@@ -899,9 +899,6 @@
           <a class="menu-item" data-page="receipts" onclick="navigateTo('receipts')">
             <i class="fa-solid fa-money-bill-transfer"></i> Receipts & Payments
           </a>
-          <a class="menu-item" data-page="expenses" onclick="navigateTo('expenses')">
-            <i class="fa-solid fa-wallet"></i> Expenses
-          </a>
           <a class="menu-item" data-page="returns" onclick="navigateTo('returns')">
             <i class="fa-solid fa-arrow-rotate-left"></i> Returns
           </a>
@@ -1357,41 +1354,7 @@
           </div>
         </section>
 
-        <!-- ==================== EXPENSES MODULE ==================== -->
-        <section id="expenses" class="page">
-          <div class="page-header">
-            <div class="page-title">
-              <h2>Expense Book</h2>
-              <p>Record company expenses such as rent, salaries, utilities, and travel</p>
-            </div>
-            <button class="btn btn-accent" onclick="openExpenseModal()"><i class="fa-solid fa-receipt"></i> Add Expense Entry</button>
-          </div>
 
-          <div class="kpi-grid" id="expenseSummaryGrid">
-            <!-- Dynamically populated category totals -->
-          </div>
-
-          <div class="dashboard-card" style="margin-bottom: 20px;">
-            <input type="text" id="expenseSearch" class="light-form-control" placeholder="Search expenses by category or details..." oninput="renderExpenses()">
-          </div>
-
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>ID</th>
-                  <th>Date</th>
-                  <th>Category</th>
-                  <th>Description</th>
-                  <th>Payment Mode</th>
-                  <th class="text-right">Amount</th>
-                  <th class="text-center">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="expensesTableBody"></tbody>
-            </table>
-          </div>
-        </section>
 
         <!-- ==================== QUOTATIONS ==================== -->
         <section id="quotations" class="page">
@@ -2617,6 +2580,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" onclick="printPartyLedger()"><i class="fa-solid fa-print"></i> Print Statement</button>
+        <button class="btn btn-accent hide-for-party" onclick="emailPartyLedger()"><i class="fa-solid fa-envelope"></i> Email Statement</button>
         <button class="btn btn-secondary" onclick="closeModal('ledgerModal')">Close</button>
       </div>
     </div>
@@ -6395,6 +6359,66 @@
       const msg = `Hello ${p.name},\n\nThis is a payment reminder from *${companyName}*.\n\nYour outstanding balance is *${formattedBal}*.\n\nPlease clear the dues at your earliest convenience.\n\nThank you!`;
       const url = `https://wa.me/${mobileWithCode}?text=${encodeURIComponent(msg)}`;
       window.open(url, '_blank');
+    }
+
+    function emailPartyLedger() {
+      const pid = document.getElementById('followupPartyId').value;
+      const p = App.data.parties.find(x => x.id === pid);
+      if (!p) return;
+      
+      const email = prompt("Enter customer email address:", p.email || "");
+      if (email === null) return;
+      if (!email.trim()) {
+        showToast("Invalid email address", "error");
+        return;
+      }
+      
+      const tableContents = document.getElementById('ledgerTableBody').innerHTML;
+      const openBal = document.getElementById('ledgerOpeningBalance').textContent;
+      const closeBal = document.getElementById('ledgerClosingBalance').textContent.split('₹')[1] ? document.getElementById('ledgerClosingBalance').textContent.split('₹')[0] + '₹' + document.getElementById('ledgerClosingBalance').textContent.split('₹')[1] : document.getElementById('ledgerClosingBalance').textContent;
+      
+      const contentHtml = `
+        <h3 style="margin-top: 0; color: #0F172A;">Account Statement: ${p.name}</h3>
+        <p style="margin: 4px 0; font-size:13px; color:#475569;"><strong>Mobile:</strong> ${p.mobile}</p>
+        <p style="margin: 4px 0; font-size:13px; color:#475569;"><strong>GSTIN:</strong> ${p.gstin || '--'}</p>
+        
+        <div style="background: #F8FAFC; border: 1px solid #E2E8F0; padding: 12px; border-radius: 8px; margin: 16px 0; font-size: 13px; display: inline-block; width: 95%;">
+          <span style="margin-right: 20px;"><strong>Opening Balance:</strong> ${openBal}</span>
+          <span style="font-weight: 700; color: #1E293B;"><strong>Closing Balance:</strong> ${closeBal}</span>
+        </div>
+        
+        <table style="width:100%; border-collapse:collapse; font-size:12px; margin-top:16px;">
+          <thead>
+            <tr style="background:#F8FAFC;">
+              <th style="padding:8px; border:1px solid #E2E8F0; text-align:left;">Date</th>
+              <th style="padding:8px; border:1px solid #E2E8F0; text-align:left;">Voucher No</th>
+              <th style="padding:8px; border:1px solid #E2E8F0; text-align:left;">Description</th>
+              <th style="padding:8px; border:1px solid #E2E8F0; text-align:left;">Type</th>
+              <th style="padding:8px; border:1px solid #E2E8F0; text-align:right;">Debit</th>
+              <th style="padding:8px; border:1px solid #E2E8F0; text-align:right;">Credit</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableContents}
+          </tbody>
+        </table>
+      `;
+      
+      showLoading(true);
+      callServer('sendPremiumEmail', {
+        to: email,
+        subject: `Account Statement - ${App.data.companyProfile.companyName || 'Mr.Rahul ERP'}`,
+        contentHtml: contentHtml,
+        partyName: p.name,
+        enteredBy: App.currentUser.name
+      }, function(res) {
+        showLoading(false);
+        if (res.success) {
+          showToast(res.message, 'success');
+        } else {
+          showToast(res.message, 'error');
+        }
+      });
     }
   </script>
 </body>

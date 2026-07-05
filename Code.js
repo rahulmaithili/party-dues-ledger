@@ -180,6 +180,85 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    // ---- GMAIL INTEGRATION ----
+    if (action === "sendPremiumEmail") {
+      var to = payload.to;
+      var subject = payload.subject;
+      var contentHtml = payload.contentHtml;
+      var partyName = payload.partyName || "Valued Customer";
+      
+      var profileSheet = sheet.getSheetByName("CompanyProfile");
+      var cp = {};
+      if (profileSheet) {
+        var data = profileSheet.getDataRange().getValues();
+        for (var ri = 1; ri < data.length; ri++) {
+          if (data[ri][0]) cp[data[ri][0]] = data[ri][1];
+        }
+      }
+      var companyName = cp.companyName || "Mr.Rahul ERP";
+      var companyLogo = cp.companyLogo || "";
+      
+      var logoHtml = "";
+      if (companyLogo) {
+        logoHtml = '<img src="' + companyLogo + '" alt="' + companyName + ' Logo" style="max-height: 50px; max-width: 150px; margin-bottom: 20px; object-fit: contain;">';
+      } else {
+        logoHtml = '<h2 style="color: #3B82F6; margin: 0; font-size: 24px; font-weight: 800; font-family: \'Inter\', sans-serif;">' + companyName + '</h2>';
+      }
+
+      var emailBody = 
+        '<!DOCTYPE html>' +
+        '<html>' +
+        '<head>' +
+        '  <meta charset="utf-8">' +
+        '  <meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+        '  <title>' + subject + '</title>' +
+        '  <style>' +
+        '    body { font-family: "Inter", sans-serif; background-color: #F8FAFC; color: #1E293B; margin: 0; padding: 0; }' +
+        '    .wrapper { width: 100%; background-color: #F1F5F9; padding: 40px 0; }' +
+        '    .container { max-width: 680px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }' +
+        '    .header { padding: 24px 32px; text-align: center; border-bottom: 1px solid #E2E8F0; background: #FFFFFF; }' +
+        '    .body { padding: 32px; }' +
+        '    .title { color: #0F172A; font-size: 18px; font-weight: 700; margin-bottom: 12px; }' +
+        '    .text { color: #475569; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }' +
+        '    .document-container { border: 1px solid #E2E8F0; border-radius: 8px; padding: 20px; background: #FFFFFF; margin-bottom: 24px; }' +
+        '    .footer { padding: 20px; text-align: center; font-size: 12px; color: #64748B; border-top: 1px solid #E2E8F0; background: #F8FAFC; }' +
+        '    .footer-text { margin: 4px 0; }' +
+        '  </style>' +
+        '</head>' +
+        '<body>' +
+        '  <div class="wrapper">' +
+        '    <div class="container">' +
+        '      <div class="header">' +
+        '        ' + logoHtml +
+        '      </div>' +
+        '      <div class="body">' +
+        '        <h2 class="title">Hello ' + partyName + ',</h2>' +
+        '        <p class="text">Please find below the account document / ledger statement sent to you by <strong>' + companyName + '</strong>.</p>' +
+        '        <div class="document-container">' +
+        '          ' + contentHtml +
+        '        </div>' +
+        '      </div>' +
+        '      <div class="footer">' +
+        '        <p class="footer-text">This is a secure billing notification from ' + companyName + '.</p>' +
+        '        <p class="footer-text">Please do not reply directly to this email.</p>' +
+        '      </div>' +
+        '    </div>' +
+        '  </div>' +
+        '</body>' +
+        '</html>';
+
+      try {
+        GmailApp.sendEmail(to, subject, "", {
+          htmlBody: emailBody
+        });
+        logActivityInternal(sheet, payload.enteredBy || "System", "Email", "Send Email success", "Auth", to);
+        return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Email sent successfully to " + to })).setMimeType(ContentService.MimeType.JSON);
+      } catch (err) {
+        logActivityInternal(sheet, payload.enteredBy || "System", "Email", "Send Email error", "Auth", err.toString());
+        return ContentService.createTextOutput(JSON.stringify({ success: false, message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
     // ---- PARTIES ----
     if (action === "saveParty") {
       upsertRowInSheet(sheet, "Parties", payload, "id");
