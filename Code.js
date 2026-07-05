@@ -214,6 +214,7 @@ function doPost(e) {
     // ---- RECEIPT ----
     if (action === "saveReceipt") {
       var txn = payload;
+      txn.proofUrl = handleProofUpload(txn);
       rollbackSheetBalances(sheet, txn.id);
       upsertRowInSheet(sheet, "Transactions", txn, "id");
       var bankSheet = sheet.getSheetByName("BankAccounts");
@@ -235,6 +236,7 @@ function doPost(e) {
     // ---- PAYMENT (to supplier) ----
     if (action === "savePayment") {
       var txn = payload;
+      txn.proofUrl = handleProofUpload(txn);
       rollbackSheetBalances(sheet, txn.id);
       upsertRowInSheet(sheet, "Transactions", txn, "id");
       var bankSheet = sheet.getSheetByName("BankAccounts");
@@ -989,7 +991,7 @@ function generateReport(sheet, reportType, dateFrom, dateTo, partyId) {
     var runningBal = openingBal;
     var rows = ledger.sort(function(a,b){ return new Date(a.date)-new Date(b.date); }).map(function(t) {
       runningBal += parseFloat(t.debit || 0) - parseFloat(t.credit || 0);
-      return { date: t.date, voucherNo: t.voucherNo, description: t.description, txnType: t.txnType, debit: parseFloat(t.debit || 0), credit: parseFloat(t.credit || 0), balance: runningBal };
+      return { date: t.date, voucherNo: t.voucherNo, description: t.description, txnType: t.txnType, debit: parseFloat(t.debit || 0), credit: parseFloat(t.credit || 0), balance: runningBal, proofUrl: t.proofUrl || "" };
     });
     return { success: true, type: "partyLedger", party: party, openingBalance: openingBal, data: rows, closingBalance: runningBal };
   }
@@ -1048,7 +1050,7 @@ function initDatabase(sheet) {
   var headerMap = {
     "Parties": ["id","name","type","mobile","email","address","gstin","pan","openingBalance","creditLimit","paymentTerms","bankAccount","bankName","ifsc","documents","securityDeposit","cylinderDeposits"],
     "Products": ["id","name","category","unit","hsn","purchaseRate","saleRate","gst","minStock","openingStock","stock","isCylinder"],
-    "Transactions": ["id","date","voucherNo","partyId","partyName","description","txnType","debit","credit","paymentMode","bankRef","items","totals","enteredBy","enteredOn","cylinderOut","cylinderIn","linkedInvoice","returnType"],
+    "Transactions": ["id","date","voucherNo","partyId","partyName","description","txnType","debit","credit","paymentMode","bankRef","items","totals","enteredBy","enteredOn","cylinderOut","cylinderIn","linkedInvoice","returnType","proofUrl"],
     "BankAccounts": ["id","accountName","bankName","accountNo","ifsc","branch","openingBalance","balance"],
     "Users": ["id","name","email","passwordHash","role","partyId","status","permissions"],
     "Notifications": ["id","message","type","date","read"],
@@ -1095,7 +1097,7 @@ function clearSheetDatabase(sheet) {
   var headerMap = {
     "Parties": ["id","name","type","mobile","email","address","gstin","pan","openingBalance","creditLimit","paymentTerms","bankAccount","bankName","ifsc","documents","securityDeposit","cylinderDeposits"],
     "Products": ["id","name","category","unit","hsn","purchaseRate","saleRate","gst","minStock","openingStock","stock","isCylinder"],
-    "Transactions": ["id","date","voucherNo","partyId","partyName","description","txnType","debit","credit","paymentMode","bankRef","items","totals","enteredBy","enteredOn","cylinderOut","cylinderIn","linkedInvoice","returnType"],
+    "Transactions": ["id","date","voucherNo","partyId","partyName","description","txnType","debit","credit","paymentMode","bankRef","items","totals","enteredBy","enteredOn","cylinderOut","cylinderIn","linkedInvoice","returnType","proofUrl"],
     "BankAccounts": ["id","accountName","bankName","accountNo","ifsc","branch","openingBalance","balance"],
     "Users": ["id","name","email","passwordHash","role","partyId","status","permissions"],
     "Notifications": ["id","message","type","date","read"],
@@ -1309,4 +1311,39 @@ function getPremiumEmailTemplate(userName, tempPassword, companyName, companyLog
     '</html>';
 
   return html;
+}
+
+function handleProofUpload(payload) {
+  if (payload.proofBase64 && payload.proofFilename && payload.proofMimeType) {
+    try {
+      var folderName = "ERP_Payment_Proofs";
+      var folders = DriveApp.getFoldersByName(folderName);
+      var folder;
+      if (folders.hasNext()) {
+        folder = folders.next();
+      } else {
+        folder = DriveApp.createFolder(folderName);
+      }
+      
+      var base64Data = payload.proofBase64;
+      if (base64Data.indexOf("base64,") !== -1) {
+        base64Data = base64Data.split("base64,")[1];
+      }
+      var fileData = Utilities.base64Decode(base64Data);
+      var blob = Utilities.newBlob(fileData, payload.proofMimeType, payload.proofFilename);
+      var file = folder.createFile(blob);
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      
+      // Clean up base64 payload properties so they are not written to sheet
+      delete payload.proofBase64;
+      delete payload.proofFilename;
+      delete payload.proofMimeType;
+      
+      return file.getUrl();
+    } catch (err) {
+      // Return empty if error occurs during upload
+      return "";
+    }
+  }
+  return payload.proofUrl || "";
 }

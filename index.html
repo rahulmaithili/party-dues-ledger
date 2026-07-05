@@ -1969,6 +1969,16 @@
             <label>Narration / Comments</label>
             <input type="text" id="receiptDescription" class="light-form-control">
           </div>
+          <div class="form-group">
+            <label>Payment Proof (PDF, JPG, PNG)</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="file" id="receiptProofFile" class="light-form-control" accept=".pdf,image/png,image/jpeg,image/jpg" style="padding: 6px 12px; font-size: 13px;">
+              <input type="hidden" id="receiptProofUrl">
+              <a id="btnViewCurrentProof" href="#" target="_blank" class="btn btn-secondary btn-sm" style="display: none; align-items: center; gap: 4px; padding: 8px 12px; height: 38px;">
+                <i class="fa-solid fa-file-image"></i> View
+              </a>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeModal('receiptModal')">Cancel</button>
@@ -3855,6 +3865,7 @@
             <td class="text-right" style="font-weight:700;">${formatCurrency(amt)}</td>
             <td class="text-center">
               <div class="flex-gap" style="justify-content: center;">
+                ${t.proofUrl ? `<a href="${t.proofUrl}" target="_blank" class="btn btn-icon" title="View Payment Proof" style="color:var(--acc);"><i class="fa-solid fa-file-image"></i></a>` : ''}
                 <button class="btn btn-icon admin-only" onclick="editReceipt('${t.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
                 <button class="btn btn-icon admin-only" onclick="deleteTransaction('${t.id}')" style="color:var(--dan);"><i class="fa-solid fa-trash"></i></button>
               </div>
@@ -3870,6 +3881,9 @@
       document.getElementById('receiptForm').reset();
       document.getElementById('receiptId').value = '';
       document.getElementById('receiptTxnType').value = type;
+      document.getElementById('receiptProofUrl').value = '';
+      document.getElementById('receiptProofFile').value = '';
+      document.getElementById('btnViewCurrentProof').style.display = 'none';
 
       const isReceipt = type === 'Receipt';
       document.getElementById('receiptModalTitle').textContent = isReceipt ? 'Customer Receipt' : 'Supplier Payment';
@@ -3895,40 +3909,73 @@
 
     function saveReceiptForm(e) {
       e.preventDefault();
-      const id = document.getElementById('receiptId').value || 'TXN' + Date.now();
-      const type = document.getElementById('receiptTxnType').value;
-      const pid = document.getElementById('receiptPartyId').value;
-      const party = App.data.parties.find(x => x.id === pid);
-      const amt = parseFloat(document.getElementById('receiptAmount').value || 0);
+      
+      const fileInput = document.getElementById('receiptProofFile');
+      
+      const proceedSave = (base64, filename, mimeType) => {
+        const id = document.getElementById('receiptId').value || 'TXN' + Date.now();
+        const type = document.getElementById('receiptTxnType').value;
+        const pid = document.getElementById('receiptPartyId').value;
+        const party = App.data.parties.find(x => x.id === pid);
+        const amt = parseFloat(document.getElementById('receiptAmount').value || 0);
 
-      // Auto generate voucher no
-      const prefix = type === 'Receipt' ? (App.data.companyProfile.receiptPrefix || 'REC') : 'PAY';
-      const count = App.data.transactions.filter(t => t.txnType === type).length + 1;
-      const vNo = `${prefix}-2026-${count.toString().padStart(3, '0')}`;
+        // Auto generate voucher no
+        const prefix = type === 'Receipt' ? (App.data.companyProfile.receiptPrefix || 'REC') : 'PAY';
+        const count = App.data.transactions.filter(t => t.txnType === type).length + 1;
+        const vNo = `${prefix}-2026-${count.toString().padStart(3, '0')}`;
 
-      const payload = {
-        id: id,
-        date: document.getElementById('receiptDate').value,
-        voucherNo: vNo,
-        partyId: party.id,
-        partyName: party.name,
-        description: document.getElementById('receiptDescription').value || `${type} Entry`,
-        txnType: type,
-        debit: type === 'Payment' ? amt : 0,
-        credit: type === 'Receipt' ? amt : 0,
-        paymentMode: document.getElementById('receiptMode').value,
-        bankRef: document.getElementById('receiptBankRef').value,
-        linkedInvoice: document.getElementById('receiptLinkedInvoice').value,
-        enteredBy: App.currentUser.id,
-        enteredOn: new Date().toISOString()
+        const payload = {
+          id: id,
+          date: document.getElementById('receiptDate').value,
+          voucherNo: vNo,
+          partyId: party.id,
+          partyName: party.name,
+          description: document.getElementById('receiptDescription').value || `${type} Entry`,
+          txnType: type,
+          debit: type === 'Payment' ? amt : 0,
+          credit: type === 'Receipt' ? amt : 0,
+          paymentMode: document.getElementById('receiptMode').value,
+          bankRef: document.getElementById('receiptBankRef').value,
+          linkedInvoice: document.getElementById('receiptLinkedInvoice').value,
+          enteredBy: App.currentUser.id,
+          enteredOn: new Date().toISOString(),
+          proofUrl: document.getElementById('receiptProofUrl').value || ""
+        };
+
+        if (base64) {
+          payload.proofBase64 = base64;
+          payload.proofFilename = filename;
+          payload.proofMimeType = mimeType;
+        }
+
+        const action = type === 'Receipt' ? 'saveReceipt' : 'savePayment';
+        callServer(action, payload, function() {
+          closeModal('receiptModal');
+          showToast('Receipt/Payment entry recorded successfully', 'success');
+          syncAllData(renderReceipts, ["Transactions", "BankAccounts", "ActivityLog"]);
+        });
       };
 
-      const action = type === 'Receipt' ? 'saveReceipt' : 'savePayment';
-      callServer(action, payload, function() {
-        closeModal('receiptModal');
-        showToast('Receipt/Payment entry recorded successfully', 'success');
-        syncAllData(renderReceipts, ["Transactions", "BankAccounts", "ActivityLog"]);
-      });
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        if (file.size > 8 * 1024 * 1024) {
+          showToast('File size must be less than 8MB', 'error');
+          return;
+        }
+        showLoading(true, 'Uploading payment proof...');
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          showLoading(false);
+          proceedSave(evt.target.result, file.name, file.type);
+        };
+        reader.onerror = function() {
+          showLoading(false);
+          showToast('Failed to read file', 'error');
+        };
+        reader.readAsDataURL(file);
+      } else {
+        proceedSave(null, null, null);
+      }
     }
 
     function editReceipt(id) {
@@ -3943,6 +3990,17 @@
       document.getElementById('receiptMode').value = t.paymentMode || 'Cash';
       document.getElementById('receiptBankRef').value = t.bankRef || '';
       document.getElementById('receiptDescription').value = t.description || '';
+
+      // Set current proof
+      document.getElementById('receiptProofUrl').value = t.proofUrl || '';
+      document.getElementById('receiptProofFile').value = '';
+      const viewProofBtn = document.getElementById('btnViewCurrentProof');
+      if (t.proofUrl) {
+        viewProofBtn.href = t.proofUrl;
+        viewProofBtn.style.display = 'inline-flex';
+      } else {
+        viewProofBtn.style.display = 'none';
+      }
 
       const pSelect = document.getElementById('receiptPartyId');
       pSelect.innerHTML = `<option value="${t.partyId}">${t.partyName}</option>`;
@@ -5063,10 +5121,11 @@
           body.innerHTML = '';
           
           res.data.forEach(row => {
+            const proofLink = row.proofUrl ? `<a href="${row.proofUrl}" target="_blank" style="margin-left:8px; color:var(--acc);" title="View Proof"><i class="fa-solid fa-file-image"></i></a>` : '';
             body.innerHTML += `
               <tr>
                 <td>${formatDate(row.date)}</td>
-                <td><strong>${row.voucherNo}</strong></td>
+                <td><strong>${row.voucherNo}</strong>${proofLink}</td>
                 <td>${row.description}</td>
                 <td><span class="badge ${row.txnType === 'Sale' || row.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${row.txnType}</span></td>
                 <td class="text-right text-danger">${row.debit > 0 ? formatCurrency(row.debit) : '--'}</td>
