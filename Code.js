@@ -25,7 +25,7 @@ function doGet(e) {
       var sheetsToRead = [
         "Parties", "Products", "Transactions", "BankAccounts", "Users", 
         "Notifications", "CompanyProfile", "Expenses", "Quotations", 
-        "PurchaseOrders", "DeliveryChallans", "ActivityLog"
+        "PurchaseOrders", "DeliveryChallans", "ActivityLog", "CRMFollowups"
       ];
       for (var i = 0; i < sheetsToRead.length; i++) {
         var sName = sheetsToRead[i];
@@ -35,6 +35,7 @@ function doGet(e) {
         if (sName === "PurchaseOrders") clientKey = "purchaseOrders";
         if (sName === "DeliveryChallans") clientKey = "deliveryChallans";
         if (sName === "ActivityLog") clientKey = "activityLog";
+        if (sName === "CRMFollowups") clientKey = "crmFollowups";
         
         if (!requestedSheets || requestedSheets.indexOf(sName) !== -1) {
           data[clientKey] = readSheetData(sheet, sName);
@@ -165,6 +166,18 @@ function doPost(e) {
         return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Password reset approved! Temporary password has been emailed to the user." })).setMimeType(ContentService.MimeType.JSON);
       }
       return ContentService.createTextOutput(JSON.stringify({ success: false, message: "User not found." })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ---- CRM FOLLOW-UPS ----
+    if (action === "saveFollowup") {
+      upsertRowInSheet(sheet, "CRMFollowups", payload, "id");
+      logActivityInternal(sheet, payload.enteredBy || "", "", "Save Followup", "CRM", payload.partyName);
+      return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (action === "deleteFollowup") {
+      deleteRowFromSheet(sheet, "CRMFollowups", payload.id, "id");
+      logActivityInternal(sheet, payload.deletedBy || "", "", "Delete Followup", "CRM", payload.id);
+      return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
     }
 
     // ---- PARTIES ----
@@ -1044,7 +1057,7 @@ function initDatabase(sheet) {
   var allSheets = [
     "Parties", "Products", "Transactions", "BankAccounts", "Users",
     "Notifications", "CompanyProfile", "CylinderSecurity",
-    "Expenses", "Quotations", "PurchaseOrders", "DeliveryChallans", "ActivityLog"
+    "Expenses", "Quotations", "PurchaseOrders", "DeliveryChallans", "ActivityLog", "CRMFollowups"
   ];
 
   var headerMap = {
@@ -1060,7 +1073,8 @@ function initDatabase(sheet) {
     "Quotations": ["id","date","voucherNo","partyId","partyName","items","totals","validTill","status","notes","enteredBy","enteredOn"],
     "PurchaseOrders": ["id","date","voucherNo","partyId","partyName","items","totals","expectedDelivery","status","notes","enteredBy","enteredOn"],
     "DeliveryChallans": ["id","date","voucherNo","partyId","partyName","items","status","linkedInvoice","notes","enteredBy","enteredOn"],
-    "ActivityLog": ["id","timestamp","userId","userName","action","module","details"]
+    "ActivityLog": ["id","timestamp","userId","userName","action","module","details"],
+    "CRMFollowups": ["id","partyId","partyName","date","type","notes","nextFollowUpDate","status","enteredBy","enteredOn"]
   };
 
   allSheets.forEach(function(name) {
@@ -1105,7 +1119,8 @@ function clearSheetDatabase(sheet) {
     "Expenses": ["id","date","category","description","amount","paymentMode","bankRef","voucherId","enteredBy","enteredOn"],
     "Quotations": ["id","date","voucherNo","partyId","partyName","items","totals","validTill","status","notes","enteredBy","enteredOn"],
     "PurchaseOrders": ["id","date","voucherNo","partyId","partyName","items","totals","expectedDelivery","status","notes","enteredBy","enteredOn"],
-    "DeliveryChallans": ["id","date","voucherNo","partyId","partyName","items","status","linkedInvoice","notes","enteredBy","enteredOn"]
+    "DeliveryChallans": ["id","date","voucherNo","partyId","partyName","items","status","linkedInvoice","notes","enteredBy","enteredOn"],
+    "CRMFollowups": ["id","partyId","partyName","date","type","notes","nextFollowUpDate","status","enteredBy","enteredOn"]
   };
 
   Object.keys(headerMap).forEach(function(name) {
