@@ -805,6 +805,19 @@ function doPost(e) {
 
     // ---- USERS ----
     if (action === "saveUser") {
+      var userId = payload.id;
+      if (payload.avatarBase64) {
+        var avatarUrl = handleProofUpload({
+          id: userId,
+          proofBase64: payload.avatarBase64,
+          proofFilename: payload.avatarFilename || "avatar.jpg",
+          proofMimeType: payload.avatarMimeType || "image/jpeg"
+        });
+        payload.avatarUrl = avatarUrl;
+        delete payload.avatarBase64;
+        delete payload.avatarFilename;
+        delete payload.avatarMimeType;
+      }
       upsertRowInSheet(sheet, "Users", payload, "id");
       return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
     }

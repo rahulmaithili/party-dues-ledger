@@ -33,6 +33,14 @@
       --r: 10px;
     }
 
+    body.dark-theme {
+      --bg: #0B0F19;
+      --card: #151F32;
+      --txt: #F1F5F9;
+      --txt2: #94A3B8;
+      --brd: #1E293B;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -137,7 +145,7 @@
     .light-form-control {
       width: 100%;
       padding: 10px 14px;
-      background: white;
+      background: var(--card);
       border: 1px solid var(--brd);
       border-radius: var(--r);
       color: var(--txt);
@@ -613,7 +621,7 @@
     }
 
     .modal-card {
-      background: white;
+      background: var(--card);
       width: 100%;
       max-width: 600px;
       border-radius: 16px;
@@ -622,6 +630,13 @@
       flex-direction: column;
       max-height: 90vh;
       animation: modalSlide 0.3s ease;
+    }
+
+    .modal-card form {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
     }
 
     .modal-card.large {
@@ -660,7 +675,7 @@
       align-items: center;
       justify-content: flex-end;
       gap: 12px;
-      background: #F8FAFC;
+      background: var(--bg);
       border-bottom-left-radius: 16px;
       border-bottom-right-radius: 16px;
     }
@@ -737,10 +752,65 @@
       to { transform: rotate(360deg); }
     }
 
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+      z-index: 99;
+    }
+
+    /* Reports Panel Menu Layout */
+    .report-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      color: var(--txt2);
+      transition: all 0.2s;
+    }
+    .report-menu-item i {
+      font-size: 16px;
+      width: 20px;
+      text-align: center;
+    }
+    .report-menu-item h5 {
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--txt);
+      margin-bottom: 2px;
+    }
+    .report-menu-item p {
+      font-size: 11px;
+      color: var(--txt2);
+    }
+    .report-menu-item:hover {
+      background: var(--bg);
+    }
+    .report-menu-item.active {
+      background: var(--sbh);
+      color: var(--sba);
+    }
+    .report-menu-item.active h5 {
+      color: var(--sba);
+    }
+    .report-menu-item.active p {
+      color: var(--sbt);
+    }
+
     /* Mobile Responsive styling */
     @media (max-width: 992px) {
       #sidebar {
         transform: translateX(-100%);
+      }
+      #sidebar.open + #sidebarOverlay {
+        display: block;
       }
       #sidebar.open {
         transform: translateX(0);
@@ -943,6 +1013,8 @@
       </div>
     </aside>
 
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar(false)"></div>
+
     <!-- MAIN VIEW AREA -->
     <div id="main-content">
       
@@ -953,6 +1025,9 @@
           <span style="font-weight: 600; font-size: 16px;" id="currentLocationName">Dashboard</span>
         </div>
         <div class="topbar-right">
+          <div class="topbar-action" onclick="toggleTheme()" title="Toggle Theme" style="margin-right: 8px;">
+            <i class="fa-solid fa-moon" id="themeIcon"></i>
+          </div>
           <div class="topbar-action" onclick="toggleNotifications()">
             <i class="fa-solid fa-bell"></i>
             <span class="badge-dot" id="notifBadge" style="display:none;"></span>
@@ -979,6 +1054,18 @@
 
           <!-- ADMIN/MANAGER DASHBOARD VIEW -->
           <div class="hide-for-party">
+            <!-- HERO CARD -->
+            <div class="kpi-hero-card" style="background: linear-gradient(135deg, #1E293B, #0F172A); border: 1px solid var(--brd); padding: 24px; border-radius: 16px; color: white; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+              <div>
+                <span style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: #94A3B8; letter-spacing: 1px;">Total Net Outstanding Dues</span>
+                <h2 id="kpiNetDues" style="font-size: 36px; font-weight: 800; margin-top: 8px; color: var(--acc);">₹0.00</h2>
+                <p style="font-size: 13.5px; color: #94A3B8; margin-top: 6px;">Total Receivables (Dues to Collect): <strong id="kpiHeroReceivable" style="color:#10B981;">₹0.00</strong> | Total Payables: <strong id="kpiHeroPayable" style="color:#EF4444;">₹0.00</strong></p>
+              </div>
+              <div style="background: rgba(229, 193, 88, 0.15); border-radius: 50%; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; color: var(--acc); font-size: 28px;">
+                <i class="fa-solid fa-scale-balanced"></i>
+              </div>
+            </div>
+
             <div class="kpi-grid">
               <div class="kpi-card">
                 <div class="kpi-details">
@@ -1007,20 +1094,6 @@
                   <p id="kpiBank">₹0.00</p>
                 </div>
                 <div class="kpi-icon blue"><i class="fa-solid fa-building-columns"></i></div>
-              </div>
-              <div class="kpi-card">
-                <div class="kpi-details">
-                  <h3>Total Receivable</h3>
-                  <p id="kpiReceivable" style="color: var(--suc);">₹0.00</p>
-                </div>
-                <div class="kpi-icon green"><i class="fa-solid fa-arrow-down-long"></i></div>
-              </div>
-              <div class="kpi-card">
-                <div class="kpi-details">
-                  <h3>Total Payable</h3>
-                  <p id="kpiPayable" style="color: var(--dan);">₹0.00</p>
-                </div>
-                <div class="kpi-icon red"><i class="fa-solid fa-arrow-up-long"></i></div>
               </div>
             </div>
 
@@ -1571,34 +1644,96 @@
             </div>
           </div>
 
-          <div class="grid-4" style="margin-bottom: 24px; align-items: flex-end;">
-            <div>
-              <label style="font-size: 12px; font-weight:600; color:var(--txt2); margin-bottom: 4px; display:block;">Report Type</label>
-              <select id="reportSelect" class="light-form-control" onchange="toggleReportFilters()">
-                <option value="daybook">Day Book / Transaction List</option>
-                <option value="pl">Profit & Loss Statement</option>
-                <option value="stock">Current Stock Valuation</option>
-                <option value="partyLedger">Customer / Supplier Account Ledger</option>
-                <option value="outstanding">Outstanding Balance Summary</option>
-                <option value="sales">Sales Invoice Journal</option>
-                <option value="purchase">Purchase Bill Journal</option>
-                <option value="expense">Expense Distribution</option>
-              </select>
+          <div class="grid-2" style="grid-template-columns: 280px 1fr; gap: 24px; margin-bottom: 24px; align-items: stretch; display: grid;">
+            <!-- Left Panel: Report Types Menu -->
+            <div class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--brd); background: var(--card); border-radius: var(--r);">
+              <h4 style="font-size: 11px; font-weight: 700; color: var(--txt2); text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.5px;">Select Report Type</h4>
+              
+              <div class="report-menu-item active" onclick="selectReportType('daybook', this)">
+                <i class="fa-solid fa-calendar-day"></i>
+                <div style="text-align: left;">
+                  <h5 style="margin: 0;">Day Book</h5>
+                  <p style="margin: 0;">Daily transaction list</p>
+                </div>
+              </div>
+              <div class="report-menu-item" onclick="selectReportType('pl', this)">
+                <i class="fa-solid fa-chart-pie"></i>
+                <div style="text-align: left;">
+                  <h5 style="margin: 0;">Profit & Loss</h5>
+                  <p style="margin: 0;">Revenue vs expenses</p>
+                </div>
+              </div>
+              <div class="report-menu-item" onclick="selectReportType('stock', this)">
+                <i class="fa-solid fa-boxes-stacked"></i>
+                <div style="text-align: left;">
+                  <h5 style="margin: 0;">Stock Valuation</h5>
+                  <p style="margin: 0;">Current inventory value</p>
+                </div>
+              </div>
+              <div class="report-menu-item" onclick="selectReportType('partyLedger', this)">
+                <i class="fa-solid fa-address-book"></i>
+                <div style="text-align: left;">
+                  <h5 style="margin: 0;">Account Ledger</h5>
+                  <p style="margin: 0;">Customer/Supplier statement</p>
+                </div>
+              </div>
+              <div class="report-menu-item" onclick="selectReportType('outstanding', this)">
+                <i class="fa-solid fa-wallet"></i>
+                <div style="text-align: left;">
+                  <h5 style="margin: 0;">Outstanding Balances</h5>
+                  <p style="margin: 0;">Uncollected dues summary</p>
+                </div>
+              </div>
+              <div class="report-menu-item" onclick="selectReportType('sales', this)">
+                <i class="fa-solid fa-file-invoice-dollar"></i>
+                <div style="text-align: left;">
+                  <h5 style="margin: 0;">Sales Journal</h5>
+                  <p style="margin: 0;">Sales invoices list</p>
+                </div>
+              </div>
+              <div class="report-menu-item" onclick="selectReportType('purchase', this)">
+                <i class="fa-solid fa-cart-flatbed"></i>
+                <div style="text-align: left;">
+                  <h5 style="margin: 0;">Purchase Journal</h5>
+                  <p style="margin: 0;">Purchase bills list</p>
+                </div>
+              </div>
+              <div class="report-menu-item" onclick="selectReportType('expense', this)">
+                <i class="fa-solid fa-file-invoice"></i>
+                <div style="text-align: left;">
+                  <h5 style="margin: 0;">Expense Report</h5>
+                  <p style="margin: 0;">Distribution analysis</p>
+                </div>
+              </div>
             </div>
-            <div id="reportPartyDiv" style="display:none;">
-              <label style="font-size: 12px; font-weight:600; color:var(--txt2); margin-bottom: 4px; display:block;">Select Party</label>
-              <select id="reportPartySelect" class="light-form-control"></select>
-            </div>
-            <div>
-              <label style="font-size: 12px; font-weight:600; color:var(--txt2); margin-bottom: 4px; display:block;">From Date</label>
-              <input type="date" id="reportFromDate" class="light-form-control">
-            </div>
-            <div>
-              <label style="font-size: 12px; font-weight:600; color:var(--txt2); margin-bottom: 4px; display:block;">To Date</label>
-              <input type="date" id="reportToDate" class="light-form-control">
-            </div>
-            <div>
-              <button class="btn btn-accent w-full" onclick="generateSystemReport()"><i class="fa-solid fa-chart-line"></i> Run Report</button>
+            
+            <!-- Right Panel: Report Parameters and Generate Action -->
+            <div class="card" style="padding: 24px; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid var(--brd); background: var(--card); border-radius: var(--r);">
+              <div>
+                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 4px; color: var(--txt);" id="selectedReportName">Day Book / Transaction List</h3>
+                <p style="font-size: 12.5px; color: var(--txt2); margin-bottom: 24px;" id="selectedReportDesc">View daily transactional daybook list with cash/bank flows.</p>
+                
+                <input type="hidden" id="reportSelect" value="daybook">
+                
+                <div class="grid-3" style="align-items: flex-end;">
+                  <div id="reportPartyDiv" style="display:none;">
+                    <label style="font-size: 12px; font-weight:600; color:var(--txt2); margin-bottom: 6px; display:block;">Select Party</label>
+                    <select id="reportPartySelect" class="light-form-control"></select>
+                  </div>
+                  <div id="reportFromDateDiv">
+                    <label style="font-size: 12px; font-weight:600; color:var(--txt2); margin-bottom: 6px; display:block;">From Date</label>
+                    <input type="date" id="reportFromDate" class="light-form-control">
+                  </div>
+                  <div id="reportToDateDiv">
+                    <label style="font-size: 12px; font-weight:600; color:var(--txt2); margin-bottom: 6px; display:block;">To Date</label>
+                    <input type="date" id="reportToDate" class="light-form-control">
+                  </div>
+                </div>
+              </div>
+              
+              <div style="margin-top: 32px; display: flex; justify-content: flex-end;">
+                <button class="btn btn-accent" style="padding: 10px 24px;" onclick="generateSystemReport()"><i class="fa-solid fa-circle-play" style="margin-right:8px;"></i> Generate Report</button>
+              </div>
             </div>
           </div>
 
@@ -1950,7 +2085,10 @@
             </div>
             <div class="form-group">
               <label>Category *</label>
-              <input type="text" id="productCategory" class="light-form-control" placeholder="e.g. Building Materials" required>
+              <div style="display: flex; gap: 8px;">
+                <select id="productCategory" class="light-form-control" required></select>
+                <button type="button" class="btn btn-secondary" style="padding: 0 12px; white-space: nowrap;" onclick="addNewCategoryPrompt()"><i class="fa-solid fa-plus"></i></button>
+              </div>
             </div>
           </div>
           <div class="grid-3">
@@ -2689,6 +2827,15 @@
             </div>
           </div>
 
+          <div class="form-group" style="margin-top: 12px; margin-bottom: 12px;">
+            <label>Profile Photo (PNG, JPG)</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="file" id="userPhotoInput" class="light-form-control" accept="image/png,image/jpeg,image/jpg" onchange="handleUserPhotoChange(event)">
+              <div id="userFormAvatarPreview" class="user-avatar" style="width: 36px; height: 36px; font-size: 14px; border-radius: 50%; background: var(--bg2); border: 1px solid var(--brd); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;">U</div>
+            </div>
+            <input type="hidden" id="userAvatarUrl">
+          </div>
+
           <div id="userPermissionsPanel">
             <h4 style="margin-top: 10px; margin-bottom: 8px; font-weight: 600;">Granular Permissions</h4>
             <div class="grid-3">
@@ -2831,6 +2978,14 @@
 
   <!-- ==================== CORE JAVASCRIPT ==================== -->
   <script>
+    // Theme initialization
+    (function() {
+      const theme = localStorage.getItem('theme');
+      if (theme === 'dark') {
+        document.body.classList.add('dark-theme');
+      }
+    })();
+
     // State management
     const App = {
       data: {
@@ -3352,6 +3507,18 @@
       if (pageId === 'banking') renderBanking();
       if (pageId === 'returns') renderReturns();
       if (pageId === 'cylinderSecurity') renderSecurityDeposits();
+      if (pageId === 'reports') {
+        const today = new Date().toISOString().split('T')[0];
+        const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+        document.getElementById('reportFromDate').value = firstDay;
+        document.getElementById('reportToDate').value = today;
+        
+        const pSelect = document.getElementById('reportPartySelect');
+        pSelect.innerHTML = '<option value="">-- Choose Party --</option>';
+        App.data.parties.forEach(p => {
+          pSelect.innerHTML += `<option value="${p.id}">${p.name} (${p.type})</option>`;
+        });
+      }
       if (pageId === 'users') renderUsers();
       if (pageId === 'settings') loadSettings();
     }
@@ -3517,8 +3684,29 @@
       }
     }
 
+    function toggleTheme() {
+      const isDark = document.body.classList.toggle('dark-theme');
+      const icon = document.getElementById('themeIcon');
+      if (icon) {
+        if (isDark) {
+          icon.className = 'fa-solid fa-sun';
+          localStorage.setItem('theme', 'dark');
+        } else {
+          icon.className = 'fa-solid fa-moon';
+          localStorage.setItem('theme', 'light');
+        }
+      }
+    }
+
     function initializeApp() {
       document.getElementById('currentDateDisplay').textContent = formatDate(new Date().toISOString().split('T')[0]);
+      
+      const isDark = document.body.classList.contains('dark-theme');
+      const icon = document.getElementById('themeIcon');
+      if (icon) {
+        icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      }
+      
       syncAllData();
     }
 
@@ -3697,11 +3885,14 @@
           else if (bal < 0) totalPayables += Math.abs(bal);
         });
 
+        const netDues = totalReceivables - totalPayables;
+
         // Show KPI Cards
+        document.getElementById('kpiNetDues').textContent = formatCurrency(netDues);
+        document.getElementById('kpiHeroReceivable').textContent = formatCurrency(totalReceivables);
+        document.getElementById('kpiHeroPayable').textContent = formatCurrency(totalPayables);
         document.getElementById('kpiSales').textContent = formatCurrency(totalSales);
         document.getElementById('kpiPurchases').textContent = formatCurrency(totalPurchase);
-        document.getElementById('kpiReceivable').textContent = formatCurrency(totalReceivables);
-        document.getElementById('kpiPayable').textContent = formatCurrency(totalPayables);
 
         // Account reserves
         let cashVal = 0, bankVal = 0;
@@ -4126,9 +4317,59 @@
       });
     }
 
+    function populateCategoriesDropdown(selectedValue) {
+      const select = document.getElementById('productCategory');
+      select.innerHTML = '<option value="">-- Select Category --</option>';
+      
+      const categories = new Set();
+      if (App.data.products) {
+        App.data.products.forEach(p => {
+          if (p.category) categories.add(p.category.trim());
+        });
+      }
+      
+      categories.add("Cylinders");
+      categories.add("Accessories");
+      
+      Array.from(categories).sort().forEach(cat => {
+        select.innerHTML += `<option value="${cat}">${cat}</option>`;
+      });
+      
+      if (selectedValue) {
+        if (!categories.has(selectedValue)) {
+          select.innerHTML += `<option value="${selectedValue}">${selectedValue}</option>`;
+        }
+        select.value = selectedValue;
+      }
+    }
+
+    function addNewCategoryPrompt() {
+      const newCat = prompt("Enter new category name:");
+      if (newCat && newCat.trim()) {
+        const select = document.getElementById('productCategory');
+        const trimmed = newCat.trim();
+        let exists = false;
+        for (let i = 0; i < select.options.length; i++) {
+          if (select.options[i].value === trimmed) {
+            exists = true;
+            select.value = trimmed;
+            break;
+          }
+        }
+        if (!exists) {
+          const opt = document.createElement('option');
+          opt.value = trimmed;
+          opt.textContent = trimmed;
+          select.appendChild(opt);
+          select.value = trimmed;
+        }
+      }
+    }
+
     function openProductModal() {
       document.getElementById('productForm').reset();
       document.getElementById('productId').value = '';
+      populateCategoriesDropdown('');
       document.getElementById('productModalTitle').textContent = 'Add Product Details';
       openModal('productModal');
     }
@@ -4164,7 +4405,7 @@
 
       document.getElementById('productId').value = p.id;
       document.getElementById('productName').value = p.name;
-      document.getElementById('productCategory').value = p.category;
+      populateCategoriesDropdown(p.category);
       document.getElementById('productUnit').value = p.unit;
       document.getElementById('productHsn').value = p.hsn || '';
       document.getElementById('productGst').value = (p.gst !== undefined && p.gst !== null) ? p.gst : 18;
@@ -5808,12 +6049,51 @@
 
     // ==================== REPORTS SYSTEM ====================
 
+    function selectReportType(type, element) {
+      document.getElementById('reportSelect').value = type;
+      
+      document.querySelectorAll('.report-menu-item').forEach(el => el.classList.remove('active'));
+      element.classList.add('active');
+      
+      const nameEl = document.getElementById('selectedReportName');
+      const descEl = document.getElementById('selectedReportDesc');
+      
+      const details = {
+        daybook: { name: 'Day Book / Transaction List', desc: 'View daily transactional daybook list with cash/bank flows.' },
+        pl: { name: 'Profit & Loss Statement', desc: 'Summarized statement of revenues, tax liability, and expense distribution.' },
+        stock: { name: 'Current Stock Valuation', desc: 'View current inventory counts, unit purchase rates, and total stock valuations.' },
+        partyLedger: { name: 'Customer / Supplier Account Ledger', desc: 'Select a customer or supplier to generate their full accounting statement.' },
+        outstanding: { name: 'Outstanding Balance Summary', desc: 'View current due balances for all customers and suppliers.' },
+        sales: { name: 'Sales Invoice Journal', desc: 'Detailed list of sales invoices, discounts, and taxes collected.' },
+        purchase: { name: 'Purchase Bill Journal', desc: 'Detailed list of purchase bills and taxes paid.' },
+        expense: { name: 'Expense Distribution', desc: 'Analyze operating and administrative expense categories.' }
+      };
+      
+      if (details[type]) {
+        nameEl.textContent = details[type].name;
+        descEl.textContent = details[type].desc;
+      }
+      
+      toggleReportFilters();
+    }
+
     function toggleReportFilters() {
       const type = document.getElementById('reportSelect').value;
       const partyDiv = document.getElementById('reportPartyDiv');
+      const fromDiv = document.getElementById('reportFromDateDiv');
+      const toDiv = document.getElementById('reportToDateDiv');
       
       if (type === 'partyLedger') partyDiv.style.display = 'block';
       else partyDiv.style.display = 'none';
+
+      // Hide date filters for Stock report since it's a current snapshot!
+      if (type === 'stock' || type === 'outstanding') {
+        fromDiv.style.display = 'none';
+        toDiv.style.display = 'none';
+      } else {
+        fromDiv.style.display = 'block';
+        toDiv.style.display = 'block';
+      }
     }
 
     function generateSystemReport() {
@@ -5825,7 +6105,7 @@
       callServer('getReport', { type: type, dateFrom: from, dateTo: to, partyId: pid }, function(res) {
         if (res.success) {
           document.getElementById('reportResultCard').style.display = 'block';
-          document.getElementById('reportTitleText').textContent = `${document.getElementById('reportSelect').options[document.getElementById('reportSelect').selectedIndex].text}`;
+          document.getElementById('reportTitleText').textContent = document.getElementById('selectedReportName').textContent;
           
           const container = document.getElementById('reportResultTableContainer');
           container.innerHTML = '';
@@ -6434,9 +6714,27 @@
       }
     }
 
+    function handleUserPhotoChange(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Image size must be less than 2MB', 'error');
+        e.target.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        document.getElementById('userFormAvatarPreview').innerHTML = `<img src="${evt.target.result}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+      };
+      reader.readAsDataURL(file);
+    }
+
     function openUserModal() {
       document.getElementById('userForm').reset();
       document.getElementById('userId').value = '';
+      document.getElementById('userAvatarUrl').value = '';
+      document.getElementById('userPhotoInput').value = '';
+      document.getElementById('userFormAvatarPreview').innerHTML = 'U';
       document.getElementById('userPassword').required = true;
       document.getElementById('userPasswordLabel').textContent = 'Password *';
       document.getElementById('userModalTitle').textContent = 'Add System User';
@@ -6448,40 +6746,63 @@
       e.preventDefault();
       const id = document.getElementById('userId').value || 'U' + Date.now();
       const pass = document.getElementById('userPassword').value;
+      const fileInput = document.getElementById('userPhotoInput');
       
-      const payload = {
-        id: id,
-        name: document.getElementById('userFullName').value,
-        email: document.getElementById('userEmail').value,
-        role: document.getElementById('userRole').value,
-        status: document.getElementById('userStatus').value,
-        partyId: document.getElementById('userPartyId').value || '',
-        permissions: {
-          dashboard: document.getElementById('perm_dashboard').checked,
-          parties: document.getElementById('perm_parties').checked,
-          products: document.getElementById('perm_products').checked,
-          sales: document.getElementById('perm_sales').checked,
-          purchase: document.getElementById('perm_purchase').checked,
-          ledger: document.getElementById('perm_ledger').checked,
-          expenses: document.getElementById('perm_expenses').checked,
-          quotations: document.getElementById('perm_quotations').checked,
-          reports: document.getElementById('perm_reports').checked,
-          banking: document.getElementById('perm_banking').checked
+      const proceedUserSave = (base64, filename, mimeType) => {
+        const payload = {
+          id: id,
+          name: document.getElementById('userFullName').value,
+          email: document.getElementById('userEmail').value,
+          role: document.getElementById('userRole').value,
+          status: document.getElementById('userStatus').value,
+          partyId: document.getElementById('userPartyId').value || '',
+          avatarUrl: document.getElementById('userAvatarUrl').value,
+          permissions: {
+            dashboard: document.getElementById('perm_dashboard').checked,
+            parties: document.getElementById('perm_parties').checked,
+            products: document.getElementById('perm_products').checked,
+            sales: document.getElementById('perm_sales').checked,
+            purchase: document.getElementById('perm_purchase').checked,
+            ledger: document.getElementById('perm_ledger').checked,
+            expenses: document.getElementById('perm_expenses').checked,
+            quotations: document.getElementById('perm_quotations').checked,
+            reports: document.getElementById('perm_reports').checked,
+            banking: document.getElementById('perm_banking').checked
+          }
+        };
+
+        if (base64) {
+          payload.avatarBase64 = base64;
+          payload.avatarFilename = filename;
+          payload.avatarMimeType = mimeType;
         }
+
+        if (pass) {
+          payload.passwordHash = simpleHash(pass);
+        } else {
+          const oldUser = App.data.users.find(x => x.id === id);
+          if(oldUser) payload.passwordHash = oldUser.passwordHash;
+        }
+
+        showLoading(true, 'Saving user details...');
+        callServer('saveUser', payload, function() {
+          showLoading(false);
+          closeModal('userModal');
+          showToast('User credentials saved successfully', 'success');
+          syncAllData(renderUsers, ["Users"]);
+        });
       };
 
-      if (pass) {
-        payload.passwordHash = simpleHash(pass);
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          proceedUserSave(evt.target.result, file.name, file.type);
+        };
+        reader.readAsDataURL(file);
       } else {
-        const oldUser = App.data.users.find(x => x.id === id);
-        if(oldUser) payload.passwordHash = oldUser.passwordHash;
+        proceedUserSave(null, null, null);
       }
-
-      callServer('saveUser', payload, function() {
-        closeModal('userModal');
-        showToast('User credentials saved successfully', 'success');
-        syncAllData(renderUsers, ["Users"]);
-      });
     }
 
     function editUser(id) {
@@ -6493,6 +6814,15 @@
       document.getElementById('userEmail').value = u.email;
       document.getElementById('userRole').value = u.role;
       document.getElementById('userStatus').value = u.status;
+      document.getElementById('userAvatarUrl').value = u.avatarUrl || '';
+      document.getElementById('userPhotoInput').value = '';
+      
+      const avatarPreview = document.getElementById('userFormAvatarPreview');
+      if (u.avatarUrl) {
+        avatarPreview.innerHTML = `<img src="${u.avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+      } else {
+        avatarPreview.innerHTML = u.name.charAt(0).toUpperCase();
+      }
       
       document.getElementById('userPassword').required = false;
       document.getElementById('userPasswordLabel').textContent = 'New Password (Optional)';
