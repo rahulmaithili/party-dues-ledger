@@ -3372,6 +3372,19 @@
       
       // Update setup display
       document.getElementById('backendSetupPage').style.display = 'none';
+
+      // Check if session exists to restore it directly
+      const sessionStr = SafeStorage.getItem('currentUserSession');
+      if (sessionStr) {
+        try {
+          const user = JSON.parse(sessionStr);
+          restoreUserSession(user);
+          return true;
+        } catch(e) {
+          SafeStorage.removeItem('currentUserSession');
+        }
+      }
+
       document.getElementById('loginPage').style.display = 'flex';
 
       // Update settings labels
@@ -3756,6 +3769,11 @@
       App.currentPage = pageId;
       toggleSidebar(false);
 
+      // Sync URL Hash
+      if (window.location.hash !== '#' + pageId) {
+        window.location.hash = pageId;
+      }
+
       // Render module specific data
       if (pageId === 'dashboard') loadDashboard();
       if (pageId === 'parties') renderParties();
@@ -3786,6 +3804,16 @@
       if (pageId === 'settings') loadSettings();
     }
 
+    // Handle hash change globally for link/tab/forward/back actions
+    window.addEventListener('hashchange', function() {
+      const pageId = window.location.hash.replace('#', '') || 'dashboard';
+      if (App.currentUser) {
+        if (document.getElementById(pageId) && App.currentPage !== pageId) {
+          navigateTo(pageId);
+        }
+      }
+    });
+
     // ==================== AUTH & APP INIT ====================
 
     function handleLogin(e) {
@@ -3807,35 +3835,10 @@
         loginBtn.disabled = false;
         loginBtn.innerHTML = originalBtnHtml;
         if (res.success) {
-          App.currentUser = res.user;
-          App.isAdmin = res.user.role === 'Admin';
-          
-          // Apply permissions and UI roles
-          document.getElementById('userNameDisplay').textContent = res.user.name;
-          document.getElementById('userRoleDisplay').textContent = res.user.role;
-          if (res.user.avatarUrl) {
-            document.getElementById('avatarName').innerHTML = `<img src="${res.user.avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-          } else {
-            document.getElementById('avatarName').textContent = res.user.name.charAt(0).toUpperCase();
-          }
-          
-          if (!App.isAdmin) {
-            document.body.classList.add('not-admin');
-          } else {
-            document.body.classList.remove('not-admin');
-          }
-
-          if (res.user.role === 'Party') {
-            document.body.classList.add('role-party');
-          } else {
-            document.body.classList.remove('role-party');
-          }
-
-          document.getElementById('loginPage').style.display = 'none';
-          document.getElementById('app').style.display = 'flex';
-          
+          // Save session to LocalStorage for persistent tab access and reload persistence
+          SafeStorage.setItem('currentUserSession', JSON.stringify(res.user));
+          restoreUserSession(res.user);
           showToast(`Welcome back, ${res.user.name}!`, 'success');
-          initializeApp();
         } else {
           errorDiv.textContent = res.message || 'Login failed';
           errorDiv.style.display = 'block';
@@ -3848,7 +3851,45 @@
       });
     }
 
+    // ---- RESTORE SESSION ON TAB OPEN / RELOAD ----
+    function restoreUserSession(user) {
+      App.currentUser = user;
+      App.isAdmin = user.role === 'Admin';
+      
+      // Apply permissions and UI roles
+      document.getElementById('userNameDisplay').textContent = user.name;
+      document.getElementById('userRoleDisplay').textContent = user.role;
+      
+      const avatarName = document.getElementById('avatarName');
+      if (user.avatarUrl) {
+        avatarName.innerHTML = `<img src="${user.avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+      } else {
+        avatarName.textContent = user.name.charAt(0).toUpperCase();
+      }
+      
+      if (!App.isAdmin) {
+        document.body.classList.add('not-admin');
+      } else {
+        document.body.classList.remove('not-admin');
+      }
+
+      if (user.role === 'Party') {
+        document.body.classList.add('role-party');
+      } else {
+        document.body.classList.remove('role-party');
+      }
+
+      document.getElementById('loginPage').style.display = 'none';
+      document.getElementById('app').style.display = 'flex';
+      
+      initializeApp();
+    }
+
     function logout() {
+      // Clear persistent session storage and hash route
+      SafeStorage.removeItem('currentUserSession');
+      window.location.hash = '';
+      
       App.currentUser = null;
       document.body.classList.remove('not-admin');
       document.body.classList.remove('role-party');
@@ -3976,6 +4017,14 @@
           _processCompanyProfile(res);
           loadDashboard();
           populateGlobalDropdowns();
+
+          // Route to current URL hash if present, fallback to dashboard
+          const targetPage = window.location.hash.replace('#', '') || 'dashboard';
+          if (document.getElementById(targetPage)) {
+            navigateTo(targetPage);
+          } else {
+            navigateTo('dashboard');
+          }
         }
 
         // PHASE 2: Load transaction data silently in background
