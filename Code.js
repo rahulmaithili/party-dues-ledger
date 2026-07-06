@@ -18,7 +18,9 @@ function doGet(e) {
     return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Spreadsheet not accessible." })).setMimeType(ContentService.MimeType.JSON);
   }
   try {
-    initDatabase(sheet);
+    if (!sheet.getSheetByName("Users")) {
+      initDatabase(sheet);
+    }
     if (action === "getAllData") {
       var requestedSheets = e.parameter.sheets ? e.parameter.sheets.split(",") : null;
       var data = { success: true };
@@ -76,13 +78,129 @@ function doPost(e) {
     if (action === "login") {
       var users = readSheetData(sheet, "Users");
       var found = users.filter(function(u) {
-        return u.email.toLowerCase() === payload.email.toLowerCase() && u.passwordHash === payload.passwordHash && u.status === "Active";
+        return u.email.toLowerCase() === payload.email.toLowerCase() && u.passwordHash === payload.passwordHash;
       });
       if (found.length > 0) {
-        logActivityInternal(sheet, found[0].id, found[0].name, "Login", "Auth", "User logged in");
-        return ContentService.createTextOutput(JSON.stringify({ success: true, user: found[0] })).setMimeType(ContentService.MimeType.JSON);
+        var user = found[0];
+        if (user.status === "Active") {
+          logActivityInternal(sheet, user.id, user.name, "Login", "Auth", "User logged in");
+          return ContentService.createTextOutput(JSON.stringify({ success: true, user: user })).setMimeType(ContentService.MimeType.JSON);
+        } else if (user.status === "Pending") {
+          return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Your account is pending admin approval." })).setMimeType(ContentService.MimeType.JSON);
+        } else {
+          return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Your account is inactive. Please contact support." })).setMimeType(ContentService.MimeType.JSON);
+        }
       }
-      return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Invalid credentials or account inactive" })).setMimeType(ContentService.MimeType.JSON);
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Invalid email or password." })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (action === "registerUser") {
+      var name = payload.name;
+      var email = payload.email;
+      var passwordHash = payload.passwordHash;
+      
+      var users = readSheetData(sheet, "Users");
+      var found = users.filter(function(u) {
+        return u.email.toLowerCase() === email.toLowerCase();
+      });
+      
+      if (found.length > 0) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Email address is already registered." })).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      var newUserId = "U" + Date.now();
+      var newUser = {
+        id: newUserId,
+        name: name,
+        email: email,
+        passwordHash: passwordHash,
+        role: "Party",
+        partyId: "",
+        status: "Pending",
+        permissions: JSON.stringify({
+          dashboard: true,
+          parties: false,
+          products: false,
+          sales: false,
+          purchase: false,
+          ledger: true,
+          expenses: false,
+          quotations: false,
+          reports: false,
+          banking: false
+        }),
+        otp: "",
+        otpExpiry: ""
+      };
+      
+      upsertRowInSheet(sheet, "Users", newUser, "id");
+      
+      // Create a notification for Admin
+      var notifId = "NOT" + Date.now();
+      var notification = {
+        id: notifId,
+        message: "New user registration: " + name + " (" + email + ") is pending approval.",
+        type: "UserRegistration|" + newUserId,
+        date: new Date().toISOString(),
+        read: "false"
+      };
+      upsertRowInSheet(sheet, "Notifications", notification, "id");
+      
+      return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Registration successful! Your account is pending admin approval." })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (action === "approveUserRegistration") {
+      var notificationId = payload.notificationId;
+      var userId = payload.userId;
+      var appUrl = payload.appUrl || "";
+      
+      var users = readSheetData(sheet, "Users");
+      var foundUsers = users.filter(function(u) {
+        return u.id === userId;
+      });
+      
+      if (foundUsers.length > 0) {
+        var user = foundUsers[0];
+        user.status = "Active";
+        upsertRowInSheet(sheet, "Users", user, "id");
+        
+        // Mark notification as read
+        if (notificationId) {
+          var notifs = readSheetData(sheet, "Notifications");
+          var foundNotif = notifs.filter(function(n) { return n.id === notificationId; });
+          if (foundNotif.length > 0) {
+            var notif = foundNotif[0];
+            notif.read = "true";
+            upsertRowInSheet(sheet, "Notifications", notif, "id");
+          }
+        }
+        
+        // Get company profile for logo/name
+        var profile = {};
+        try {
+          var profiles = readSheetData(sheet, "CompanyProfile");
+          if (profiles.length > 0) profile = profiles[0];
+        } catch(e) {}
+        
+        var companyName = profile.companyName || "Mr.Rahul ERP";
+        var companyLogo = profile.companyLogo || "";
+        
+        // Send email with premium HTML design template
+        var emailSubject = "Account Approved - " + companyName;
+        var emailBody = getAccountApprovedEmailTemplate(user.name, companyName, companyLogo, appUrl);
+        
+        try {
+          GmailApp.sendEmail(user.email, emailSubject, "", {
+            htmlBody: emailBody
+          });
+        } catch (e) {
+          logActivityInternal(sheet, "System", "Email", "Email Error", "Auth", e.toString());
+        }
+        
+        logActivityInternal(sheet, "System", "Auth", "Approve Registration", "Users", user.email);
+        return ContentService.createTextOutput(JSON.stringify({ success: true, message: "User registration approved successfully!" })).setMimeType(ContentService.MimeType.JSON);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: "User not found." })).setMimeType(ContentService.MimeType.JSON);
     }
 
     if (action === "requestPasswordReset") {
@@ -92,19 +210,76 @@ function doPost(e) {
       });
       if (found.length > 0) {
         var user = found[0];
-        // Create a notification for Admin
-        var notifId = "NOT" + Date.now();
-        var notification = {
-          id: notifId,
-          message: "Password reset requested for " + user.name + " (" + user.email + ")",
-          type: "PasswordReset|" + user.id,
-          date: new Date().toISOString(),
-          read: "false"
-        };
-        upsertRowInSheet(sheet, "Notifications", notification, "id");
-        return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Request submitted successfully. Please wait for Admin approval." })).setMimeType(ContentService.MimeType.JSON);
+        
+        // Generate a 6-digit OTP
+        var otp = Math.floor(100000 + Math.random() * 900000).toString();
+        var otpExpiry = (Date.now() + 10 * 60 * 1000).toString(); // 10 minutes validity
+        
+        user.otp = otp;
+        user.otpExpiry = otpExpiry;
+        upsertRowInSheet(sheet, "Users", user, "id");
+        
+        // Get company profile for logo/name
+        var profile = {};
+        try {
+          var profiles = readSheetData(sheet, "CompanyProfile");
+          if (profiles.length > 0) profile = profiles[0];
+        } catch(e) {}
+        
+        var companyName = profile.companyName || "Mr.Rahul ERP";
+        var companyLogo = profile.companyLogo || "";
+        
+        var emailSubject = "Password Reset OTP - " + companyName;
+        var emailBody = getOtpEmailTemplate(user.name, otp, companyName, companyLogo);
+        
+        try {
+          GmailApp.sendEmail(user.email, emailSubject, "", {
+            htmlBody: emailBody
+          });
+        } catch (e) {
+          logActivityInternal(sheet, "System", "Email", "Email Error", "Auth", e.toString());
+          return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Failed to send OTP email: " + e.toString() })).setMimeType(ContentService.MimeType.JSON);
+        }
+        
+        logActivityInternal(sheet, user.id, user.name, "Request Reset", "Auth", "OTP generated and emailed");
+        return ContentService.createTextOutput(JSON.stringify({ success: true, message: "OTP has been sent to your email." })).setMimeType(ContentService.MimeType.JSON);
       }
       return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Email address not found in system." })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    if (action === "resetPasswordWithOtp") {
+      var email = payload.email;
+      var otp = payload.otp;
+      var newPasswordHash = payload.newPasswordHash;
+      
+      var users = readSheetData(sheet, "Users");
+      var found = users.filter(function(u) {
+        return u.email.toLowerCase() === email.toLowerCase();
+      });
+      
+      if (found.length > 0) {
+        var user = found[0];
+        
+        if (!user.otp || user.otp !== otp) {
+          return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Invalid OTP code." })).setMimeType(ContentService.MimeType.JSON);
+        }
+        
+        var now = Date.now();
+        var expiry = parseFloat(user.otpExpiry || 0);
+        if (now > expiry) {
+          return ContentService.createTextOutput(JSON.stringify({ success: false, message: "OTP code has expired." })).setMimeType(ContentService.MimeType.JSON);
+        }
+        
+        // Reset OTP and update password
+        user.passwordHash = newPasswordHash;
+        user.otp = "";
+        user.otpExpiry = "";
+        upsertRowInSheet(sheet, "Users", user, "id");
+        
+        logActivityInternal(sheet, user.id, user.name, "Reset Password", "Auth", "Password updated successfully with OTP");
+        return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Password updated successfully! You can now log in." })).setMimeType(ContentService.MimeType.JSON);
+      }
+      return ContentService.createTextOutput(JSON.stringify({ success: false, message: "User not found." })).setMimeType(ContentService.MimeType.JSON);
     }
 
     if (action === "approvePasswordReset") {
@@ -1144,7 +1319,7 @@ function initDatabase(sheet) {
     "Products": ["id","name","category","unit","hsn","purchaseRate","saleRate","gst","minStock","openingStock","stock","isCylinder"],
     "Transactions": ["id","date","voucherNo","partyId","partyName","description","txnType","debit","credit","paymentMode","bankRef","items","totals","enteredBy","enteredOn","cylinderOut","cylinderIn","linkedInvoice","returnType","proofUrl"],
     "BankAccounts": ["id","accountName","bankName","accountNo","ifsc","branch","openingBalance","balance"],
-    "Users": ["id","name","email","passwordHash","role","partyId","status","permissions"],
+    "Users": ["id","name","email","passwordHash","role","partyId","status","permissions","otp","otpExpiry"],
     "Notifications": ["id","message","type","date","read"],
     "CompanyProfile": ["key","value"],
     "CylinderSecurity": ["id","partyId","partyName","cylinderType","totalOut","totalIn","pending","depositAmount","depositDate","refundAmount","refundDate","notes"],
@@ -1192,7 +1367,7 @@ function clearSheetDatabase(sheet) {
     "Products": ["id","name","category","unit","hsn","purchaseRate","saleRate","gst","minStock","openingStock","stock","isCylinder"],
     "Transactions": ["id","date","voucherNo","partyId","partyName","description","txnType","debit","credit","paymentMode","bankRef","items","totals","enteredBy","enteredOn","cylinderOut","cylinderIn","linkedInvoice","returnType","proofUrl"],
     "BankAccounts": ["id","accountName","bankName","accountNo","ifsc","branch","openingBalance","balance"],
-    "Users": ["id","name","email","passwordHash","role","partyId","status","permissions"],
+    "Users": ["id","name","email","passwordHash","role","partyId","status","permissions","otp","otpExpiry"],
     "Notifications": ["id","message","type","date","read"],
     "CompanyProfile": ["key","value"],
     "Expenses": ["id","date","category","description","amount","paymentMode","bankRef","voucherId","enteredBy","enteredOn"],
@@ -1286,51 +1461,22 @@ function seedSheetDatabase(sheet) {
 
 function formatSheetVisuals(sheetObject) {
   if (!sheetObject) return;
-  sheetObject.setHiddenGridlines(false);
-  var lastRow = sheetObject.getLastRow();
-  var lastCol = sheetObject.getLastColumn();
-  if (lastRow === 0 || lastCol === 0) return;
-
-  sheetObject.setRowHeight(1, 28);
-  if (lastRow > 1) sheetObject.setRowHeights(2, lastRow - 1, 22);
-
-  var headerRange = sheetObject.getRange(1, 1, 1, lastCol);
-  headerRange.setBackground("#0B111E").setFontColor("#E5C158").setFontWeight("bold").setFontFamily("Roboto").setHorizontalAlignment("center").setVerticalAlignment("middle");
-
-  var headers = headerRange.getValues()[0];
-  var currencyHeaders = ["openingBalance","creditLimit","purchaseRate","saleRate","debit","credit","balance","depositAmount","refundAmount","securityDeposit","amount","grandTotal","subTotal"];
-  var integerHeaders = ["minStock","openingStock","stock","cylinderOut","cylinderIn","totalOut","totalIn","pending","paymentTerms"];
-  var centerHeaders = ["id","date","voucherNo","partyId","txnType","paymentMode","enteredBy","enteredOn","role","status","type","read","cylinderType","depositDate","refundDate","unit","hsn","isCylinder","key","validTill","expectedDelivery"];
-
-  for (var col = 1; col <= lastCol; col++) {
-    if (lastRow > 1) {
-      var colRange = sheetObject.getRange(2, col, lastRow - 1, 1);
-      colRange.setFontFamily("Roboto").setFontSize(10).setVerticalAlignment("middle");
-      var h = headers[col - 1];
-      if (currencyHeaders.indexOf(h) !== -1) { colRange.setHorizontalAlignment("right").setNumberFormat("₹#,##0.00"); }
-      else if (integerHeaders.indexOf(h) !== -1) { colRange.setHorizontalAlignment("right").setNumberFormat("#,##0"); }
-      else if (centerHeaders.indexOf(h) !== -1) { colRange.setHorizontalAlignment("center"); }
-      else { colRange.setHorizontalAlignment("left"); }
-    }
-  }
-
-  if (lastRow > 1) {
-    var dataRange = sheetObject.getRange(2, 1, lastRow - 1, lastCol);
-    dataRange.setBorder(true, true, true, true, true, true, "#E2E8F0", SpreadsheetApp.BorderStyle.SOLID);
-    var backgrounds = [];
-    for (var r = 2; r <= lastRow; r++) {
-      var rowBg = [];
-      var color = (r % 2 === 0) ? "#FFFFFF" : "#F8FAFC";
-      for (var c = 0; c < lastCol; c++) rowBg.push(color);
-      backgrounds.push(rowBg);
-    }
-    dataRange.setBackgrounds(backgrounds);
-  }
-
-  sheetObject.autoResizeColumns(1, lastCol);
-  for (var col = 1; col <= lastCol; col++) {
-    if (sheetObject.getColumnWidth(col) < 100) sheetObject.setColumnWidth(col, 100);
-  }
+  try {
+    sheetObject.setHiddenGridlines(false);
+    var lastCol = sheetObject.getLastColumn();
+    if (lastCol === 0) return;
+    
+    // Format header row only (very fast!)
+    var headerRange = sheetObject.getRange(1, 1, 1, lastCol);
+    headerRange.setBackground("#0B111E")
+               .setFontColor("#E5C158")
+               .setFontWeight("bold")
+               .setFontFamily("Roboto")
+               .setHorizontalAlignment("center")
+               .setVerticalAlignment("middle");
+               
+    sheetObject.setRowHeight(1, 28);
+  } catch(e) {}
 }
 
 function simpleHash(str) {
@@ -1440,4 +1586,115 @@ function handleProofUpload(payload) {
     }
   }
   return payload.proofUrl || "";
+}
+
+function getOtpEmailTemplate(userName, otp, companyName, companyLogo) {
+  var logoHtml = "";
+  if (companyLogo) {
+    logoHtml = '<img src="' + companyLogo + '" alt="' + companyName + ' Logo" style="max-height: 50px; max-width: 150px; margin-bottom: 20px; object-fit: contain;">';
+  } else {
+    logoHtml = '<h2 style="color: #10B981; margin: 0; font-size: 24px; font-weight: 800; font-family: \'Inter\', sans-serif;">' + companyName + '</h2>';
+  }
+
+  var html = 
+    '<!DOCTYPE html>' +
+    '<html>' +
+    '<head>' +
+    '  <meta charset="utf-8">' +
+    '  <meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+    '  <title>Your OTP Code</title>' +
+    '  <style>' +
+    '    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #0F172A; color: #E2E8F0; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }' +
+    '    .wrapper { width: 100%; background-color: #020617; padding: 40px 0; }' +
+    '    .container { max-width: 580px; margin: 0 auto; background: #0F172A; border: 1px solid #1E293B; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }' +
+    '    .header { padding: 32px; text-align: center; border-bottom: 1px solid #1E293B; background: #1E293B; }' +
+    '    .body { padding: 32px 40px; }' +
+    '    .title { color: #FFFFFF; font-size: 20px; font-weight: 700; margin-bottom: 16px; }' +
+    '    .text { color: #94A3B8; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }' +
+    '    .credentials-box { background: #020617; border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 24px; margin-bottom: 28px; text-align: center; }' +
+    '    .label { color: #64748B; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }' +
+    '    .otp { color: #10B981; font-family: monospace; font-size: 32px; font-weight: 700; letter-spacing: 4px; margin: 0; }' +
+    '    .footer { padding: 24px; text-align: center; font-size: 12px; color: #475569; border-top: 1px solid #1E293B; background: #020617; }' +
+    '    .footer-text { margin: 4px 0; }' +
+    '  </style>' +
+    '</head>' +
+    '<body>' +
+    '  <div class="wrapper">' +
+    '    <div class="container">' +
+    '      <div class="header">' +
+    '        ' + logoHtml +
+    '      </div>' +
+    '      <div class="body">' +
+    '        <h2 class="title">Hello ' + userName + ',</h2>' +
+    '        <p class="text">We received a request to reset your password. Use the following One-Time Password (OTP) to reset it. This OTP is valid for 10 minutes:</p>' +
+    '        <div class="credentials-box">' +
+    '          <div class="label">Your OTP Code</div>' +
+    '          <div class="otp">' + otp + '</div>' +
+    '        </div>' +
+    '        <p class="text" style="color: #EF4444; font-size: 12px;">If you did not request a password reset, please ignore this email or contact the administrator.</p>' +
+    '      </div>' +
+    '      <div class="footer">' +
+    '        <p class="footer-text">This is an automated system email from ' + companyName + '.</p>' +
+    '        <p class="footer-text">Please do not reply directly to this message.</p>' +
+    '      </div>' +
+    '    </div>' +
+    '  </div>' +
+    '</body>' +
+    '</html>';
+  return html;
+}
+
+function getAccountApprovedEmailTemplate(userName, companyName, companyLogo, appUrl) {
+  var logoHtml = "";
+  if (companyLogo) {
+    logoHtml = '<img src="' + companyLogo + '" alt="' + companyName + ' Logo" style="max-height: 50px; max-width: 150px; margin-bottom: 20px; object-fit: contain;">';
+  } else {
+    logoHtml = '<h2 style="color: #10B981; margin: 0; font-size: 24px; font-weight: 800; font-family: \'Inter\', sans-serif;">' + companyName + '</h2>';
+  }
+
+  var loginLink = appUrl || "https://netlify.app";
+
+  var html = 
+    '<!DOCTYPE html>' +
+    '<html>' +
+    '<head>' +
+    '  <meta charset="utf-8">' +
+    '  <meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+    '  <title>Account Approved</title>' +
+    '  <style>' +
+    '    body { font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #0F172A; color: #E2E8F0; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }' +
+    '    .wrapper { width: 100%; background-color: #020617; padding: 40px 0; }' +
+    '    .container { max-width: 580px; margin: 0 auto; background: #0F172A; border: 1px solid #1E293B; border-radius: 16px; overflow: hidden; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); }' +
+    '    .header { padding: 32px; text-align: center; border-bottom: 1px solid #1E293B; background: #1E293B; }' +
+    '    .body { padding: 32px 40px; }' +
+    '    .title { color: #FFFFFF; font-size: 20px; font-weight: 700; margin-bottom: 16px; }' +
+    '    .text { color: #94A3B8; font-size: 14px; line-height: 1.6; margin-bottom: 24px; }' +
+    '    .btn-container { text-align: center; margin-top: 24px; margin-bottom: 24px; }' +
+    '    .btn { display: inline-block; padding: 12px 28px; background: #10B981; color: #FFFFFF !important; text-decoration: none; font-size: 14px; font-weight: 600; border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.25); }' +
+    '    .footer { padding: 24px; text-align: center; font-size: 12px; color: #475569; border-top: 1px solid #1E293B; background: #020617; }' +
+    '    .footer-text { margin: 4px 0; }' +
+    '  </style>' +
+    '</head>' +
+    '<body>' +
+    '  <div class="wrapper">' +
+    '    <div class="container">' +
+    '      <div class="header">' +
+    '        ' + logoHtml +
+    '      </div>' +
+    '      <div class="body">' +
+    '        <h2 class="title">Hello ' + userName + ',</h2>' +
+    '        <p class="text">Your account has been approved and activated by the Administrator! You can now log in using your registered email and password.</p>' +
+    '        <div class="btn-container">' +
+    '          <a href="' + loginLink + '" class="btn" target="_blank">Login to ERP Dashboard</a>' +
+    '        </div>' +
+    '      </div>' +
+    '      <div class="footer">' +
+    '        <p class="footer-text">This is an automated system email from ' + companyName + '.</p>' +
+    '        <p class="footer-text">Please do not reply directly to this message.</p>' +
+    '      </div>' +
+    '    </div>' +
+    '  </div>' +
+    '</body>' +
+    '</html>';
+  return html;
 }
