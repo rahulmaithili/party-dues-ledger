@@ -3363,11 +3363,11 @@
     };
 
     function initBackend() {
-      const scriptUrl = SafeStorage.getItem('googleScriptUrl');
+      let scriptUrl = SafeStorage.getItem('googleScriptUrl');
       if (!scriptUrl) {
-        document.getElementById('loginPage').style.display = 'none';
-        document.getElementById('backendSetupPage').style.display = 'flex';
-        return false;
+        // Hardcoded default fallback so the app works out-of-the-box everywhere!
+        scriptUrl = 'https://script.google.com/macros/s/AKfycbxat87ykvgbGr5sCoDLiUeP_OENdA325fBxBSuWLSDspyUKNMvrB2ETow_JNMUCV9ll/exec';
+        SafeStorage.setItem('googleScriptUrl', scriptUrl);
       }
       
       // Update setup display
