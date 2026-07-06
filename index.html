@@ -35,10 +35,142 @@
 
     body.dark-theme {
       --bg: #0B0F19;
+      --bg2: #1E293B;
       --card: #151F32;
       --txt: #F1F5F9;
       --txt2: #94A3B8;
       --brd: #1E293B;
+    }
+
+    /* ===== DARK MODE - GLOBAL OVERRIDES ===== */
+    body.dark-theme input,
+    body.dark-theme select,
+    body.dark-theme textarea {
+      background-color: #0B0F19 !important;
+      color: #F1F5F9 !important;
+      border-color: #1E293B !important;
+    }
+
+    body.dark-theme input::placeholder,
+    body.dark-theme textarea::placeholder {
+      color: #64748B !important;
+    }
+
+    body.dark-theme input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(1);
+    }
+
+    body.dark-theme select option {
+      background: #151F32;
+      color: #F1F5F9;
+    }
+
+    body.dark-theme .modal-card {
+      background: #151F32 !important;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.6) !important;
+    }
+
+    body.dark-theme .modal-header {
+      background: #151F32 !important;
+      border-bottom-color: #1E293B !important;
+    }
+
+    body.dark-theme .modal-footer {
+      background: #0D1526 !important;
+      border-top-color: #1E293B !important;
+    }
+
+    body.dark-theme .modal-body {
+      background: #151F32 !important;
+    }
+
+    body.dark-theme table thead tr {
+      background: #0D1526 !important;
+    }
+
+    body.dark-theme table thead th {
+      color: #94A3B8 !important;
+      border-bottom-color: #1E293B !important;
+    }
+
+    body.dark-theme table tbody tr {
+      border-bottom-color: #1E293B !important;
+    }
+
+    body.dark-theme table tbody tr:hover {
+      background: #1E293B !important;
+    }
+
+    body.dark-theme table td {
+      color: #F1F5F9 !important;
+    }
+
+    body.dark-theme .table-container {
+      background: #151F32 !important;
+      border-color: #1E293B !important;
+    }
+
+    body.dark-theme .dashboard-card,
+    body.dark-theme .card {
+      background: #151F32 !important;
+      border-color: #1E293B !important;
+    }
+
+    body.dark-theme .toast {
+      background: #151F32 !important;
+      color: #F1F5F9 !important;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+    }
+
+    body.dark-theme .invoice-line-item {
+      background: #0B0F19 !important;
+      border-color: #1E293B !important;
+    }
+
+    body.dark-theme .line-items-header {
+      background: #0D1526 !important;
+    }
+
+    body.dark-theme .sidebar {
+      background: #080D18 !important;
+    }
+
+    body.dark-theme .topbar {
+      background: #151F32 !important;
+      border-bottom-color: #1E293B !important;
+    }
+
+    body.dark-theme .badge {
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    body.dark-theme .kpi-card {
+      background: #151F32 !important;
+      border-color: #1E293B !important;
+    }
+
+    body.dark-theme .page-content {
+      background: #0B0F19 !important;
+    }
+
+    body.dark-theme .form-group label {
+      color: #94A3B8 !important;
+    }
+
+    body.dark-theme .card-header {
+      border-bottom-color: #1E293B !important;
+    }
+
+    body.dark-theme .report-menu-item:hover {
+      background: #0B0F19 !important;
+    }
+
+    body.dark-theme .report-menu-item.active {
+      background: #1E293B !important;
+    }
+
+    body.dark-theme .nav-item.active {
+      background: #1E293B !important;
     }
 
     * {
@@ -1761,7 +1893,26 @@
               <h2>User Management & Roles</h2>
               <p>Authorize login credentials and set system restrictions</p>
             </div>
-            <button class="btn btn-accent" onclick="openUserModal()"><i class="fa-solid fa-user-plus"></i> Add New User</button>
+            <div class="flex-gap">
+              <button class="btn btn-secondary" onclick="openQuickPartyLoginModal()"><i class="fa-solid fa-user-lock"></i> Create Party Login</button>
+              <button class="btn btn-accent" onclick="openUserModal()"><i class="fa-solid fa-user-plus"></i> Add New User</button>
+            </div>
+          </div>
+
+          <!-- Info card explaining party login -->
+          <div class="dashboard-card" style="margin-bottom: 20px; border-left: 4px solid var(--acc); padding: 16px 20px;">
+            <div style="display:flex; gap:14px; align-items:flex-start;">
+              <i class="fa-solid fa-circle-info" style="color:var(--acc); font-size:20px; margin-top:2px;"></i>
+              <div>
+                <h4 style="font-size:14px; font-weight:700; margin-bottom:4px;">Party Portal Login Kaise Banayein?</h4>
+                <p style="font-size:12.5px; color:var(--txt2); line-height:1.6;">
+                  1. Upar <strong>"Create Party Login"</strong> button click karein.<br>
+                  2. Dropdown me apni party (Customer/Supplier) select karein.<br>
+                  3. Unhe ek <strong>Email</strong> aur <strong>Password</strong> de dein.<br>
+                  4. Save hone ke baad woh party apna ledger, outstanding dues, aur invoices khud dekh sakta hai.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div class="table-container">
@@ -1772,6 +1923,7 @@
                   <th>Full Name</th>
                   <th>Email</th>
                   <th>Role</th>
+                  <th>Linked Party</th>
                   <th>Status</th>
                   <th class="text-center">Actions</th>
                 </tr>
@@ -2269,8 +2421,8 @@
       <form id="myProfileForm" onsubmit="saveMyProfile(event)">
         <div class="modal-body text-center">
           <div style="position: relative; width: 100px; height: 100px; margin: 0 auto 16px auto;">
-            <div id="profileModalAvatar" class="user-avatar" style="width: 100px; height: 100px; font-size: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--acc); color: #000; font-weight: 700; overflow: hidden; margin: 0 auto;">A</div>
-            <label for="profilePhotoInput" style="position: absolute; bottom: 0; right: 130px; background: var(--bg2); border: 1px solid var(--brd); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--txt);">
+            <div id="profileModalAvatar" class="user-avatar" style="width: 100px; height: 100px; font-size: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--acc); color: #000; font-weight: 700; overflow: hidden; margin: 0 auto;"></div>
+            <label for="profilePhotoInput" title="Upload photo" style="position: absolute; bottom: 0; right: 0; background: var(--card); border: 2px solid var(--acc); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--acc); z-index:2;">
               <i class="fa-solid fa-camera" style="font-size:12px;"></i>
             </label>
             <input type="file" id="profilePhotoInput" accept="image/png,image/jpeg,image/jpg" style="display:none;" onchange="handleProfilePhotoChange(event)">
@@ -2782,6 +2934,60 @@
     </div>
   </div>
 
+  <!-- QUICK PARTY LOGIN MODAL -->
+  <div class="modal-backdrop" id="quickPartyLoginModal">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-user-lock" style="margin-right:8px; color:var(--acc);"></i>Create Party Login Access</h3>
+        <i class="fa-solid fa-xmark pointer" onclick="closeModal('quickPartyLoginModal')"></i>
+      </div>
+      <form id="quickPartyLoginForm" onsubmit="saveQuickPartyLogin(event)">
+        <div class="modal-body">
+          <div style="background: rgba(229,193,88,0.08); border: 1px solid rgba(229,193,88,0.3); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; font-size: 12.5px; color: var(--txt2); line-height:1.7;">
+            <i class="fa-solid fa-lightbulb" style="color:var(--acc); margin-right:6px;"></i>
+            Party apne <strong style="color:var(--txt);">outstanding dues, invoices, aur ledger</strong> khud dekh sakti hai. Neeche party select karke login credentials de dein.
+          </div>
+
+          <div class="form-group">
+            <label>Party Select Karein <span style="color:var(--dan);">*</span></label>
+            <select id="qplPartyId" class="light-form-control" required onchange="fillPartyLoginDefaults()">
+              <option value="">-- Party Choose Karein --</option>
+            </select>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Login Email <span style="color:var(--dan);">*</span></label>
+              <input type="email" id="qplEmail" class="light-form-control" required placeholder="customer@example.com">
+            </div>
+            <div class="form-group">
+              <label>Password <span style="color:var(--dan);">*</span></label>
+              <input type="password" id="qplPassword" class="light-form-control" required placeholder="Min. 6 characters" minlength="6">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Login Status</label>
+            <select id="qplStatus" class="light-form-control">
+              <option value="Active">Active (Login allowed)</option>
+              <option value="Inactive">Inactive (Block login)</option>
+            </select>
+          </div>
+
+          <div style="background: var(--bg); border-radius: 8px; padding: 12px 14px; font-size: 12px; color: var(--txt2);">
+            <strong style="color:var(--txt); display:block; margin-bottom:6px;"><i class="fa-solid fa-eye"></i> Party ko kya dikhega?</strong>
+            ✅ Apna account ledger &amp; dues<br>
+            ✅ Apne invoices (sales bills)<br>
+            ✅ Outstanding balance<br>
+            ❌ Admin data, other parties, or reports
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('quickPartyLoginModal')">Cancel</button>
+          <button type="submit" class="btn btn-accent"><i class="fa-solid fa-check"></i> Create Login</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- USER CREATION MODAL -->
   <div class="modal-backdrop" id="userModal">
     <div class="modal-card">
@@ -3169,12 +3375,14 @@
     setTimeout(initBackend, 100);
 
     // Call server helper - performs fetch API requests to Google Apps Script Web App
-    function callServer(action, payload, callback, failCallback) {
-      showLoading(true);
-      
+    function callServer(action, payload, callback, failCallback, silentMode) {
+      // Only show loader for write/save actions, not for background data reads
+      const isReadAction = ['getAllData', 'getDashboardStats', 'getReport'].includes(action);
+      if (!silentMode && !isReadAction) showLoading(true);
+
       const scriptUrl = SafeStorage.getItem('googleScriptUrl');
       if (!scriptUrl) {
-        showLoading(false);
+        if (!silentMode && !isReadAction) showLoading(false);
         const err = new Error('Backend URL not configured');
         if (failCallback) failCallback(err);
         else showToast(err.message, 'error');
@@ -3182,17 +3390,15 @@
       }
 
       const success = (res) => {
-        showLoading(false);
+        if (!silentMode && !isReadAction) showLoading(false);
         if (callback) callback(res);
       };
-      
-      const fail = (err) => {
-        showLoading(false);
-        if (failCallback) failCallback(err);
-        else showToast(err.message || 'Operation failed', 'error');
-      };
 
-      const isReadAction = ['getAllData', 'getDashboardStats', 'getReport'].includes(action);
+      const fail = (err) => {
+        if (!silentMode && !isReadAction) showLoading(false);
+        if (failCallback) failCallback(err);
+        else if (!silentMode) showToast(err.message || 'Operation failed', 'error');
+      };
       
       if (isReadAction) {
         // Build query parameters
@@ -3706,62 +3912,71 @@
 
     function initializeApp() {
       document.getElementById('currentDateDisplay').textContent = formatDate(new Date().toISOString().split('T')[0]);
-      
+
       const isDark = document.body.classList.contains('dark-theme');
       const icon = document.getElementById('themeIcon');
-      if (icon) {
-        icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      if (icon) icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+
+      // PHASE 1: Load only critical sheets (fast, shown to user immediately)
+      const criticalSheets = ['Parties', 'Products', 'BankAccounts', 'Users', 'CompanyProfile'];
+      showLoading(true, 'Loading...');
+      callServer('getAllData', { sheets: criticalSheets.join(',') }, function(res) {
+        showLoading(false);
+        if (res.success) {
+          Object.keys(res).forEach(k => { if (k !== 'success') App.data[k] = res[k]; });
+          _processCompanyProfile(res);
+          loadDashboard();
+          populateGlobalDropdowns();
+        }
+
+        // PHASE 2: Load remaining sheets silently in background (no spinner)
+        const secondarySheets = ['Transactions', 'Expenses', 'Quotations', 'PurchaseOrders', 'DeliveryChallans', 'ActivityLog', 'Notifications', 'CylinderSecurity'];
+        callServer('getAllData', { sheets: secondarySheets.join(',') }, function(res2) {
+          if (res2.success) {
+            Object.keys(res2).forEach(k => { if (k !== 'success') App.data[k] = res2[k]; });
+            // Re-render dashboard with full data now available
+            loadDashboard();
+            populateGlobalDropdowns();
+          }
+        }, null, true); // silentMode = true (no spinner, no error toast)
+      });
+    }
+
+    function _processCompanyProfile(res) {
+      if (res.companyProfile && Array.isArray(App.data.companyProfile)) {
+        const cpObj = {};
+        App.data.companyProfile.forEach(item => { if (item.key) cpObj[item.key] = item.value; });
+        App.data.companyProfile = cpObj;
       }
-      
-      syncAllData();
+      if (App.data.companyProfile) {
+        const sidebarLogo = document.getElementById('sidebarLogoImg');
+        const sidebarTitle = document.getElementById('sidebarTitle');
+        if (sidebarLogo && sidebarTitle) {
+          const logo = App.data.companyProfile.companyLogo;
+          const name = App.data.companyProfile.companyName || 'Mr.Rahul ERP';
+          sidebarTitle.textContent = name;
+          if (logo) { sidebarLogo.src = logo; sidebarLogo.style.display = 'block'; }
+          else { sidebarLogo.src = ''; sidebarLogo.style.display = 'none'; }
+        }
+      }
     }
 
     function syncAllData(callback, sheetsList) {
+      // After a write action, silently refresh only the affected sheets
       const sheetsParam = sheetsList ? sheetsList.join(',') : '';
       callServer('getAllData', { sheets: sheetsParam }, function(res) {
         if (res.success) {
           if (sheetsList) {
-            Object.keys(res).forEach(key => {
-              if (key !== 'success') {
-                App.data[key] = res[key];
-              }
-            });
+            Object.keys(res).forEach(key => { if (key !== 'success') App.data[key] = res[key]; });
           } else {
             App.data = res;
+            _processCompanyProfile(res);
+            loadDashboard();
+            populateGlobalDropdowns();
           }
-          
-          // Proactive Fix: Convert companyProfile array of key-values to a flat object
-          if (res.companyProfile && Array.isArray(App.data.companyProfile)) {
-            const cpObj = {};
-            App.data.companyProfile.forEach(item => {
-              if (item.key) cpObj[item.key] = item.value;
-            });
-            App.data.companyProfile = cpObj;
-          }
-          
-          // Update sidebar logo and title
-          if (res.companyProfile) {
-            const sidebarLogo = document.getElementById('sidebarLogoImg');
-            const sidebarTitle = document.getElementById('sidebarTitle');
-            if (sidebarLogo && sidebarTitle) {
-              const logo = App.data.companyProfile.companyLogo;
-              const name = App.data.companyProfile.companyName || 'Mr.Rahul ERP';
-              sidebarTitle.textContent = name;
-              if (logo) {
-                sidebarLogo.src = logo;
-                sidebarLogo.style.display = 'block';
-              } else {
-                sidebarLogo.src = '';
-                sidebarLogo.style.display = 'none';
-              }
-            }
-          }
-          
-          loadDashboard();
-          populateGlobalDropdowns();
           if (callback) callback();
         }
-      });
+      }, null, true); // silentMode - no spinner for background refreshes
     }
 
     function populateGlobalDropdowns() {
