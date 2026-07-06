@@ -860,28 +860,10 @@
     .flex-gap { display: flex; gap: 10px; align-items: center; }
     .pointer { cursor: pointer; }
     
-    .loading-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(255,255,255,0.7);
-      backdrop-filter: blur(2px);
-      z-index: 9999;
-      display: none;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 4px solid #E2E8F0;
-      border-top-color: var(--acc);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
+    /* Slim topbar progress bar (no more full-screen block) */
+    @keyframes shimmerBar {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
     }
 
     .sidebar-overlay {
@@ -977,34 +959,85 @@
 
     @media (min-width: 993px) {
       #app.collapsed #sidebar {
-        width: 70px;
+        width: 68px;
+        overflow: visible;
       }
+      /* Hide all text labels and section titles */
       #app.collapsed #sidebar #sidebarTitle,
       #app.collapsed #sidebar .sidebar-header .mobile-toggle,
-      #app.collapsed #sidebar .menu-section-title {
+      #app.collapsed #sidebar .menu-section-title,
+      #app.collapsed #sidebar .user-info,
+      #app.collapsed #sidebar .fa-right-from-bracket {
         display: none !important;
       }
-      #app.collapsed #sidebar .menu-item {
-        font-size: 0 !important; /* Hides text nodes */
+      /* Sidebar header: center the logo only */
+      #app.collapsed #sidebar .sidebar-header {
         justify-content: center;
-        padding: 14px;
+        padding: 16px 0;
+      }
+      #app.collapsed #sidebar .sidebar-logo {
+        margin: 0 auto;
+      }
+      /* Menu items: icon only, centered, with tooltip */
+      #app.collapsed #sidebar .menu-item {
+        font-size: 0 !important;
+        justify-content: center;
+        padding: 13px 0;
+        border-radius: 10px;
+        margin: 2px 8px;
+        position: relative;
       }
       #app.collapsed #sidebar .menu-item i {
-        font-size: 18px !important;
+        font-size: 17px !important;
         margin-right: 0 !important;
+        flex-shrink: 0;
       }
+      /* Tooltip on hover */
+      #app.collapsed #sidebar .menu-item::after {
+        content: attr(data-label);
+        position: absolute;
+        left: 72px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: #1E293B;
+        color: #F1F5F9;
+        font-size: 12px !important;
+        font-weight: 600;
+        padding: 6px 10px;
+        border-radius: 6px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+        z-index: 9999;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      }
+      #app.collapsed #sidebar .menu-item:hover::after {
+        opacity: 1;
+      }
+      /* Sidebar footer: avatar only, centered */
+      #app.collapsed #sidebar .sidebar-footer {
+        justify-content: center;
+        padding: 12px 0;
+      }
+      #app.collapsed #sidebar .sidebar-footer .user-avatar {
+        margin: 0 auto;
+        flex-shrink: 0;
+      }
+      /* Main content expands to fill */
       #app.collapsed #main-content {
-        margin-left: 70px;
-        width: calc(100% - 70px);
+        margin-left: 68px;
+        width: calc(100% - 68px);
+        transition: all 0.3s ease;
       }
     }
   </style>
 </head>
 <body>
 
-  <!-- LOADING SPINNER -->
-  <div class="loading-overlay" id="loadingSpinner">
-    <div class="spinner"></div>
+  <!-- SLIM PROGRESS BAR (replaces full-screen blocking spinner) -->
+  <div id="loadingSpinner" style="display:none; position:fixed; top:0; left:0; width:100%; height:3px; z-index:99999; background: transparent;">
+    <div id="loadingBar" style="height:3px; background: linear-gradient(90deg, #E5C158, #F59E0B, #E5C158); background-size: 200% 100%; animation: shimmerBar 1.2s linear infinite; width: 100%;"></div>
   </div>
 
   <!-- TOAST NOTIFICATION CONTAINER -->
@@ -1066,7 +1099,7 @@
     <aside id="sidebar">
       <div class="sidebar-header">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <img id="sidebarLogoImg" style="max-height: 32px; max-width: 32px; object-fit: contain; display: none;">
+          <img id="sidebarLogoImg" class="sidebar-logo" style="max-height: 32px; max-width: 32px; object-fit: contain; display: none;">
           <h1 id="sidebarTitle">Mr.Rahul ERP</h1>
         </div>
         <i class="fa-solid fa-xmark mobile-toggle" onclick="toggleSidebar(false)"></i>
@@ -1074,52 +1107,52 @@
       <div class="sidebar-menu">
         <div class="menu-section">
           <div class="menu-section-title">Core</div>
-          <a class="menu-item active" data-page="dashboard" onclick="navigateTo('dashboard')">
+          <a class="menu-item active" data-page="dashboard" data-label="Dashboard" onclick="navigateTo('dashboard')">
             <i class="fa-solid fa-chart-pie"></i> Dashboard
           </a>
-          <a class="menu-item hide-for-party" data-page="parties" onclick="navigateTo('parties')">
+          <a class="menu-item hide-for-party" data-page="parties" data-label="Parties & Ledgers" onclick="navigateTo('parties')">
             <i class="fa-solid fa-users"></i> Parties & Ledgers
           </a>
-          <a class="menu-item hide-for-party" data-page="products" onclick="navigateTo('products')">
+          <a class="menu-item hide-for-party" data-page="products" data-label="Products & Stock" onclick="navigateTo('products')">
             <i class="fa-solid fa-box"></i> Products & Stock
           </a>
-          <a class="menu-item party-only" data-page="partyLedgerView" onclick="openMyLedgerView()">
+          <a class="menu-item party-only" data-page="partyLedgerView" data-label="My Statement" onclick="openMyLedgerView()">
             <i class="fa-solid fa-file-invoice"></i> My Statement
           </a>
-          <a class="menu-item party-only" data-page="partyTransactionsView" onclick="openMyTransactionsView()">
+          <a class="menu-item party-only" data-page="partyTransactionsView" data-label="My Invoices" onclick="openMyTransactionsView()">
             <i class="fa-solid fa-receipt"></i> My Invoices
           </a>
         </div>
         
         <div class="menu-section hide-for-party">
           <div class="menu-section-title">Transactions</div>
-          <a class="menu-item" data-page="sales" onclick="navigateTo('sales')">
+          <a class="menu-item" data-page="sales" data-label="Sales Invoices" onclick="navigateTo('sales')">
             <i class="fa-solid fa-file-invoice-dollar"></i> Sales Invoices
           </a>
-          <a class="menu-item" data-page="receipts" onclick="navigateTo('receipts')">
+          <a class="menu-item" data-page="receipts" data-label="Receipts & Payments" onclick="navigateTo('receipts')">
             <i class="fa-solid fa-money-bill-transfer"></i> Receipts & Payments
           </a>
-          <a class="menu-item" data-page="returns" onclick="navigateTo('returns')">
+          <a class="menu-item" data-page="returns" data-label="Returns" onclick="navigateTo('returns')">
             <i class="fa-solid fa-arrow-rotate-left"></i> Returns
           </a>
-          <a class="menu-item" data-page="cylinderSecurity" onclick="navigateTo('cylinderSecurity')">
+          <a class="menu-item" data-page="cylinderSecurity" data-label="Security Deposits" onclick="navigateTo('cylinderSecurity')">
             <i class="fa-solid fa-shield-halved"></i> Security Deposits
           </a>
         </div>
 
         <div class="menu-section hide-for-party">
           <div class="menu-section-title">Documents</div>
-          <a class="menu-item" data-page="quotations" onclick="navigateTo('quotations')">
+          <a class="menu-item" data-page="quotations" data-label="Quotations" onclick="navigateTo('quotations')">
             <i class="fa-solid fa-file-signature"></i> Quotations
           </a>
-          <a class="menu-item" data-page="deliveryChallans" onclick="navigateTo('deliveryChallans')">
+          <a class="menu-item" data-page="deliveryChallans" data-label="Delivery Challans" onclick="navigateTo('deliveryChallans')">
             <i class="fa-solid fa-truck"></i> Delivery Challans
           </a>
         </div>
 
         <div class="menu-section hide-for-party">
           <div class="menu-section-title">Reports</div>
-          <a class="menu-item" data-page="reports" onclick="navigateTo('reports')">
+          <a class="menu-item" data-page="reports" data-label="Reports Panel" onclick="navigateTo('reports')">
             <i class="fa-solid fa-file-invoice"></i> Reports Panel
           </a>
         </div>
@@ -1357,10 +1390,27 @@
               <p>Manage customers, suppliers, and view detailed balance logs</p>
             </div>
             <div class="flex-gap">
-              <label for="partyCsvInput" class="btn btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
-                <i class="fa-solid fa-file-import"></i> Import CSV / Excel
-              </label>
-              <input type="file" id="partyCsvInput" accept=".csv" style="display:none;" onchange="importPartyCSV(event)">
+              <div style="position:relative; display:inline-block;">
+                <button class="btn btn-secondary" onclick="toggleImportMenu()" id="importMenuBtn">
+                  <i class="fa-solid fa-file-import"></i> Import CSV / Excel <i class="fa-solid fa-chevron-down" style="font-size:11px; margin-left:4px;"></i>
+                </button>
+                <div id="importDropdownMenu" style="display:none; position:absolute; top:calc(100% + 6px); right:0; background:var(--card); border:1px solid var(--brd); border-radius:10px; min-width:230px; box-shadow:0 10px 30px rgba(0,0,0,0.15); z-index:999; overflow:hidden;">
+                  <div style="padding:10px 14px 6px; font-size:11px; font-weight:700; color:var(--txt2); text-transform:uppercase; letter-spacing:0.5px;">Import Steps</div>
+                  <a onclick="downloadPartyTemplate()" style="display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; color:var(--txt); font-size:13px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+                    <i class="fa-solid fa-download" style="color:#10B981; width:16px;"></i>
+                    Step 1: Download Template
+                  </a>
+                  <div style="height:1px; background:var(--brd); margin:0 10px;"></div>
+                  <label for="partyCsvInput" style="display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; color:var(--txt); font-size:13px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+                    <i class="fa-solid fa-upload" style="color:#3B82F6; width:16px;"></i>
+                    Step 2: Upload Filled CSV
+                  </label>
+                  <input type="file" id="partyCsvInput" accept=".csv" style="display:none;" onchange="importPartyCSV(event)">
+                  <div style="padding:8px 14px 10px; font-size:11px; color:var(--txt2); line-height:1.5; border-top:1px solid var(--brd); margin-top:2px;">
+                    <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>Template download karo, usme apna data bharo, phir upload karo.
+                  </div>
+                </div>
+              </div>
               <button class="btn btn-accent" onclick="openPartyModal()"><i class="fa-solid fa-user-plus"></i> Add New Party</button>
             </div>
           </div>
@@ -3242,9 +3292,10 @@
       }
     }
 
-    function showLoading(show) {
+    function showLoading(show, msg) {
       App.isLoading = show;
-      document.getElementById('loadingSpinner').style.display = show ? 'flex' : 'none';
+      const el = document.getElementById('loadingSpinner');
+      if (el) el.style.display = show ? 'block' : 'none';
     }
 
     function showToast(message, type = 'info') {
@@ -3917,11 +3968,9 @@
       const icon = document.getElementById('themeIcon');
       if (icon) icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
 
-      // PHASE 1: Load only critical sheets (fast, shown to user immediately)
+      // PHASE 1: Load critical sheets silently — no loading overlay (UI appears instantly)
       const criticalSheets = ['Parties', 'Products', 'BankAccounts', 'Users', 'CompanyProfile'];
-      showLoading(true, 'Loading...');
       callServer('getAllData', { sheets: criticalSheets.join(',') }, function(res) {
-        showLoading(false);
         if (res.success) {
           Object.keys(res).forEach(k => { if (k !== 'success') App.data[k] = res[k]; });
           _processCompanyProfile(res);
@@ -3929,17 +3978,16 @@
           populateGlobalDropdowns();
         }
 
-        // PHASE 2: Load remaining sheets silently in background (no spinner)
+        // PHASE 2: Load transaction data silently in background
         const secondarySheets = ['Transactions', 'Expenses', 'Quotations', 'PurchaseOrders', 'DeliveryChallans', 'ActivityLog', 'Notifications', 'CylinderSecurity'];
         callServer('getAllData', { sheets: secondarySheets.join(',') }, function(res2) {
           if (res2.success) {
             Object.keys(res2).forEach(k => { if (k !== 'success') App.data[k] = res2[k]; });
-            // Re-render dashboard with full data now available
             loadDashboard();
             populateGlobalDropdowns();
           }
-        }, null, true); // silentMode = true (no spinner, no error toast)
-      });
+        }, null, true);
+      }, null, true);
     }
 
     function _processCompanyProfile(res) {
@@ -4329,9 +4377,68 @@
       });
     }
 
+    // ---- IMPORT DROPDOWN TOGGLE ----
+    function toggleImportMenu() {
+      const menu = document.getElementById('importDropdownMenu');
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+      // Close when clicking outside
+      if (menu.style.display === 'block') {
+        setTimeout(() => {
+          document.addEventListener('click', function closeMenu(e) {
+            if (!document.getElementById('importMenuBtn').contains(e.target) &&
+                !menu.contains(e.target)) {
+              menu.style.display = 'none';
+              document.removeEventListener('click', closeMenu);
+            }
+          });
+        }, 50);
+      }
+    }
+
+    // ---- DOWNLOAD PARTY TEMPLATE ----
+    function downloadPartyTemplate() {
+      document.getElementById('importDropdownMenu').style.display = 'none';
+
+      // Template columns matching the importPartyCSV expected fields
+      const headers = [
+        'name', 'type', 'mobile', 'email', 'address',
+        'gstin', 'pan', 'openingBalance', 'creditLimit',
+        'paymentTerms', 'bankName', 'bankAccount', 'ifsc'
+      ];
+
+      // Sample rows so user understands the format
+      const sampleRows = [
+        ['Ramesh Traders', 'Customer', '9876543210', 'ramesh@example.com', 'Gandhi Nagar, Delhi',
+         '07AAACR5055K1Z5', 'AAACR5055K', '5000', '50000', '30', 'SBI', '12345678901', 'SBIN0001234'],
+        ['Shyam Suppliers', 'Supplier', '8765432109', 'shyam@example.com', 'Civil Lines, Agra',
+         '', '', '0', '100000', '15', '', '', ''],
+        ['Sunita Devi', 'Customer', '7654321098', '', 'Lal Bagh, Lucknow',
+         '', '', '2500', '20000', '30', '', '', '']
+      ];
+
+      let csv = headers.join(',') + '\r\n';
+      sampleRows.forEach(row => {
+        csv += row.map(val => `"${val}"`).join(',') + '\r\n';
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Party_Import_Template.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('Template downloaded! Excel me open karo, apna data bharo, CSV format me save karo, phir upload karo.', 'success');
+    }
+
     function importPartyCSV(e) {
+      document.getElementById('importDropdownMenu').style.display = 'none';
       const file = e.target.files[0];
       if (!file) return;
+
       
       const reader = new FileReader();
       reader.onload = function(evt) {
