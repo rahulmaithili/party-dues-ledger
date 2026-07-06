@@ -904,6 +904,9 @@
           <a class="menu-item" data-page="returns" onclick="navigateTo('returns')">
             <i class="fa-solid fa-arrow-rotate-left"></i> Returns
           </a>
+          <a class="menu-item" data-page="cylinderSecurity" onclick="navigateTo('cylinderSecurity')">
+            <i class="fa-solid fa-shield-halved"></i> Security Deposits
+          </a>
         </div>
 
         <div class="menu-section hide-for-party">
@@ -934,13 +937,13 @@
         </div>
       </div>
       
-      <div class="sidebar-footer">
+      <div class="sidebar-footer pointer" onclick="openMyProfileModal()" title="Edit My Profile">
         <div class="user-avatar" id="avatarName">A</div>
         <div class="user-info">
           <h4 id="userNameDisplay">Admin User</h4>
           <p id="userRoleDisplay">Administrator</p>
         </div>
-        <i class="fa-solid fa-right-from-bracket pointer text-white hover:text-danger" onclick="logout()" title="Logout"></i>
+        <i class="fa-solid fa-right-from-bracket pointer text-white hover:text-danger" onclick="event.stopPropagation(); logout()" title="Logout"></i>
       </div>
     </aside>
 
@@ -1341,6 +1344,7 @@
                   <th>Mode</th>
                   <th>Ref Account / UTR</th>
                   <th class="text-right">Paid Amount</th>
+                  <th>Received By</th>
                   <th class="text-center">Actions</th>
                 </tr>
               </thead>
@@ -1350,6 +1354,51 @@
         </section>
 
 
+
+        <!-- ==================== SECURITY DEPOSITS ==================== -->
+        <section id="cylinderSecurity" class="page">
+          <div class="page-header">
+            <div class="page-title">
+              <h2>Cylinder & Product Security Deposits</h2>
+              <p>Track returnable products given to clients and their security deposits</p>
+            </div>
+            <div class="flex-gap">
+              <button class="btn btn-accent" onclick="openSecurityDepositModal()"><i class="fa-solid fa-plus"></i> New Security Deposit</button>
+              <button class="btn btn-danger" onclick="openSecurityRefundModal()"><i class="fa-solid fa-arrow-rotate-left"></i> Record Refund & Return</button>
+            </div>
+          </div>
+          
+          <div class="dashboard-card" style="margin-bottom: 20px;">
+            <div class="grid-2">
+              <input type="text" id="securitySearch" class="light-form-control" placeholder="Search by customer name or product..." oninput="renderSecurityDeposits()">
+              <select id="securityFilterStatus" class="light-form-control" onchange="renderSecurityDeposits()">
+                <option value="All">All Records</option>
+                <option value="Pending">Only Pending Returns</option>
+                <option value="Returned">Only Fully Returned</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Voucher ID</th>
+                  <th>Customer Name</th>
+                  <th>Product / Cylinder</th>
+                  <th class="text-right">Qty Out</th>
+                  <th class="text-right">Qty Returned</th>
+                  <th class="text-right">Pending Qty</th>
+                  <th class="text-right">Deposit Collected</th>
+                  <th class="text-right">Deposit Refunded</th>
+                  <th>Date</th>
+                  <th class="text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody id="securityTableBody"></tbody>
+            </table>
+          </div>
+        </section>
 
         <!-- ==================== QUOTATIONS ==================== -->
         <section id="quotations" class="page">
@@ -1863,9 +1912,18 @@
               <input type="email" id="partyEmail" class="light-form-control">
             </div>
           </div>
-          <div class="form-group">
-            <label>Physical Address</label>
-            <input type="text" id="partyAddress" class="light-form-control">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Physical Address</label>
+              <input type="text" id="partyAddress" class="light-form-control">
+            </div>
+            <div class="form-group">
+              <label>GPS Location (Latitude, Longitude)</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="partyGpsLocation" class="light-form-control" placeholder="Not captured" readonly>
+                <button type="button" class="btn btn-secondary" style="padding: 0 12px; white-space: nowrap;" onclick="capturePartyLocation()"><i class="fa-solid fa-location-crosshairs"></i> Get GPS</button>
+              </div>
+            </div>
           </div>
           <div class="grid-2">
             <div class="form-group">
@@ -2055,6 +2113,12 @@
                   <td>GST Tax Amount:</td>
                   <td class="text-right" id="invTax">₹0.00</td>
                 </tr>
+                <tr>
+                  <td>Discount (₹):</td>
+                  <td class="text-right">
+                    <input type="number" id="invDiscount" class="light-form-control text-right" style="width:120px; display:inline-block;" value="0" step="0.01" oninput="calculateInvoiceTotals()">
+                  </td>
+                </tr>
                 <tr style="font-weight:700; font-size:16px;">
                   <td>Grand Total:</td>
                   <td class="text-right" id="invGrandTotal">₹0.00</td>
@@ -2090,6 +2154,145 @@
     </div>
   </div>
 
+  <!-- MY PROFILE MODAL -->
+  <div class="modal-backdrop" id="myProfileModal">
+    <div class="modal-card" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3>My Profile</h3>
+        <i class="fa-solid fa-xmark pointer" onclick="closeModal('myProfileModal')"></i>
+      </div>
+      <form id="myProfileForm" onsubmit="saveMyProfile(event)">
+        <div class="modal-body text-center">
+          <div style="position: relative; width: 100px; height: 100px; margin: 0 auto 16px auto;">
+            <div id="profileModalAvatar" class="user-avatar" style="width: 100px; height: 100px; font-size: 36px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--acc); color: #000; font-weight: 700; overflow: hidden; margin: 0 auto;">A</div>
+            <label for="profilePhotoInput" style="position: absolute; bottom: 0; right: 130px; background: var(--bg2); border: 1px solid var(--brd); border-radius: 50%; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--txt);">
+              <i class="fa-solid fa-camera" style="font-size:12px;"></i>
+            </label>
+            <input type="file" id="profilePhotoInput" accept="image/png,image/jpeg,image/jpg" style="display:none;" onchange="handleProfilePhotoChange(event)">
+          </div>
+          
+          <div class="form-group" style="text-align: left;">
+            <label>Name</label>
+            <input type="text" id="profileName" class="light-form-control" readonly>
+          </div>
+          <div class="form-group" style="text-align: left;">
+            <label>Email</label>
+            <input type="email" id="profileEmail" class="light-form-control" readonly>
+          </div>
+          <div class="form-group" style="text-align: left;">
+            <label>Role</label>
+            <input type="text" id="profileRole" class="light-form-control" readonly>
+          </div>
+          <div class="form-group" style="text-align: left;">
+            <label>New Password (leave blank to keep current)</label>
+            <input type="password" id="profileNewPassword" class="light-form-control" placeholder="••••••••">
+          </div>
+          <input type="hidden" id="profileAvatarUrl">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('myProfileModal')">Cancel</button>
+          <button type="submit" class="btn btn-accent">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SECURITY DEPOSIT MODAL -->
+  <div class="modal-backdrop" id="securityDepositModal">
+    <div class="modal-card" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3>New Security Deposit</h3>
+        <i class="fa-solid fa-xmark pointer" onclick="closeModal('securityDepositModal')"></i>
+      </div>
+      <form id="securityDepositForm" onsubmit="saveSecurityDeposit(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Select Customer *</label>
+            <select id="secDepPartyId" class="light-form-control" required></select>
+          </div>
+          <div class="form-group">
+            <label>Select Product / Cylinder *</label>
+            <select id="secDepProductId" class="light-form-control" required></select>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Quantity *</label>
+              <input type="number" id="secDepQty" class="light-form-control" value="1" min="1" required>
+            </div>
+            <div class="form-group">
+              <label>Deposit Amount (₹) *</label>
+              <input type="number" id="secDepAmount" class="light-form-control" value="0" step="0.01" required>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Date *</label>
+              <input type="date" id="secDepDate" class="light-form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Deposit To Account *</label>
+              <select id="secDepAccountId" class="light-form-control" required></select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Notes</label>
+            <input type="text" id="secDepNotes" class="light-form-control">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('securityDepositModal')">Cancel</button>
+          <button type="submit" class="btn btn-accent">Save Deposit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SECURITY REFUND & RETURN MODAL -->
+  <div class="modal-backdrop" id="securityRefundModal">
+    <div class="modal-card" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3>Record Refund & Return</h3>
+        <i class="fa-solid fa-xmark pointer" onclick="closeModal('securityRefundModal')"></i>
+      </div>
+      <form id="securityRefundForm" onsubmit="saveSecurityRefund(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Select Active Deposit Record *</label>
+            <select id="secRefRecordId" class="light-form-control" required onchange="handleSecurityRecordChange(this.value)"></select>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Quantity to Return *</label>
+              <input type="number" id="secRefQty" class="light-form-control" min="1" required>
+            </div>
+            <div class="form-group">
+              <label>Refund Amount (₹) *</label>
+              <input type="number" id="secRefAmount" class="light-form-control" step="0.01" required>
+            </div>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Return Date *</label>
+              <input type="date" id="secRefDate" class="light-form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Refund From Account *</label>
+              <select id="secRefAccountId" class="light-form-control" required></select>
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Notes</label>
+            <input type="text" id="secRefNotes" class="light-form-control">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('securityRefundModal')">Cancel</button>
+          <button type="submit" class="btn btn-accent">Record Return</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- RECEIPTS & PAYMENTS MODAL -->
   <div class="modal-backdrop" id="receiptModal">
     <div class="modal-card">
@@ -2118,7 +2321,7 @@
           <div class="grid-2">
             <div class="form-group">
               <label>Payment Mode *</label>
-              <select id="receiptMode" class="light-form-control" required>
+              <select id="receiptMode" class="light-form-control" required onchange="handleReceiptModeChange(this.value)">
                 <option value="Cash">Cash</option>
                 <option value="Bank">Bank Transfer</option>
                 <option value="UPI">UPI Payment</option>
@@ -2129,6 +2332,10 @@
               <label>Linked Voucher / Invoice No</label>
               <select id="receiptLinkedInvoice" class="light-form-control"></select>
             </div>
+          </div>
+          <div class="form-group">
+            <label>Deposit To Account *</label>
+            <select id="receiptBankAccountId" class="light-form-control" required></select>
           </div>
           <div class="form-group">
             <label>Reference # / UTR Number</label>
@@ -2500,6 +2707,8 @@
               <select id="userRole" class="light-form-control" required onchange="handleUserRoleToggle()">
                 <option value="Admin">Admin</option>
                 <option value="Manager">Manager</option>
+                <option value="Cashier">Cashier</option>
+                <option value="Staff">Staff</option>
                 <option value="Party">Party / Client portal</option>
               </select>
             </div>
@@ -3181,6 +3390,7 @@
       if (pageId === 'deliveryChallans') renderChallans();
       if (pageId === 'banking') renderBanking();
       if (pageId === 'returns') renderReturns();
+      if (pageId === 'cylinderSecurity') renderSecurityDeposits();
       if (pageId === 'users') renderUsers();
       if (pageId === 'settings') loadSettings();
     }
@@ -3212,7 +3422,11 @@
           // Apply permissions and UI roles
           document.getElementById('userNameDisplay').textContent = res.user.name;
           document.getElementById('userRoleDisplay').textContent = res.user.role;
-          document.getElementById('avatarName').textContent = res.user.name.charAt(0).toUpperCase();
+          if (res.user.avatarUrl) {
+            document.getElementById('avatarName').innerHTML = `<img src="${res.user.avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+          } else {
+            document.getElementById('avatarName').textContent = res.user.name.charAt(0).toUpperCase();
+          }
           
           if (!App.isAdmin) {
             document.body.classList.add('not-admin');
@@ -3251,6 +3465,95 @@
       document.getElementById('loginPage').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
       showToast('Logged out successfully', 'info');
+    }
+
+    function openMyProfileModal() {
+      if (!App.currentUser) return;
+      document.getElementById('myProfileForm').reset();
+      document.getElementById('profileName').value = App.currentUser.name;
+      document.getElementById('profileEmail').value = App.currentUser.email;
+      document.getElementById('profileRole').value = App.currentUser.role;
+      document.getElementById('profileAvatarUrl').value = App.currentUser.avatarUrl || '';
+      document.getElementById('profileNewPassword').value = '';
+      document.getElementById('profilePhotoInput').value = '';
+
+      const avatarDiv = document.getElementById('profileModalAvatar');
+      if (App.currentUser.avatarUrl) {
+        avatarDiv.innerHTML = `<img src="${App.currentUser.avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+      } else {
+        avatarDiv.innerHTML = App.currentUser.name.charAt(0).toUpperCase();
+      }
+
+      openModal('myProfileModal');
+    }
+
+    function handleProfilePhotoChange(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Image size must be less than 2MB', 'error');
+        e.target.value = '';
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        document.getElementById('profileModalAvatar').innerHTML = `<img src="${evt.target.result}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function saveMyProfile(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('profilePhotoInput');
+      const newPassword = document.getElementById('profileNewPassword').value.trim();
+
+      const proceedProfileSave = (base64, filename, mimeType) => {
+        const payload = {
+          id: App.currentUser.id,
+          avatarUrl: document.getElementById('profileAvatarUrl').value,
+          newPassword: newPassword
+        };
+
+        if (base64) {
+          payload.avatarBase64 = base64;
+          payload.avatarFilename = filename;
+          payload.avatarMimeType = mimeType;
+        }
+
+        showLoading(true, 'Saving profile details...');
+        callServer('saveUserProfile', payload, function(res) {
+          showLoading(false);
+          if (res.success && res.user) {
+            App.currentUser = res.user;
+            
+            // Re-render sidebar profile elements
+            document.getElementById('userNameDisplay').textContent = App.currentUser.name;
+            document.getElementById('userRoleDisplay').textContent = App.currentUser.role;
+            const sideAvatar = document.getElementById('avatarName');
+            if (App.currentUser.avatarUrl) {
+              sideAvatar.innerHTML = `<img src="${App.currentUser.avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+            } else {
+              sideAvatar.textContent = App.currentUser.name.charAt(0).toUpperCase();
+            }
+            
+            closeModal('myProfileModal');
+            showToast('Profile updated successfully', 'success');
+          } else {
+            showToast(res.message || 'Failed to update profile', 'error');
+          }
+        });
+      };
+
+      if (fileInput.files && fileInput.files[0]) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          proceedProfileSave(evt.target.result, file.name, file.type);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        proceedProfileSave(null, null, null);
+      }
     }
 
     function initializeApp() {
@@ -3616,6 +3919,7 @@
               <td class="text-center">
                 <div class="flex-gap" style="justify-content: center;">
                   <button class="btn btn-secondary btn-sm" onclick="viewPartyLedger('${p.id}')"><i class="fa-solid fa-file-invoice"></i> Ledger</button>
+                  ${p.gpsLocation ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(p.gpsLocation)}" target="_blank" class="btn btn-icon" title="View GPS Location" style="color:var(--acc);"><i class="fa-solid fa-map-location-dot"></i></a>` : ''}
                   <button class="btn btn-icon" onclick="editParty('${p.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
                   <button class="btn btn-icon admin-only" onclick="deleteParty('${p.id}')" style="color:var(--dan);"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -3641,6 +3945,7 @@
                 </div>
                 <div class="flex-gap" style="gap: 4px;">
                   <button class="btn btn-icon" onclick="viewPartyLedger('${p.id}')" title="View Ledger"><i class="fa-solid fa-file-invoice"></i></button>
+                  ${p.gpsLocation ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(p.gpsLocation)}" target="_blank" class="btn btn-icon" title="View GPS Location" style="color:var(--acc);"><i class="fa-solid fa-map-location-dot"></i></a>` : ''}
                   <button class="btn btn-icon" onclick="editParty('${p.id}')" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
                   <button class="btn btn-icon admin-only" onclick="deleteParty('${p.id}')" style="color:var(--dan);" title="Delete"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -3654,8 +3959,34 @@
     function openPartyModal() {
       document.getElementById('partyForm').reset();
       document.getElementById('partyId').value = '';
+      document.getElementById('partyGpsLocation').value = '';
       document.getElementById('partyModalTitle').textContent = 'Add New Party';
       openModal('partyModal');
+    }
+
+    function capturePartyLocation() {
+      if (!navigator.geolocation) {
+        showToast('Geolocation is not supported by your browser', 'error');
+        return;
+      }
+      showLoading(true, 'Capturing GPS coordinates...');
+      navigator.geolocation.getCurrentPosition(
+        function(position) {
+          showLoading(false);
+          const coords = `${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`;
+          document.getElementById('partyGpsLocation').value = coords;
+          showToast('GPS coordinates captured successfully!', 'success');
+        },
+        function(error) {
+          showLoading(false);
+          let msg = 'Failed to capture GPS location';
+          if (error.code === error.PERMISSION_DENIED) {
+            msg = 'Permission to access location was denied';
+          }
+          showToast(msg, 'error');
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
     }
 
     function savePartyForm(e) {
@@ -3676,6 +4007,7 @@
         bankName: document.getElementById('partyBankName').value,
         bankAccount: document.getElementById('partyBankAccount').value,
         ifsc: document.getElementById('partyIfsc').value,
+        gpsLocation: document.getElementById('partyGpsLocation').value,
         enteredBy: App.currentUser.id
       };
 
@@ -3704,6 +4036,7 @@
       document.getElementById('partyBankName').value = p.bankName || '';
       document.getElementById('partyBankAccount').value = p.bankAccount || '';
       document.getElementById('partyIfsc').value = p.ifsc || '';
+      document.getElementById('partyGpsLocation').value = p.gpsLocation || '';
 
       document.getElementById('partyModalTitle').textContent = 'Edit Party Details';
       openModal('partyModal');
@@ -4096,9 +4429,10 @@
         document.getElementById(`invItemTotal_${idx}`).textContent = formatCurrency(lineTotal);
       });
 
+      const discount = parseFloat(document.getElementById('invDiscount') ? document.getElementById('invDiscount').value : 0) || 0;
       const grandTotal = subTotal + totalTax;
-      const roundedGrandTotal = Math.round(grandTotal);
-      const roundOff = roundedGrandTotal - grandTotal;
+      const roundedGrandTotal = Math.round(Math.max(0, grandTotal - discount));
+      const roundOff = roundedGrandTotal - (grandTotal - discount);
 
       document.getElementById('invSubtotal').textContent = formatCurrency(subTotal);
       document.getElementById('invTax').textContent = formatCurrency(totalTax);
@@ -4145,8 +4479,9 @@
         taxTotal += (x.quantity * x.rate) * (x.gst / 100);
       });
 
-      const grand = Math.round(subTotal + taxTotal);
-      const round = grand - (subTotal + taxTotal);
+      const discount = parseFloat(document.getElementById('invDiscount').value || 0);
+      const grand = Math.round(Math.max(0, subTotal + taxTotal - discount));
+      const round = grand - (subTotal + taxTotal - discount);
       const paidCash = parseFloat(document.getElementById('invPaidCash').value || 0);
       const paidBank = parseFloat(document.getElementById('invPaidBank').value || 0);
       const due = grand - (paidCash + paidBank);
@@ -4164,6 +4499,7 @@
         items: items,
         totals: {
           subTotal: subTotal,
+          discount: discount,
           cgst: taxTotal / 2,
           sgst: taxTotal / 2,
           igst: 0,
@@ -4202,6 +4538,7 @@
       });
 
       document.getElementById('invoiceDescription').value = t.description || '';
+      document.getElementById('invDiscount').value = t.totals && t.totals.discount || 0;
       document.getElementById('invPaidCash').value = t.totals && t.totals.paidCash || 0;
       document.getElementById('invPaidBank').value = t.totals && t.totals.paidBank || 0;
 
@@ -4280,7 +4617,7 @@
       });
 
       if (list.length === 0) {
-        body.innerHTML = '<tr><td colspan="8" class="text-center">No receipts/payments recorded.</td></tr>';
+        body.innerHTML = '<tr><td colspan="9" class="text-center">No receipts/payments recorded.</td></tr>';
         return;
       }
 
@@ -4296,6 +4633,7 @@
             <td>${t.paymentMode || 'Cash'}</td>
             <td>${t.bankRef || '--'}</td>
             <td class="text-right" style="font-weight:700;">${formatCurrency(amt)}</td>
+            <td>${t.receivedBy || 'System'} <span class="badge badge-secondary" style="font-size:10px; padding:2px 4px;">${t.receivedByRole || 'Admin'}</span></td>
             <td class="text-center">
               <div class="flex-gap" style="justify-content: center;">
                 ${t.proofUrl ? `<a href="${t.proofUrl}" target="_blank" class="btn btn-icon" title="View Payment Proof" style="color:var(--acc);"><i class="fa-solid fa-file-image"></i></a>` : ''}
@@ -4337,7 +4675,24 @@
         invSelect.innerHTML += `<option value="${t.voucherNo}">${t.voucherNo} (${formatCurrency(t.totals && t.totals.balanceDue || 0)} due)</option>`;
       });
 
+      // Populate Deposit Accounts select
+      const accSelect = document.getElementById('receiptBankAccountId');
+      accSelect.innerHTML = '';
+      App.data.bankAccounts.forEach(acc => {
+        accSelect.innerHTML += `<option value="${acc.id}">${acc.accountName} (${acc.bankName})</option>`;
+      });
+      accSelect.value = 'BA001'; // Default to cash
+
       openModal('receiptModal');
+    }
+
+    function handleReceiptModeChange(val) {
+      const accSelect = document.getElementById('receiptBankAccountId');
+      if (val === 'Cash') {
+        accSelect.value = 'BA001';
+      } else {
+        accSelect.value = 'BA002';
+      }
     }
 
     function saveReceiptForm(e) {
@@ -4368,10 +4723,13 @@
           debit: type === 'Payment' ? amt : 0,
           credit: type === 'Receipt' ? amt : 0,
           paymentMode: document.getElementById('receiptMode').value,
+          bankAccountId: document.getElementById('receiptBankAccountId').value,
           bankRef: document.getElementById('receiptBankRef').value,
           linkedInvoice: document.getElementById('receiptLinkedInvoice').value,
           enteredBy: App.currentUser.id,
           enteredOn: new Date().toISOString(),
+          receivedBy: App.currentUser.name,
+          receivedByRole: App.currentUser.role,
           proofUrl: document.getElementById('receiptProofUrl').value || ""
         };
 
@@ -4421,6 +4779,15 @@
       document.getElementById('receiptDate').value = t.date;
       document.getElementById('receiptAmount').value = t.txnType === 'Receipt' ? t.credit : t.debit;
       document.getElementById('receiptMode').value = t.paymentMode || 'Cash';
+      
+      // Populate deposit account dropdown and pre-select
+      const accSelect = document.getElementById('receiptBankAccountId');
+      accSelect.innerHTML = '';
+      App.data.bankAccounts.forEach(acc => {
+        accSelect.innerHTML += `<option value="${acc.id}">${acc.accountName} (${acc.bankName})</option>`;
+      });
+      accSelect.value = t.bankAccountId || (t.paymentMode === 'Cash' ? 'BA001' : 'BA002');
+
       document.getElementById('receiptBankRef').value = t.bankRef || '';
       document.getElementById('receiptDescription').value = t.description || '';
 
@@ -5116,6 +5483,208 @@
         closeModal('returnModal');
         showToast('Return entry saved', 'success');
         syncAllData(renderReturns, ["Transactions", "Products", "ActivityLog"]);
+      });
+    }
+
+    // ==================== CYLINDER & PRODUCT SECURITY DEPOSITS ====================
+
+    function renderSecurityDeposits() {
+      const search = document.getElementById('securitySearch').value.toLowerCase();
+      const statusFilter = document.getElementById('securityFilterStatus').value;
+      const body = document.getElementById('securityTableBody');
+      body.innerHTML = '';
+
+      if (!App.data.cylinderSecurity) App.data.cylinderSecurity = [];
+
+      const list = App.data.cylinderSecurity.filter(s => {
+        const matchesSearch = s.partyName.toLowerCase().includes(search) || s.cylinderType.toLowerCase().includes(search);
+        
+        let matchesStatus = true;
+        const pending = parseFloat(s.pending || 0);
+        if (statusFilter === 'Pending') matchesStatus = pending > 0;
+        else if (statusFilter === 'Returned') matchesStatus = pending === 0;
+
+        return matchesSearch && matchesStatus;
+      });
+
+      if (list.length === 0) {
+        body.innerHTML = '<tr><td colspan="10" class="text-center">No security deposits found.</td></tr>';
+        return;
+      }
+
+      list.forEach(s => {
+        const pending = parseFloat(s.pending || 0);
+        body.innerHTML += `
+          <tr>
+            <td><strong>${s.id}</strong></td>
+            <td><strong>${s.partyName}</strong></td>
+            <td>${s.cylinderType}</td>
+            <td class="text-right">${s.totalOut}</td>
+            <td class="text-right">${s.totalIn || 0}</td>
+            <td class="text-right" style="font-weight:700; color:${pending > 0 ? 'var(--dan)' : 'var(--txt2)'};">${pending}</td>
+            <td class="text-right">${formatCurrency(s.depositAmount || 0)}</td>
+            <td class="text-right">${formatCurrency(s.refundAmount || 0)}</td>
+            <td>${formatDate(s.depositDate)}</td>
+            <td class="text-center">
+              ${pending > 0 ? `<button class="btn btn-secondary btn-sm" onclick="openSecurityRefundModal('${s.id}')"><i class="fa-solid fa-arrow-rotate-left"></i> Return</button>` : '<span class="badge badge-success">Completed</span>'}
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function openSecurityDepositModal() {
+      document.getElementById('securityDepositForm').reset();
+      document.getElementById('secDepDate').value = new Date().toISOString().split('T')[0];
+
+      // Populate customers selector
+      const pSelect = document.getElementById('secDepPartyId');
+      pSelect.innerHTML = '<option value="">-- Select Customer --</option>';
+      App.data.parties.filter(p => p.type === 'Customer').forEach(p => {
+        pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+      });
+
+      // Populate products selector
+      const prSelect = document.getElementById('secDepProductId');
+      prSelect.innerHTML = '<option value="">-- Select Product --</option>';
+      // Filter for LPG cylinders or container products
+      const cylinderProds = App.data.products.filter(p => p.isCylinder === true || p.isCylinder === 'true' || p.category.toLowerCase().includes('cylinder'));
+      const prodsToRender = cylinderProds.length > 0 ? cylinderProds : App.data.products;
+      prodsToRender.forEach(p => {
+        prSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+      });
+
+      // Populate bank accounts
+      const accSelect = document.getElementById('secDepAccountId');
+      accSelect.innerHTML = '';
+      App.data.bankAccounts.forEach(acc => {
+        accSelect.innerHTML += `<option value="${acc.id}">${acc.accountName} (${acc.bankName})</option>`;
+      });
+      accSelect.value = 'BA001'; // Default to Cash
+
+      openModal('securityDepositModal');
+    }
+
+    function saveSecurityDeposit(e) {
+      e.preventDefault();
+      const pid = document.getElementById('secDepPartyId').value;
+      const party = App.data.parties.find(x => x.id === pid);
+      const prodId = document.getElementById('secDepProductId').value;
+      const product = App.data.products.find(x => x.id === prodId);
+      const qty = parseFloat(document.getElementById('secDepQty').value || 1);
+      const amt = parseFloat(document.getElementById('secDepAmount').value || 0);
+      const accId = document.getElementById('secDepAccountId').value;
+
+      const payload = {
+        id: 'SEC' + Date.now(),
+        date: document.getElementById('secDepDate').value,
+        voucherNo: 'SEC-' + Date.now().toString().slice(-6),
+        partyId: party.id,
+        partyName: party.name,
+        cylinderType: product.name,
+        cylinderOut: qty,
+        credit: amt,
+        debit: 0,
+        paymentMode: accId === 'BA001' ? 'Cash' : 'Bank',
+        bankAccountId: accId,
+        description: document.getElementById('secDepNotes').value || `Security Deposit for ${qty} x ${product.name}`,
+        txnType: 'SecurityDeposit',
+        enteredBy: App.currentUser.id,
+        enteredOn: new Date().toISOString()
+      };
+
+      showLoading(true, 'Saving security deposit...');
+      callServer('saveSecurityDeposit', payload, function(res) {
+        showLoading(false);
+        closeModal('securityDepositModal');
+        showToast('Security deposit recorded successfully', 'success');
+        syncAllData(renderSecurityDeposits, ["Transactions", "CylinderSecurity", "BankAccounts", "ActivityLog"]);
+      });
+    }
+
+    function openSecurityRefundModal(prefilledId) {
+      document.getElementById('securityRefundForm').reset();
+      document.getElementById('secRefDate').value = new Date().toISOString().split('T')[0];
+
+      // Populate active deposit records dropdown
+      const recSelect = document.getElementById('secRefRecordId');
+      recSelect.innerHTML = '<option value="">-- Choose Active Deposit Record --</option>';
+      if (App.data.cylinderSecurity) {
+        App.data.cylinderSecurity.filter(s => parseFloat(s.pending || 0) > 0).forEach(s => {
+          recSelect.innerHTML += `<option value="${s.id}">${s.partyName} - ${s.cylinderType} (Pending: ${s.pending})</option>`;
+        });
+      }
+
+      // Populate bank accounts selector
+      const accSelect = document.getElementById('secRefAccountId');
+      accSelect.innerHTML = '';
+      App.data.bankAccounts.forEach(acc => {
+        accSelect.innerHTML += `<option value="${acc.id}">${acc.accountName} (${acc.bankName})</option>`;
+      });
+      accSelect.value = 'BA001'; // Default to Cash
+
+      openModal('securityRefundModal');
+
+      if (prefilledId) {
+        recSelect.value = prefilledId;
+        handleSecurityRecordChange(prefilledId);
+      }
+    }
+
+    // Proportional Refund calculation
+    function handleSecurityRecordChange(recordId) {
+      if (!recordId) return;
+      const rec = App.data.cylinderSecurity.find(s => s.id === recordId);
+      if (!rec) return;
+
+      const pending = parseFloat(rec.pending || 0);
+      const qtyInput = document.getElementById('secRefQty');
+      qtyInput.value = pending;
+      qtyInput.max = pending;
+
+      const rate = parseFloat(rec.depositAmount || 0) / parseFloat(rec.totalOut || 1);
+      document.getElementById('secRefAmount').value = (rate * pending).toFixed(2);
+    }
+
+    function saveSecurityRefund(e) {
+      e.preventDefault();
+      const recordId = document.getElementById('secRefRecordId').value;
+      const rec = App.data.cylinderSecurity.find(s => s.id === recordId);
+      if (!rec) return;
+
+      const qty = parseFloat(document.getElementById('secRefQty').value || 1);
+      const amt = parseFloat(document.getElementById('secRefAmount').value || 0);
+      const accId = document.getElementById('secRefAccountId').value;
+
+      if (qty > parseFloat(rec.pending || 0)) {
+        showToast(`Cannot return more than pending quantity (${rec.pending})`, 'error');
+        return;
+      }
+
+      const payload = {
+        id: 'REF' + Date.now(),
+        securityRecordId: recordId,
+        partyId: rec.partyId,
+        partyName: rec.partyName,
+        cylinderIn: qty,
+        debit: amt,
+        credit: 0,
+        date: document.getElementById('secRefDate').value,
+        voucherNo: 'REF-' + Date.now().toString().slice(-6),
+        paymentMode: accId === 'BA001' ? 'Cash' : 'Bank',
+        bankAccountId: accId,
+        description: document.getElementById('secRefNotes').value || `Returned ${qty} x ${rec.cylinderType} security cylinders`,
+        txnType: 'SecurityRefund',
+        enteredBy: App.currentUser.id,
+        enteredOn: new Date().toISOString()
+      };
+
+      showLoading(true, 'Saving return refund details...');
+      callServer('saveSecurityRefund', payload, function(res) {
+        showLoading(false);
+        closeModal('securityRefundModal');
+        showToast('Refund and return recorded successfully', 'success');
+        syncAllData(renderSecurityDeposits, ["Transactions", "CylinderSecurity", "BankAccounts", "ActivityLog"]);
       });
     }
 

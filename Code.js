@@ -27,7 +27,7 @@ function doGet(e) {
       var sheetsToRead = [
         "Parties", "Products", "Transactions", "BankAccounts", "Users", 
         "Notifications", "CompanyProfile", "Expenses", "Quotations", 
-        "PurchaseOrders", "DeliveryChallans", "ActivityLog", "CRMFollowups"
+        "PurchaseOrders", "DeliveryChallans", "ActivityLog", "CRMFollowups", "CylinderSecurity"
       ];
       for (var i = 0; i < sheetsToRead.length; i++) {
         var sName = sheetsToRead[i];
@@ -38,6 +38,7 @@ function doGet(e) {
         if (sName === "DeliveryChallans") clientKey = "deliveryChallans";
         if (sName === "ActivityLog") clientKey = "activityLog";
         if (sName === "CRMFollowups") clientKey = "crmFollowups";
+        if (sName === "CylinderSecurity") clientKey = "cylinderSecurity";
         
         if (!requestedSheets || requestedSheets.indexOf(sName) !== -1) {
           data[clientKey] = readSheetData(sheet, sName);
@@ -488,11 +489,12 @@ function doPost(e) {
       if (bankSheet) {
         var bankData = bankSheet.getDataRange().getValues();
         var credit = parseFloat(txn.credit || 0);
+        var targetAccId = txn.bankAccountId || (txn.paymentMode === "Cash" ? "BA001" : "BA002");
         for (var k = 1; k < bankData.length; k++) {
-          if ((txn.paymentMode === "Cash" && bankData[k][0] === "BA001") ||
-              (txn.paymentMode !== "Cash" && bankData[k][0] === "BA002")) {
+          if (bankData[k][0] === targetAccId) {
             var currBal = parseFloat(bankSheet.getRange(k+1, 8).getValue() || 0);
             bankSheet.getRange(k+1, 8).setValue(currBal + credit);
+            break;
           }
         }
       }
@@ -596,15 +598,32 @@ function doPost(e) {
       var txn = payload;
       rollbackSheetBalances(sheet, txn.id);
       upsertRowInSheet(sheet, "Transactions", txn, "id");
+      
+      // Upsert CylinderSecurity record
+      var secRecord = {
+        id: txn.id,
+        partyId: txn.partyId,
+        partyName: txn.partyName,
+        cylinderType: txn.cylinderType || (txn.items && txn.items[0] && txn.items[0].productName) || "Cylinder",
+        totalOut: parseFloat(txn.cylinderOut || 1),
+        totalIn: 0,
+        pending: parseFloat(txn.cylinderOut || 1),
+        depositAmount: parseFloat(txn.credit || 0),
+        depositDate: txn.date,
+        notes: txn.description || ""
+      };
+      upsertRowInSheet(sheet, "CylinderSecurity", secRecord, "id");
+
       var bankSheet = sheet.getSheetByName("BankAccounts");
       if (bankSheet) {
         var bankData = bankSheet.getDataRange().getValues();
         var credit = parseFloat(txn.credit || 0);
+        var targetAccId = txn.bankAccountId || (txn.paymentMode === "Cash" ? "BA001" : "BA002");
         for (var k = 1; k < bankData.length; k++) {
-          if ((txn.paymentMode === "Cash" && bankData[k][0] === "BA001") ||
-              (txn.paymentMode !== "Cash" && bankData[k][0] === "BA002")) {
+          if (bankData[k][0] === targetAccId) {
             var currBal = parseFloat(bankSheet.getRange(k+1, 8).getValue() || 0);
             bankSheet.getRange(k+1, 8).setValue(currBal + credit);
+            break;
           }
         }
       }
@@ -614,19 +633,79 @@ function doPost(e) {
       var txn = payload;
       rollbackSheetBalances(sheet, txn.id);
       upsertRowInSheet(sheet, "Transactions", txn, "id");
+      
+      // Update CylinderSecurity record
+      var secSheet = sheet.getSheetByName("CylinderSecurity");
+      if (secSheet) {
+        var secData = readSheetData(sheet, "CylinderSecurity");
+        var foundSec = secData.filter(function(s) { return s.id === txn.securityRecordId; });
+        if (foundSec.length > 0) {
+          var secRecord = foundSec[0];
+          var returnQty = parseFloat(txn.cylinderIn || 0);
+          var refundPaid = parseFloat(txn.debit || 0);
+          
+          secRecord.totalIn = parseFloat(secRecord.totalIn || 0) + returnQty;
+          secRecord.pending = parseFloat(secRecord.totalOut || 0) - secRecord.totalIn;
+          secRecord.refundAmount = parseFloat(secRecord.refundAmount || 0) + refundPaid;
+          secRecord.refundDate = txn.date;
+          if (txn.description) secRecord.notes = txn.description;
+          
+          upsertRowInSheet(sheet, "CylinderSecurity", secRecord, "id");
+        }
+      }
+
       var bankSheet = sheet.getSheetByName("BankAccounts");
       if (bankSheet) {
         var bankData = bankSheet.getDataRange().getValues();
-        var amount = parseFloat(txn.totals && txn.totals.grandTotal || 0);
+        var amount = parseFloat(txn.debit || 0);
+        var targetAccId = txn.bankAccountId || (txn.paymentMode === "Cash" ? "BA001" : "BA002");
         for (var k = 1; k < bankData.length; k++) {
-          if ((txn.paymentMode === "Cash" && bankData[k][0] === "BA001") ||
-              (txn.paymentMode !== "Cash" && bankData[k][0] === "BA002")) {
+          if (bankData[k][0] === targetAccId) {
             var currBal = parseFloat(bankSheet.getRange(k+1, 8).getValue() || 0);
             bankSheet.getRange(k+1, 8).setValue(currBal - amount);
+            break;
           }
         }
       }
       return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ---- SAVE USER PROFILE ----
+    if (action === "saveUserProfile") {
+      var userId = payload.id;
+      var usersSheet = sheet.getSheetByName("Users");
+      if (!usersSheet) return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Users sheet not found" })).setMimeType(ContentService.MimeType.JSON);
+      
+      var uData = usersSheet.getDataRange().getValues();
+      var uHeaders = uData[0];
+      var uRowIdx = -1;
+      for (var i = 1; i < uData.length; i++) {
+        if (uData[i][0] === userId) { uRowIdx = i + 1; break; }
+      }
+      
+      if (uRowIdx === -1) return ContentService.createTextOutput(JSON.stringify({ success: false, message: "User not found" })).setMimeType(ContentService.MimeType.JSON);
+      
+      var avatarUrl = payload.avatarUrl || "";
+      if (payload.avatarBase64) {
+        avatarUrl = handleProofUpload({
+          id: userId,
+          proofBase64: payload.avatarBase64,
+          proofFilename: payload.avatarFilename || "avatar.jpg",
+          proofMimeType: payload.avatarMimeType || "image/jpeg"
+        });
+      }
+      
+      var passCol = uHeaders.indexOf("passwordHash");
+      var avatarCol = uHeaders.indexOf("avatarUrl");
+      
+      if (avatarCol !== -1 && avatarUrl) usersSheet.getRange(uRowIdx, avatarCol + 1).setValue(avatarUrl);
+      if (payload.newPassword && passCol !== -1) usersSheet.getRange(uRowIdx, passCol + 1).setValue(simpleHash(payload.newPassword));
+      
+      // Read updated user record to return to client
+      var updatedUser = readSheetData(sheet, "Users").filter(function(u) { return u.id === userId; })[0];
+      if (updatedUser) delete updatedUser.passwordHash;
+      
+      return ContentService.createTextOutput(JSON.stringify({ success: true, user: updatedUser })).setMimeType(ContentService.MimeType.JSON);
     }
 
     // ---- EXPENSES ----
@@ -1052,6 +1131,13 @@ function rollbackSheetBalances(sheet, txnId) {
     bankSheet.getRange(idx, 8).setValue(currBal + delta);
   };
 
+  var getAccountRowIdx = function(accountId) {
+    for (var k = 1; k < bankData.length; k++) {
+      if (bankData[k][0] === accountId) return k + 1;
+    }
+    return -1;
+  };
+
   if (oldTxn.txnType === "Sale") {
     var totals = oldTxn.totals || {};
     updateBank(cashIdx, -parseFloat(totals.paidCash || 0));
@@ -1062,8 +1148,8 @@ function rollbackSheetBalances(sheet, txnId) {
     updateBank(bankIdx, parseFloat(totals.paidBank || 0));
   } else if (oldTxn.txnType === "Receipt") {
     var credit = parseFloat(oldTxn.credit || 0);
-    if (oldTxn.paymentMode === "Cash") updateBank(cashIdx, -credit);
-    else updateBank(bankIdx, -credit);
+    var targetAccIdx = oldTxn.bankAccountId ? getAccountRowIdx(oldTxn.bankAccountId) : (oldTxn.paymentMode === "Cash" ? cashIdx : bankIdx);
+    updateBank(targetAccIdx, -credit);
     if (oldTxn.linkedInvoice) adjustLinkedInvoiceSheet(sheet, oldTxn.linkedInvoice, credit, oldTxn.paymentMode, true);
   } else if (oldTxn.txnType === "Payment") {
     var debit = parseFloat(oldTxn.debit || 0);
@@ -1090,12 +1176,29 @@ function rollbackSheetBalances(sheet, txnId) {
     }
   } else if (oldTxn.txnType === "SecurityDeposit") {
     var credit = parseFloat(oldTxn.credit || 0);
-    if (oldTxn.paymentMode === "Cash") updateBank(cashIdx, -credit);
-    else updateBank(bankIdx, -credit);
+    var targetAccIdx = oldTxn.bankAccountId ? getAccountRowIdx(oldTxn.bankAccountId) : (oldTxn.paymentMode === "Cash" ? cashIdx : bankIdx);
+    updateBank(targetAccIdx, -credit);
+    deleteRowFromSheet(sheet, "CylinderSecurity", oldTxn.id, "id");
   } else if (oldTxn.txnType === "SecurityRefund") {
-    var amount = parseFloat(oldTxn.totals && oldTxn.totals.grandTotal || 0);
-    if (oldTxn.paymentMode === "Cash") updateBank(cashIdx, amount);
-    else updateBank(bankIdx, amount);
+    var amount = parseFloat(oldTxn.debit || 0);
+    var targetAccIdx = oldTxn.bankAccountId ? getAccountRowIdx(oldTxn.bankAccountId) : (oldTxn.paymentMode === "Cash" ? cashIdx : bankIdx);
+    updateBank(targetAccIdx, amount);
+    
+    // Revert CylinderSecurity change
+    var secSheet = sheet.getSheetByName("CylinderSecurity");
+    if (secSheet && oldTxn.securityRecordId) {
+      var secData = readSheetData(sheet, "CylinderSecurity");
+      var foundSec = secData.filter(function(s) { return s.id === oldTxn.securityRecordId; });
+      if (foundSec.length > 0) {
+        var secRecord = foundSec[0];
+        var returnQty = parseFloat(oldTxn.cylinderIn || 0);
+        var refundPaid = parseFloat(oldTxn.debit || 0);
+        secRecord.totalIn = Math.max(0, parseFloat(secRecord.totalIn || 0) - returnQty);
+        secRecord.pending = parseFloat(secRecord.totalOut || 0) - secRecord.totalIn;
+        secRecord.refundAmount = Math.max(0, parseFloat(secRecord.refundAmount || 0) - refundPaid);
+        upsertRowInSheet(sheet, "CylinderSecurity", secRecord, "id");
+      }
+    }
   }
 }
 
@@ -1315,11 +1418,11 @@ function initDatabase(sheet) {
   ];
 
   var headerMap = {
-    "Parties": ["id","name","type","mobile","email","address","gstin","pan","openingBalance","creditLimit","paymentTerms","bankAccount","bankName","ifsc","documents","securityDeposit","cylinderDeposits"],
+    "Parties": ["id","name","type","mobile","email","address","gstin","pan","openingBalance","creditLimit","paymentTerms","bankAccount","bankName","ifsc","documents","securityDeposit","cylinderDeposits","gpsLocation"],
     "Products": ["id","name","category","unit","hsn","purchaseRate","saleRate","gst","minStock","openingStock","stock","isCylinder"],
-    "Transactions": ["id","date","voucherNo","partyId","partyName","description","txnType","debit","credit","paymentMode","bankRef","items","totals","enteredBy","enteredOn","cylinderOut","cylinderIn","linkedInvoice","returnType","proofUrl"],
+    "Transactions": ["id","date","voucherNo","partyId","partyName","description","txnType","debit","credit","paymentMode","bankRef","items","totals","enteredBy","enteredOn","cylinderOut","cylinderIn","linkedInvoice","returnType","proofUrl","bankAccountId","receivedBy","receivedByRole"],
     "BankAccounts": ["id","accountName","bankName","accountNo","ifsc","branch","openingBalance","balance"],
-    "Users": ["id","name","email","passwordHash","role","partyId","status","permissions","otp","otpExpiry"],
+    "Users": ["id","name","email","passwordHash","role","partyId","status","permissions","otp","otpExpiry","avatarUrl"],
     "Notifications": ["id","message","type","date","read"],
     "CompanyProfile": ["key","value"],
     "CylinderSecurity": ["id","partyId","partyName","cylinderType","totalOut","totalIn","pending","depositAmount","depositDate","refundAmount","refundDate","notes"],
@@ -1363,11 +1466,11 @@ function clearSheetDatabase(sheet) {
   if (!sheet) return;
 
   var headerMap = {
-    "Parties": ["id","name","type","mobile","email","address","gstin","pan","openingBalance","creditLimit","paymentTerms","bankAccount","bankName","ifsc","documents","securityDeposit","cylinderDeposits"],
+    "Parties": ["id","name","type","mobile","email","address","gstin","pan","openingBalance","creditLimit","paymentTerms","bankAccount","bankName","ifsc","documents","securityDeposit","cylinderDeposits","gpsLocation"],
     "Products": ["id","name","category","unit","hsn","purchaseRate","saleRate","gst","minStock","openingStock","stock","isCylinder"],
-    "Transactions": ["id","date","voucherNo","partyId","partyName","description","txnType","debit","credit","paymentMode","bankRef","items","totals","enteredBy","enteredOn","cylinderOut","cylinderIn","linkedInvoice","returnType","proofUrl"],
+    "Transactions": ["id","date","voucherNo","partyId","partyName","description","txnType","debit","credit","paymentMode","bankRef","items","totals","enteredBy","enteredOn","cylinderOut","cylinderIn","linkedInvoice","returnType","proofUrl","bankAccountId","receivedBy","receivedByRole"],
     "BankAccounts": ["id","accountName","bankName","accountNo","ifsc","branch","openingBalance","balance"],
-    "Users": ["id","name","email","passwordHash","role","partyId","status","permissions","otp","otpExpiry"],
+    "Users": ["id","name","email","passwordHash","role","partyId","status","permissions","otp","otpExpiry","avatarUrl"],
     "Notifications": ["id","message","type","date","read"],
     "CompanyProfile": ["key","value"],
     "Expenses": ["id","date","category","description","amount","paymentMode","bankRef","voucherId","enteredBy","enteredOn"],
