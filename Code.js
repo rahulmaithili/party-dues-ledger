@@ -41,7 +41,7 @@ function doGet(e) {
         if (sName === "CylinderSecurity") clientKey = "cylinderSecurity";
         
         if (!requestedSheets || requestedSheets.indexOf(sName) !== -1) {
-          data[clientKey] = readSheetData(sheet, sName);
+          data[clientKey] = getCachedSheetData(sheet, sName);
         }
       }
       return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(ContentService.MimeType.JSON);
@@ -74,6 +74,9 @@ function doPost(e) {
   }
   try {
     var payload = JSON.parse(e.postData.contents);
+    if (action !== "login") {
+      clearSheetCache();
+    }
 
     // ---- AUTH ----
     if (action === "login") {
@@ -939,6 +942,37 @@ function readSheetData(sheet, sheetName) {
     list.push(obj);
   }
   return list;
+}
+
+function getCachedSheetData(sheet, sheetName) {
+  var cache = CacheService.getScriptCache();
+  var cached = null;
+  try {
+    cached = cache.get("sheet_" + sheetName);
+  } catch(e) {}
+  if (cached) {
+    try {
+      return JSON.parse(cached);
+    } catch(e) {}
+  }
+  var data = readSheetData(sheet, sheetName);
+  try {
+    var str = JSON.stringify(data);
+    if (str.length < 100000) {
+      cache.put("sheet_" + sheetName, str, 21600); // 6 hours
+    }
+  } catch(e) {}
+  return data;
+}
+
+function clearSheetCache() {
+  var cache = CacheService.getScriptCache();
+  var sheets = ["Parties", "Products", "Transactions", "BankAccounts", "Users", "Notifications", "CompanyProfile", "Expenses", "Quotations", "PurchaseOrders", "DeliveryChallans", "ActivityLog", "CRMFollowups", "CylinderSecurity"];
+  sheets.forEach(function(s) {
+    try {
+      cache.remove("sheet_" + s);
+    } catch(e) {}
+  });
 }
 
 function appendRowToSheet(sheet, sheetName, item) {

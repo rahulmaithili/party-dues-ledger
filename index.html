@@ -854,10 +854,6 @@
       <div style="text-align: center; margin-top: 16px;">
         <a href="#" onclick="openForgotPasswordModal(event)" style="color: var(--txt2); font-size: 13px; text-decoration: none; font-weight: 500; transition: color 0.2s;" onmouseover="this.style.color='var(--acc)'" onmouseout="this.style.color='var(--txt2)'">Forgot Password?</a>
       </div>
-      <div style="text-align: center; margin-top: 12px; font-size: 13.5px; color: var(--txt2);">
-        Don't have an account? 
-        <a href="#" onclick="openSignUpModal(event)" style="color: var(--acc); text-decoration: none; font-weight: 600; margin-left: 4px; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">Sign Up</a>
-      </div>
     </div>
   </div>
 
@@ -1808,42 +1804,7 @@
     </div>
   </div>
 
-  <!-- SIGN UP MODAL -->
-  <div class="modal-backdrop" id="signUpModal">
-    <div class="modal-card" style="max-width: 420px;">
-      <div class="modal-header">
-        <h3>Create an Account</h3>
-        <i class="fa-solid fa-xmark pointer" onclick="closeModal('signUpModal')"></i>
-      </div>
-      <form id="signUpForm" onsubmit="submitSignUpRequest(event)">
-        <div class="modal-body">
-          <p style="font-size: 13.5px; color: var(--txt2); margin-bottom: 16px; line-height: 1.5;">
-            Register for a client portal account. Once submitted, the administrator must approve your account before you can log in.
-          </p>
-          <div class="form-group">
-            <label>Full Name *</label>
-            <input type="text" id="signUpName" class="light-form-control" required placeholder="John Doe">
-          </div>
-          <div class="form-group">
-            <label>Email Address *</label>
-            <input type="email" id="signUpEmail" class="light-form-control" required placeholder="name@company.com">
-          </div>
-          <div class="form-group">
-            <label>Password *</label>
-            <input type="password" id="signUpPassword" class="light-form-control" required placeholder="••••••••">
-          </div>
-          <div class="form-group" style="margin-bottom: 0;">
-            <label>Confirm Password *</label>
-            <input type="password" id="signUpConfirmPassword" class="light-form-control" required placeholder="••••••••">
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('signUpModal')">Cancel</button>
-          <button type="submit" id="signUpSubmitBtn" class="btn btn-accent">Register</button>
-        </div>
-      </form>
-    </div>
-  </div>
+
 
   <!-- MY TRANSACTIONS MODAL -->
   <div class="modal-backdrop" id="myTransactionsModal">
