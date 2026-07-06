@@ -74,9 +74,7 @@ function doPost(e) {
   }
   try {
     var payload = JSON.parse(e.postData.contents);
-    if (action !== "login") {
-      clearSheetCache();
-    }
+
 
     // ---- AUTH ----
     if (action === "login") {
@@ -988,6 +986,15 @@ function clearSheetCache() {
   });
 }
 
+function clearSpecificCaches(sheetNames) {
+  var cache = CacheService.getScriptCache();
+  sheetNames.forEach(function(s) {
+    try {
+      cache.remove("sheet_" + s);
+    } catch(e) {}
+  });
+}
+
 function appendRowToSheet(sheet, sheetName, item) {
   var targetSheet = sheet.getSheetByName(sheetName);
   if (!targetSheet) return;
@@ -999,6 +1006,7 @@ function appendRowToSheet(sheet, sheetName, item) {
     newRow.push(val !== undefined ? val : "");
   }
   targetSheet.appendRow(newRow);
+  clearSpecificCaches([sheetName]);
 }
 
 function upsertRowInSheet(sheet, sheetName, item, idKey) {
@@ -1022,6 +1030,7 @@ function upsertRowInSheet(sheet, sheetName, item, idKey) {
     targetSheet.appendRow(rowValues);
   }
   formatSheetVisuals(targetSheet);
+  clearSpecificCaches([sheetName]);
 }
 
 function deleteRowFromSheet(sheet, sheetName, id, idKey) {
@@ -1033,6 +1042,7 @@ function deleteRowFromSheet(sheet, sheetName, id, idKey) {
   for (var i = 1; i < data.length; i++) {
     if (data[i][idColIdx] === id) { targetSheet.deleteRow(i + 1); break; }
   }
+  clearSpecificCaches([sheetName]);
 }
 
 function updateSheetHeaders(sheet, sheetName, expectedHeaders) {
@@ -1252,11 +1262,11 @@ function rollbackSheetBalances(sheet, txnId) {
 // ===================== REPORTS =====================
 
 function getDashboardStats(sheet) {
-  var txns = readSheetData(sheet, "Transactions");
-  var products = readSheetData(sheet, "Products");
-  var parties = readSheetData(sheet, "Parties");
-  var bankAccounts = readSheetData(sheet, "BankAccounts");
-  var expenses = readSheetData(sheet, "Expenses");
+  var txns = getCachedSheetData(sheet, "Transactions");
+  var products = getCachedSheetData(sheet, "Products");
+  var parties = getCachedSheetData(sheet, "Parties");
+  var bankAccounts = getCachedSheetData(sheet, "BankAccounts");
+  var expenses = getCachedSheetData(sheet, "Expenses");
 
   var today = new Date();
   var thisMonth = today.getMonth();
@@ -1352,10 +1362,10 @@ function getDashboardStats(sheet) {
 }
 
 function generateReport(sheet, reportType, dateFrom, dateTo, partyId) {
-  var txns = readSheetData(sheet, "Transactions");
-  var expenses = readSheetData(sheet, "Expenses");
-  var products = readSheetData(sheet, "Products");
-  var parties = readSheetData(sheet, "Parties");
+  var txns = getCachedSheetData(sheet, "Transactions");
+  var expenses = getCachedSheetData(sheet, "Expenses");
+  var products = getCachedSheetData(sheet, "Products");
+  var parties = getCachedSheetData(sheet, "Parties");
 
   var from = dateFrom ? new Date(dateFrom) : new Date("2000-01-01");
   var to = dateTo ? new Date(dateTo) : new Date();
