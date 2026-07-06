@@ -2573,6 +2573,18 @@
               <input type="text" id="partyIfsc" class="light-form-control">
             </div>
           </div>
+          <div class="grid-2" style="margin-top: 15px;">
+            <div class="form-group">
+              <label>Upload Document / KYC Proof (GST, PAN, Trade License, ID)</label>
+              <input type="file" id="partyDocFile" class="light-form-control" accept="image/*,application/pdf">
+              <input type="hidden" id="partyDocUrl">
+            </div>
+            <div class="form-group" id="partyCurrentDocGroup" style="display: none; align-items: flex-end; padding-bottom: 6px;">
+              <a id="btnViewCurrentPartyDoc" href="#" target="_blank" class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fa-solid fa-paperclip"></i> View Current Document
+              </a>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" onclick="closeModal('partyModal')">Cancel</button>
@@ -4899,6 +4911,7 @@
                 <div class="flex-gap" style="justify-content: center;">
                   <button class="btn btn-secondary btn-sm" onclick="viewPartyLedger('${p.id}')"><i class="fa-solid fa-file-invoice"></i> Ledger</button>
                   ${p.gpsLocation ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(p.gpsLocation)}" target="_blank" class="btn btn-icon" title="View GPS Location" style="color:var(--acc);"><i class="fa-solid fa-map-location-dot"></i></a>` : ''}
+                  ${p.documents ? `<a href="${p.documents}" target="_blank" class="btn btn-icon" title="View Document / KYC Proof" style="color: var(--acc);"><i class="fa-solid fa-paperclip"></i></a>` : ''}
                   <button class="btn btn-icon" onclick="editParty('${p.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
                   <button class="btn btn-icon admin-only" onclick="deleteParty('${p.id}')" style="color:var(--dan);"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -4925,6 +4938,7 @@
                 <div class="flex-gap" style="gap: 4px;">
                   <button class="btn btn-icon" onclick="viewPartyLedger('${p.id}')" title="View Ledger"><i class="fa-solid fa-file-invoice"></i></button>
                   ${p.gpsLocation ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(p.gpsLocation)}" target="_blank" class="btn btn-icon" title="View GPS Location" style="color:var(--acc);"><i class="fa-solid fa-map-location-dot"></i></a>` : ''}
+                  ${p.documents ? `<a href="${p.documents}" target="_blank" class="btn btn-icon" title="View Document / KYC Proof" style="color:var(--acc);"><i class="fa-solid fa-paperclip"></i></a>` : ''}
                   <button class="btn btn-icon" onclick="editParty('${p.id}')" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
                   <button class="btn btn-icon admin-only" onclick="deleteParty('${p.id}')" style="color:var(--dan);" title="Delete"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -5173,6 +5187,9 @@
       document.getElementById('partyForm').reset();
       document.getElementById('partyId').value = '';
       document.getElementById('partyGpsLocation').value = '';
+      document.getElementById('partyDocUrl').value = '';
+      document.getElementById('partyDocFile').value = '';
+      document.getElementById('partyCurrentDocGroup').style.display = 'none';
       document.getElementById('partyModalTitle').textContent = 'Add New Party';
       openModal('partyModal');
     }
@@ -5204,31 +5221,52 @@
 
     function savePartyForm(e) {
       e.preventDefault();
-      const id = document.getElementById('partyId').value || 'PT' + Date.now();
-      const payload = {
-        id: id,
-        name: document.getElementById('partyName').value,
-        type: document.getElementById('partyType').value,
-        mobile: document.getElementById('partyMobile').value,
-        email: document.getElementById('partyEmail').value,
-        address: document.getElementById('partyAddress').value,
-        gstin: document.getElementById('partyGstin').value,
-        pan: document.getElementById('partyPan').value,
-        openingBalance: parseFloat(document.getElementById('partyOpeningBalance').value || 0),
-        creditLimit: parseFloat(document.getElementById('partyCreditLimit').value || 50000),
-        paymentTerms: parseInt(document.getElementById('partyPaymentTerms').value || 30),
-        bankName: document.getElementById('partyBankName').value,
-        bankAccount: document.getElementById('partyBankAccount').value,
-        ifsc: document.getElementById('partyIfsc').value,
-        gpsLocation: document.getElementById('partyGpsLocation').value,
-        enteredBy: App.currentUser.id
+
+      const fileInput = document.getElementById('partyDocFile');
+
+      const proceedSave = function(base64, filename, mimeType) {
+        const id = document.getElementById('partyId').value || 'PT' + Date.now();
+        const payload = {
+          id: id,
+          name: document.getElementById('partyName').value,
+          type: document.getElementById('partyType').value,
+          mobile: document.getElementById('partyMobile').value,
+          email: document.getElementById('partyEmail').value,
+          address: document.getElementById('partyAddress').value,
+          gstin: document.getElementById('partyGstin').value,
+          pan: document.getElementById('partyPan').value,
+          openingBalance: parseFloat(document.getElementById('partyOpeningBalance').value || 0),
+          creditLimit: parseFloat(document.getElementById('partyCreditLimit').value || 50000),
+          paymentTerms: parseInt(document.getElementById('partyPaymentTerms').value || 30),
+          bankName: document.getElementById('partyBankName').value,
+          bankAccount: document.getElementById('partyBankAccount').value,
+          ifsc: document.getElementById('partyIfsc').value,
+          gpsLocation: document.getElementById('partyGpsLocation').value,
+          documents: document.getElementById('partyDocUrl').value || '',
+          enteredBy: App.currentUser.id
+        };
+        if (base64) {
+          payload.proofBase64 = base64;
+          payload.proofFilename = filename;
+          payload.proofMimeType = mimeType;
+        }
+        callServer('saveParty', payload, function() {
+          closeModal('partyModal');
+          showToast('Party details saved successfully', 'success');
+          syncAllData(renderParties, ['Parties', 'ActivityLog']);
+        });
       };
 
-      callServer('saveParty', payload, function() {
-        closeModal('partyModal');
-        showToast('Party details saved successfully', 'success');
-        syncAllData(renderParties, ["Parties", "ActivityLog"]);
-      });
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          proceedSave(evt.target.result, file.name, file.type);
+        };
+        reader.readAsDataURL(file);
+      } else {
+        proceedSave(null, null, null);
+      }
     }
 
     function editParty(id) {
@@ -5250,6 +5288,17 @@
       document.getElementById('partyBankAccount').value = p.bankAccount || '';
       document.getElementById('partyIfsc').value = p.ifsc || '';
       document.getElementById('partyGpsLocation').value = p.gpsLocation || '';
+      // Document fields
+      document.getElementById('partyDocUrl').value = p.documents || '';
+      document.getElementById('partyDocFile').value = '';
+      const docGroup = document.getElementById('partyCurrentDocGroup');
+      const docBtn = document.getElementById('btnViewCurrentPartyDoc');
+      if (p.documents) {
+        docBtn.href = p.documents;
+        docGroup.style.display = 'flex';
+      } else {
+        docGroup.style.display = 'none';
+      }
 
       document.getElementById('partyModalTitle').textContent = 'Edit Party Details';
       openModal('partyModal');

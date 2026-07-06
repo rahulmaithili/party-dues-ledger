@@ -456,6 +456,10 @@ function doPost(e) {
 
     // ---- PARTIES ----
     if (action === "saveParty") {
+      var uploadedUrl = handleProofUpload(payload);
+      if (uploadedUrl) {
+        payload.documents = uploadedUrl;
+      }
       upsertRowInSheet(sheet, "Parties", payload, "id");
       logActivityInternal(sheet, payload.enteredBy || "", "", "Save Party", "Parties", payload.name);
       return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
