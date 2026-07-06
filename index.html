@@ -2613,7 +2613,7 @@
         <div class="modal-body">
           <div class="form-group">
             <label id="receiptPartyLabel">Select Customer *</label>
-            <select id="receiptPartyId" class="light-form-control" required></select>
+            <select id="receiptPartyId" class="light-form-control" required onchange="populateLinkedInvoicesForSelectedParty()"></select>
           </div>
           <div class="grid-2">
             <div class="form-group">
@@ -5340,12 +5340,40 @@
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
 
-      // Populate Linked Invoice
+      // Populate Linked Invoice with fallback placeholder
       const invSelect = document.getElementById('receiptLinkedInvoice');
+      invSelect.innerHTML = '<option value="">-- Select Party First --</option>';
+    }
+
+    // ---- DYNAMIC LINKED INVOICES POPULATION ----
+    function populateLinkedInvoicesForSelectedParty(selectedVoucherNo) {
+      const partyId = document.getElementById('receiptPartyId').value;
+      const type = document.getElementById('receiptTxnType').value;
+      const isReceipt = type === 'Receipt';
+      const invSelect = document.getElementById('receiptLinkedInvoice');
+      
       invSelect.innerHTML = '<option value="">-- Choose Invoice --</option>';
-      App.data.transactions.filter(t => t.txnType === (isReceipt ? 'Sale' : 'Purchase')).forEach(t => {
-        invSelect.innerHTML += `<option value="${t.voucherNo}">${t.voucherNo} (${formatCurrency(t.totals && t.totals.balanceDue || 0)} due)</option>`;
+      
+      if (!partyId) {
+        invSelect.innerHTML = '<option value="">-- Select Party First --</option>';
+        return;
+      }
+      
+      // Filter transactions for this specific party and type
+      const targetTxnType = isReceipt ? 'Sale' : 'Purchase';
+      const partyInvoices = App.data.transactions.filter(t => t.partyId === partyId && t.txnType === targetTxnType);
+      
+      partyInvoices.forEach(t => {
+        const due = t.totals && t.totals.balanceDue ? parseFloat(t.totals.balanceDue) : 0;
+        // Show only invoices with outstanding dues, or if it is the currently linked invoice being edited
+        if (due > 0 || (selectedVoucherNo && t.voucherNo === selectedVoucherNo)) {
+          invSelect.innerHTML += `<option value="${t.voucherNo}">${t.voucherNo} (${formatCurrency(due)} due)</option>`;
+        }
       });
+      
+      if (selectedVoucherNo) {
+        invSelect.value = selectedVoucherNo;
+      }
 
       // Populate Deposit Accounts select
       const accSelect = document.getElementById('receiptBankAccountId');
@@ -5475,11 +5503,13 @@
       }
 
       const pSelect = document.getElementById('receiptPartyId');
-      pSelect.innerHTML = `<option value="${t.partyId}">${t.partyName}</option>`;
+      pSelect.innerHTML = '<option value="">-- Choose Party --</option>';
+      App.data.parties.filter(x => t.txnType === 'Receipt' ? x.type === 'Customer' : x.type === 'Supplier').forEach(p => {
+        pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+      });
+      pSelect.value = t.partyId;
 
-      const invSelect = document.getElementById('receiptLinkedInvoice');
-      invSelect.innerHTML = `<option value="">-- Choose Invoice --</option>`;
-      if (t.linkedInvoice) invSelect.innerHTML += `<option value="${t.linkedInvoice}" selected>${t.linkedInvoice}</option>`;
+      populateLinkedInvoicesForSelectedParty(t.linkedInvoice);
 
       openModal('receiptModal');
     }
