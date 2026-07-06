@@ -20,6 +20,19 @@ function doGet(e) {
   try {
     if (!sheet.getSheetByName("Users")) {
       initDatabase(sheet);
+    } else {
+      // Always ensure all expected columns exist (handles schema upgrades for existing sheets)
+      var schemaHeaders = {
+        "Transactions": ["id","date","voucherNo","partyId","partyName","description","txnType","debit","credit","paymentMode","bankRef","items","totals","enteredBy","enteredOn","cylinderOut","cylinderIn","linkedInvoice","returnType","proofUrl","bankAccountId","receivedBy","receivedByRole"],
+        "Parties": ["id","name","type","mobile","email","address","gstin","pan","openingBalance","creditLimit","paymentTerms","bankAccount","bankName","ifsc","documents","securityDeposit","cylinderDeposits","gpsLocation"]
+      };
+      Object.keys(schemaHeaders).forEach(function(sName) {
+        updateSheetHeaders(sheet, sName, schemaHeaders[sName]);
+      });
+    }
+    if (action === "syncHeaders") {
+      initDatabase(sheet);
+      return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Headers synced." })).setMimeType(ContentService.MimeType.JSON);
     }
     if (action === "getAllData") {
       var requestedSheets = e.parameter.sheets ? e.parameter.sheets.split(",") : null;
