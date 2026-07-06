@@ -6845,11 +6845,37 @@
         
         const proofLink = t.proofUrl ? `<a href="${t.proofUrl}" target="_blank" style="margin-left:8px; color:var(--acc);" title="View Proof"><i class="fa-solid fa-file-image"></i></a>` : '';
         
+        // 1. Clickable Voucher Link
+        const voucherLink = `<a href="javascript:void(0)" onclick="printVoucher('${t.id}')" title="Click to View/Print Invoice" style="color:var(--pri); font-weight:700; text-decoration:underline;">${t.voucherNo || t.id}</a>${proofLink}`;
+        
+        // 2. Build detailed description with Products and Dues
+        let descHTML = `<span style="font-size:13px; font-weight:500;">${t.description || ''}</span>`;
+        
+        // Show Products Sold/Purchased
+        if (t.items && Array.isArray(t.items) && t.items.length > 0) {
+          const itemsList = t.items.map(x => `<span style="display:inline-block; background:rgba(229,193,88,0.1); border:1px solid rgba(229,193,88,0.25); border-radius:4px; padding:2px 6px; margin:2px 0; font-size:11px; font-weight:600; color:var(--acc);">${x.productName} (x${x.quantity} ${x.unit || ''})</span>`).join(' ');
+          if (t.description) {
+            descHTML += `<div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:4px;">${itemsList}</div>`;
+          } else {
+            descHTML = `<div style="display:flex; flex-wrap:wrap; gap:4px;">${itemsList}</div>`;
+          }
+        }
+        
+        // Show Invoice Dues Status
+        if (t.txnType === 'Sale' || t.txnType === 'Purchase') {
+          const dueAmt = t.totals && t.totals.balanceDue ? parseFloat(t.totals.balanceDue) : 0;
+          if (dueAmt > 0) {
+            descHTML += `<div style="margin-top:4px;"><span class="badge badge-danger" style="font-size:10px; padding:2px 6px; font-weight:600;"><i class="fa-solid fa-circle-exclamation" style="margin-right:4px;"></i>₹${dueAmt.toFixed(2)} Dues Pending</span></div>`;
+          } else {
+            descHTML += `<div style="margin-top:4px;"><span class="badge badge-success" style="font-size:10px; padding:2px 6px; font-weight:600;"><i class="fa-solid fa-circle-check" style="margin-right:4px;"></i>Fully Paid</span></div>`;
+          }
+        }
+        
         body.innerHTML += `
           <tr>
             <td>${formatDate(t.date)}</td>
-            <td><strong>${t.voucherNo || t.id}</strong>${proofLink}</td>
-            <td>${t.description}</td>
+            <td><strong>${voucherLink}</strong></td>
+            <td>${descHTML}</td>
             <td><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
             <td class="text-right text-danger">${debit > 0 ? formatCurrency(debit) : '--'}</td>
             <td class="text-right text-success">${credit > 0 ? formatCurrency(credit) : '--'}</td>
