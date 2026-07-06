@@ -1224,7 +1224,13 @@
               <h2>Parties & Ledger Directory</h2>
               <p>Manage customers, suppliers, and view detailed balance logs</p>
             </div>
-            <button class="btn btn-accent" onclick="openPartyModal()"><i class="fa-solid fa-user-plus"></i> Add New Party</button>
+            <div class="flex-gap">
+              <label for="partyCsvInput" class="btn btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-file-import"></i> Import CSV / Excel
+              </label>
+              <input type="file" id="partyCsvInput" accept=".csv" style="display:none;" onchange="importPartyCSV(event)">
+              <button class="btn btn-accent" onclick="openPartyModal()"><i class="fa-solid fa-user-plus"></i> Add New Party</button>
+            </div>
           </div>
 
           <div class="dashboard-card" style="margin-bottom: 20px;">
@@ -4106,6 +4112,148 @@
           `;
         }
       });
+    }
+
+    function importPartyCSV(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const text = evt.target.result;
+        const rows = parseCSVText(text);
+        if (rows.length <= 1) {
+          showToast('No data rows found in CSV file', 'error');
+          return;
+        }
+        
+        const headers = rows[0].map(h => h.trim().toLowerCase());
+        const dataRows = rows.slice(1).filter(r => r.length > 0 && r[0]);
+        
+        const nameIdx = headers.findIndex(h => h.includes('name'));
+        const typeIdx = headers.findIndex(h => h.includes('type'));
+        const mobileIdx = headers.findIndex(h => h.includes('mobile') || h.includes('phone') || h.includes('mobile number'));
+        const emailIdx = headers.findIndex(h => h.includes('email'));
+        const addressIdx = headers.findIndex(h => h.includes('address'));
+        const gstinIdx = headers.findIndex(h => h.includes('gstin') || h.includes('gst'));
+        const panIdx = headers.findIndex(h => h.includes('pan'));
+        const opBalIdx = headers.findIndex(h => h.includes('opening') || h.includes('balance') || h.includes('op bal'));
+        const limitIdx = headers.findIndex(h => h.includes('limit') || h.includes('credit limit'));
+        const termsIdx = headers.findIndex(h => h.includes('terms') || h.includes('payment terms'));
+        const bankIdx = headers.findIndex(h => h.includes('bank name') || h.includes('bank'));
+        const accountIdx = headers.findIndex(h => h.includes('account') || h.includes('account number') || h.includes('ac'));
+        const ifscIdx = headers.findIndex(h => h.includes('ifsc'));
+        const gpsIdx = headers.findIndex(h => h.includes('gps') || h.includes('location') || h.includes('coordinates'));
+
+        if (nameIdx === -1) {
+          showToast('Required column "Name" not found in CSV file', 'error');
+          return;
+        }
+
+        let successCount = 0;
+        let currentIndex = 0;
+
+        showLoading(true, `Importing 0 of ${dataRows.length} parties...`);
+
+        function uploadNext() {
+          if (currentIndex >= dataRows.length) {
+            showLoading(false);
+            showToast(`Successfully imported ${successCount} parties!`, 'success');
+            syncAllData(renderParties, ["Parties", "ActivityLog"]);
+            e.target.value = '';
+            return;
+          }
+
+          const row = dataRows[currentIndex];
+          const name = row[nameIdx];
+          const type = typeIdx !== -1 && row[typeIdx] ? row[typeIdx].trim() : 'Customer';
+          const mobile = mobileIdx !== -1 ? row[mobileIdx] : '';
+          const email = emailIdx !== -1 ? row[emailIdx] : '';
+          const address = addressIdx !== -1 ? row[addressIdx] : '';
+          const gstin = gstinIdx !== -1 ? row[gstinIdx] : '';
+          const pan = panIdx !== -1 ? row[panIdx] : '';
+          const openingBalance = opBalIdx !== -1 ? parseFloat(row[opBalIdx] || 0) : 0;
+          const creditLimit = limitIdx !== -1 ? parseFloat(row[limitIdx] || 50000) : 50000;
+          const paymentTerms = termsIdx !== -1 ? parseInt(row[termsIdx] || 30) : 30;
+          const bankName = bankIdx !== -1 ? row[bankIdx] : '';
+          const bankAccount = accountIdx !== -1 ? row[accountIdx] : '';
+          const ifsc = ifscIdx !== -1 ? row[ifscIdx] : '';
+          const gpsLocation = gpsIdx !== -1 ? row[gpsIdx] : '';
+
+          const payload = {
+            id: 'PT' + (Date.now() + currentIndex),
+            name: name,
+            type: type,
+            mobile: mobile,
+            email: email,
+            address: address,
+            gstin: gstin,
+            pan: pan,
+            openingBalance: openingBalance,
+            creditLimit: creditLimit,
+            paymentTerms: paymentTerms,
+            bankName: bankName,
+            bankAccount: bankAccount,
+            ifsc: ifsc,
+            gpsLocation: gpsLocation,
+            enteredBy: App.currentUser.id
+          };
+
+          showLoading(true, `Importing ${currentIndex + 1} of ${dataRows.length} parties...`);
+          
+          callServer('saveParty', payload, function(res) {
+            successCount++;
+            currentIndex++;
+            uploadNext();
+          }, function() {
+            currentIndex++;
+            uploadNext();
+          });
+        }
+
+        uploadNext();
+      };
+      reader.readAsText(file);
+    }
+
+    function parseCSVText(text) {
+      let lines = [];
+      let row = [""];
+      let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        let char = text[i];
+        let nextChar = text[i+1];
+        if (char === '"') {
+          if (inQuotes && nextChar === '"') {
+            row[row.length - 1] += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === ',') {
+          if (inQuotes) {
+            row[row.length - 1] += char;
+          } else {
+            row.push("");
+          }
+        } else if (char === '\r' || char === '\n') {
+          if (inQuotes) {
+            row[row.length - 1] += char;
+          } else {
+            if (char === '\r' && nextChar === '\n') {
+              i++;
+            }
+            lines.push(row);
+            row = [""];
+          }
+        } else {
+          row[row.length - 1] += char;
+        }
+      }
+      if (row.length > 1 || row[0] !== "") {
+        lines.push(row);
+      }
+      return lines;
     }
 
     function openPartyModal() {
