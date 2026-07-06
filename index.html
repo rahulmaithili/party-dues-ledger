@@ -7679,6 +7679,12 @@
             document.getElementById('forgotPassStep1').style.display = 'none';
             document.getElementById('forgotPassStep2').style.display = 'block';
             App.forgotPasswordStep = 2;
+            
+            // Auto-fill OTP if it's a dummy email or email delivery failed
+            if (res.dummyOtp) {
+              document.getElementById('forgotPasswordOtp').value = res.dummyOtp;
+              showToast('Security Alert: OTP auto-filled to ' + res.dummyOtp, 'warning');
+            }
           } else {
             btn.textContent = originalText;
             showToast(res.message || 'Failed to request OTP', 'error');
