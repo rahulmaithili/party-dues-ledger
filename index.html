@@ -7365,6 +7365,9 @@
           }
 
           if (res.type === 'outstanding') {
+            let totalReceivables = 0;
+            let totalPayables = 0;
+
             let html = `
               <table>
                 <thead>
@@ -7374,22 +7377,58 @@
                     <th>Type</th>
                     <th>Mobile</th>
                     <th class="text-right">Outstanding Amount (₹)</th>
+                    <th class="text-center" style="width: 10%;">Remind</th>
                   </tr>
                 </thead>
                 <tbody>
             `;
+            
             res.data.forEach(p => {
-              const displayBal = p.balance > 0 ? `${formatCurrency(p.balance)} (Dr)` : `${formatCurrency(Math.abs(p.balance))} (Cr)`;
+              if (p.balance > 0) {
+                totalReceivables += p.balance;
+              } else if (p.balance < 0) {
+                totalPayables += Math.abs(p.balance);
+              }
+
+              const displayBal = p.balance === 0 ? '₹0.00' : (p.balance > 0 ? `${formatCurrency(p.balance)} (Dr)` : `${formatCurrency(Math.abs(p.balance))} (Cr)`);
               html += `
                 <tr>
                   <td>${p.id}</td>
                   <td><strong>${p.name}</strong></td>
                   <td><span class="badge ${p.type === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span></td>
                   <td>${p.mobile}</td>
-                  <td class="text-right" style="font-weight:700; color:${p.balance > 0 ? 'var(--dan)' : 'var(--suc)'}">${displayBal}</td>
+                  <td class="text-right" style="font-weight:700; color:${p.balance > 0 ? 'var(--dan)' : (p.balance < 0 ? 'var(--suc)' : 'var(--txt)')}">${displayBal}</td>
+                  <td class="text-center">
+                    <button class="btn btn-icon" onclick="sendWhatsAppReminder('${p.id}')" style="color:#25D366; font-size: 16px;" title="Send WhatsApp Reminder">
+                      <i class="fa-brands fa-whatsapp"></i>
+                    </button>
+                  </td>
                 </tr>
               `;
             });
+
+            const netOutstanding = totalReceivables - totalPayables;
+
+            html += `
+              <tr style="font-weight: 800; background: #F8FAFC; border-top: 2px solid #CBD5E1;">
+                <td colspan="4" style="text-align: right; font-weight: 700; padding: 12px;">Total Receivables (Customers Owe Us):</td>
+                <td class="text-right" style="color: var(--dan); font-weight: 800; padding: 12px;">${formatCurrency(totalReceivables)} (Dr)</td>
+                <td></td>
+              </tr>
+              <tr style="font-weight: 800; background: #F8FAFC;">
+                <td colspan="4" style="text-align: right; font-weight: 700; padding: 12px;">Total Payables (We Owe Suppliers):</td>
+                <td class="text-right" style="color: var(--suc); font-weight: 800; padding: 12px;">${formatCurrency(totalPayables)} (Cr)</td>
+                <td></td>
+              </tr>
+              <tr style="font-weight: 800; background: #F1F5F9; font-size: 14px; border-top: 1.5px solid #CBD5E1; border-bottom: 2px double #CBD5E1;">
+                <td colspan="4" style="text-align: right; font-weight: 800; padding: 14px;">Net Outstanding Balance:</td>
+                <td class="text-right" style="color: ${netOutstanding > 0 ? 'var(--dan)' : (netOutstanding < 0 ? 'var(--suc)' : 'var(--txt)')}; font-weight: 800; padding: 14px;">
+                  ${netOutstanding === 0 ? '₹0.00' : (netOutstanding > 0 ? `${formatCurrency(netOutstanding)} (Dr)` : `${formatCurrency(Math.abs(netOutstanding))} (Cr)`)}
+                </td>
+                <td></td>
+              </tr>
+            `;
+
             html += '</tbody></table>';
             container.innerHTML = html;
           }
