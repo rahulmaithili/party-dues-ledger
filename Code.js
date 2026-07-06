@@ -720,6 +720,8 @@ function doPost(e) {
       if (avatarCol !== -1 && avatarUrl) usersSheet.getRange(uRowIdx, avatarCol + 1).setValue(avatarUrl);
       if (payload.newPassword && passCol !== -1) usersSheet.getRange(uRowIdx, passCol + 1).setValue(simpleHash(payload.newPassword));
       
+      clearSpecificCaches(["Users"]);
+      
       // Read updated user record to return to client
       var updatedUser = readSheetData(sheet, "Users").filter(function(u) { return u.id === userId; })[0];
       if (updatedUser) delete updatedUser.passwordHash;
@@ -1750,7 +1752,11 @@ function handleProofUpload(payload) {
       var fileData = Utilities.base64Decode(base64Data);
       var blob = Utilities.newBlob(fileData, payload.proofMimeType, payload.proofFilename);
       var file = folder.createFile(blob);
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      try {
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+      } catch (shareErr) {
+        // Domain level restricted sharing bypass
+      }
       
       // Clean up base64 payload properties so they are not written to sheet
       delete payload.proofBase64;
@@ -1759,7 +1765,11 @@ function handleProofUpload(payload) {
       
       return file.getUrl();
     } catch (err) {
-      // Return empty if error occurs during upload
+      // Log the exact error to activity log for debug
+      try {
+        var ss = SpreadsheetApp.getActiveSpreadsheet();
+        logActivityInternal(ss, "System", "Upload Error", "File Upload", "Drive", err.toString());
+      } catch(logErr) {}
       return "";
     }
   }
