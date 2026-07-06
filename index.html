@@ -866,6 +866,56 @@
       100% { background-position: -200% 0; }
     }
 
+    /* Custom Searchable Combobox Dropdown */
+    .combobox-wrapper {
+      position: relative;
+      width: 100%;
+    }
+    .combobox-input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .combobox-input-wrapper i {
+      position: absolute;
+      right: 12px;
+      color: var(--txt2);
+      pointer-events: none;
+      font-size: 11px;
+    }
+    .combobox-dropdown {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      background: var(--card);
+      border: 1px solid var(--brd);
+      border-radius: 10px;
+      max-height: 220px;
+      overflow-y: auto;
+      z-index: 99999;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+      display: none;
+    }
+    .combobox-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--txt);
+      font-weight: 600;
+      transition: background 0.15s, color 0.15s;
+    }
+    .combobox-item:hover, .combobox-item.active {
+      background: var(--bg2);
+      color: var(--pri);
+    }
+    .combobox-item.no-results {
+      color: var(--txt2);
+      cursor: default;
+      font-style: italic;
+      font-weight: 500;
+    }
+
     .sidebar-overlay {
       display: none;
       position: fixed;
@@ -3428,6 +3478,178 @@
         });
     }
 
+    // ---- SEARCHABLE COMBOBOX COMPONENT ----
+    function initSearchableDropdown(selectId, onChangeCallback) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+
+      // Check if combobox is already initialized
+      let wrapper = select.nextElementSibling;
+      if (wrapper && wrapper.classList.contains('combobox-wrapper')) {
+        refreshSearchableDropdown(selectId);
+        return;
+      }
+
+      // Hide original select
+      select.style.display = 'none';
+
+      // Create wrapper container
+      wrapper = document.createElement('div');
+      wrapper.className = 'combobox-wrapper';
+      
+      // Create input field
+      const inputWrapper = document.createElement('div');
+      inputWrapper.className = 'combobox-input-wrapper';
+      
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'light-form-control combobox-input';
+      input.placeholder = '-- Choose Party (Search) --';
+      input.autocomplete = 'off';
+      
+      const arrowIcon = document.createElement('i');
+      arrowIcon.className = 'fa-solid fa-chevron-down';
+      
+      inputWrapper.appendChild(input);
+      inputWrapper.appendChild(arrowIcon);
+      wrapper.appendChild(inputWrapper);
+
+      // Create dropdown container
+      const dropdown = document.createElement('div');
+      dropdown.className = 'combobox-dropdown';
+      wrapper.appendChild(dropdown);
+
+      // Insert wrapper after the select element
+      select.parentNode.insertBefore(wrapper, select.nextSibling);
+
+      let activeIndex = -1;
+
+      // Function to render matching options
+      function renderOptions(filterText = '') {
+        dropdown.innerHTML = '';
+        const options = Array.from(select.options);
+        
+        // Filter matching options (skipping the empty placeholder option)
+        const matches = options.filter(opt => {
+          if (!opt.value) return false;
+          return opt.text.toLowerCase().includes(filterText.toLowerCase());
+        });
+
+        if (matches.length === 0) {
+          const noRes = document.createElement('div');
+          noRes.className = 'combobox-item no-results';
+          noRes.textContent = 'No matching parties found';
+          dropdown.appendChild(noRes);
+          return;
+        }
+
+        matches.forEach((opt, idx) => {
+          const item = document.createElement('div');
+          item.className = 'combobox-item';
+          if (idx === activeIndex) item.classList.add('active');
+          item.textContent = opt.text;
+          item.dataset.value = opt.value;
+          
+          item.onclick = () => {
+            select.value = opt.value;
+            input.value = opt.text;
+            dropdown.style.display = 'none';
+            
+            // Trigger change event on original select
+            select.dispatchEvent(new Event('change'));
+            if (onChangeCallback) onChangeCallback(opt.value);
+          };
+          dropdown.appendChild(item);
+        });
+      }
+
+      // Update input display based on currently selected option in original select
+      function syncInputDisplay() {
+        const selectedOpt = select.options[select.selectedIndex];
+        if (selectedOpt && selectedOpt.value) {
+          input.value = selectedOpt.text;
+        } else {
+          input.value = '';
+        }
+      }
+      syncInputDisplay();
+
+      // Toggle dropdown display
+      input.onfocus = () => {
+        renderOptions('');
+        dropdown.style.display = 'block';
+        activeIndex = -1;
+      };
+
+      input.oninput = () => {
+        dropdown.style.display = 'block';
+        activeIndex = -1;
+        renderOptions(input.value);
+      };
+
+      // Close dropdown on click outside
+      document.addEventListener('click', (e) => {
+        if (!wrapper.contains(e.target)) {
+          dropdown.style.display = 'none';
+          syncInputDisplay();
+        }
+      });
+
+      // Key navigation
+      input.onkeydown = (e) => {
+        const items = dropdown.querySelectorAll('.combobox-item:not(.no-results)');
+        if (dropdown.style.display === 'none') {
+          if (e.key === 'ArrowDown' || e.key === 'Enter') {
+            dropdown.style.display = 'block';
+            renderOptions(input.value);
+            e.preventDefault();
+          }
+          return;
+        }
+
+        if (e.key === 'ArrowDown') {
+          activeIndex = (activeIndex + 1) % items.length;
+          renderOptions(input.value);
+          const activeItem = items[activeIndex];
+          if (activeItem) activeItem.scrollIntoView({ block: 'nearest' });
+          e.preventDefault();
+        } else if (e.key === 'ArrowUp') {
+          activeIndex = (activeIndex - 1 + items.length) % items.length;
+          renderOptions(input.value);
+          const activeItem = items[activeIndex];
+          if (activeItem) activeItem.scrollIntoView({ block: 'nearest' });
+          e.preventDefault();
+        } else if (e.key === 'Enter') {
+          const activeItem = items[activeIndex];
+          if (activeItem) {
+            activeItem.click();
+          } else if (items.length > 0) {
+            items[0].click();
+          }
+          e.preventDefault();
+        } else if (e.key === 'Escape') {
+          dropdown.style.display = 'none';
+          syncInputDisplay();
+          e.preventDefault();
+        }
+      };
+    }
+
+    function refreshSearchableDropdown(selectId) {
+      const select = document.getElementById(selectId);
+      if (!select) return;
+      const wrapper = select.nextElementSibling;
+      if (wrapper && wrapper.classList.contains('combobox-wrapper')) {
+        const input = wrapper.querySelector('.combobox-input');
+        const selectedOpt = select.options[select.selectedIndex];
+        if (selectedOpt && selectedOpt.value) {
+          input.value = selectedOpt.text;
+        } else {
+          input.value = '';
+        }
+      }
+    }
+
     function disconnectBackend() {
       if (confirm('Disconnect this database? You will be returned to the Setup screen.')) {
         SafeStorage.removeItem('googleScriptUrl');
@@ -3796,9 +4018,11 @@
         
         const pSelect = document.getElementById('reportPartySelect');
         pSelect.innerHTML = '<option value="">-- Choose Party --</option>';
-        App.data.parties.forEach(p => {
+        const sortedParties = [...App.data.parties].sort((a, b) => a.name.localeCompare(b.name));
+        sortedParties.forEach(p => {
           pSelect.innerHTML += `<option value="${p.id}">${p.name} (${p.type})</option>`;
         });
+        initSearchableDropdown('reportPartySelect');
       }
       if (pageId === 'users') renderUsers();
       if (pageId === 'settings') loadSettings();
@@ -4083,9 +4307,13 @@
         const select = document.getElementById(id);
         if (!select) return;
         select.innerHTML = '<option value="">-- Choose Party --</option>';
-        App.data.parties.forEach(p => {
+        const sortedParties = [...App.data.parties].sort((a, b) => a.name.localeCompare(b.name));
+        sortedParties.forEach(p => {
           select.innerHTML += `<option value="${p.id}">${p.name} (${p.type})</option>`;
         });
+        
+        // Convert to searchable combobox
+        initSearchableDropdown(id);
       });
     }
 
@@ -4327,7 +4555,10 @@
 
     // ==================== PARTIES CRUD ====================
 
-    function renderParties() {
+    function renderParties(isLoadMore) {
+      if (!isLoadMore) {
+        App.partiesRenderLimit = 50;
+      }
       const search = document.getElementById('partySearch').value.toLowerCase();
       const filter = document.getElementById('partyFilterType').value;
       
@@ -4370,7 +4601,11 @@
         return;
       }
 
-      list.forEach(p => {
+      // Slice the list for high-performance lazy loading
+      const limit = App.partiesRenderLimit || 50;
+      const slicedList = list.slice(0, limit);
+
+      slicedList.forEach(p => {
         const balance = partyBalance[p.id] || 0;
         const color = balance > 0 ? 'var(--dan)' : (balance < 0 ? 'var(--suc)' : 'var(--txt)');
         const displayBal = balance === 0 ? '₹0.00' : (balance > 0 ? `${formatCurrency(balance)} (Dr)` : `${formatCurrency(Math.abs(balance))} (Cr)`);
@@ -4424,6 +4659,39 @@
           `;
         }
       });
+
+      // Render "Show More" if matches exceed current display limit
+      if (list.length > slicedList.length) {
+        const remaining = list.length - slicedList.length;
+        if (viewMode === 'list') {
+          body.innerHTML += `
+            <tr>
+              <td colspan="7" class="text-center" style="padding: 15px 0;">
+                <button class="btn btn-secondary btn-sm" onclick="loadMoreParties()" style="font-weight: 600; padding: 6px 16px;">
+                  <i class="fa-solid fa-arrow-down-long" style="margin-right: 6px;"></i> Show More Parties (${remaining} remaining)
+                </button>
+              </td>
+            </tr>
+          `;
+        } else {
+          const loadMoreCard = document.createElement('div');
+          loadMoreCard.style.gridColumn = '1/-1';
+          loadMoreCard.style.display = 'flex';
+          loadMoreCard.style.justifyContent = 'center';
+          loadMoreCard.style.padding = '20px 0';
+          loadMoreCard.innerHTML = `
+            <button class="btn btn-secondary btn-sm" onclick="loadMoreParties()" style="font-weight: 600; padding: 8px 20px;">
+              <i class="fa-solid fa-arrow-down-long" style="margin-right: 6px;"></i> Show More Parties (${remaining} remaining)
+            </button>
+          `;
+          gridContainer.appendChild(loadMoreCard);
+        }
+      }
+    }
+
+    function loadMoreParties() {
+      App.partiesRenderLimit = (App.partiesRenderLimit || 50) + 50;
+      renderParties(true);
     }
 
     // ---- IMPORT DROPDOWN TOGGLE ----
@@ -5056,6 +5324,7 @@
       App.data.parties.filter(x => isSale ? x.type === 'Customer' : x.type === 'Supplier').forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
+      initSearchableDropdown('invoicePartyId');
 
       activeInvoiceItems = [];
       document.getElementById('invoiceItemsBody').innerHTML = '';
@@ -5257,6 +5526,7 @@
       App.data.parties.forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}" ${p.id === t.partyId ? 'selected' : ''}>${p.name}</option>`;
       });
+      initSearchableDropdown('invoicePartyId');
 
       document.getElementById('invoiceDescription').value = t.description || '';
       document.getElementById('invDiscount').value = t.totals && t.totals.discount || 0;
@@ -5388,6 +5658,7 @@
       App.data.parties.filter(x => isReceipt ? x.type === 'Customer' : x.type === 'Supplier').forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
+      initSearchableDropdown('receiptPartyId');
 
       // Populate Linked Invoice with fallback placeholder
       const invSelect = document.getElementById('receiptLinkedInvoice');
@@ -5557,6 +5828,7 @@
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
       pSelect.value = t.partyId;
+      initSearchableDropdown('receiptPartyId');
 
       populateLinkedInvoicesForSelectedParty(t.linkedInvoice);
 
@@ -5757,6 +6029,7 @@
       App.data.parties.filter(x => isPO ? x.type === 'Supplier' : x.type === 'Customer').forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
+      initSearchableDropdown('docPartyId');
 
       activeDocItems = [];
       document.getElementById('docItemsBody').innerHTML = '';
@@ -5907,8 +6180,14 @@
       document.getElementById('docDate').value = doc.date;
       document.getElementById('docVoucherNo').value = doc.voucherNo;
       
+      const isPO = type === 'PurchaseOrder';
       const pSelect = document.getElementById('docPartyId');
-      pSelect.innerHTML = `<option value="${doc.partyId}">${doc.partyName}</option>`;
+      pSelect.innerHTML = '<option value="">-- Choose Party --</option>';
+      App.data.parties.filter(x => isPO ? x.type === 'Supplier' : x.type === 'Customer').forEach(p => {
+        pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+      });
+      pSelect.value = doc.partyId;
+      initSearchableDropdown('docPartyId');
 
       document.getElementById('docStatus').value = doc.status;
       document.getElementById('docExtraDate').value = doc.validTill || doc.expectedDelivery || '';
@@ -6101,6 +6380,7 @@
       App.data.parties.filter(x => x.type === filterType).forEach(p => {
         select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
+      initSearchableDropdown('returnPartyId');
     }
 
     function openReturnModal() {
@@ -7109,88 +7389,139 @@
       w.document.close();
     }
 
+    // ---- INDIAN NUMBER TO WORDS CONVERTER ----
+    function numberToWords(amount) {
+      const words = {
+        0: 'Zero', 1: 'One', 2: 'Two', 3: 'Three', 4: 'Four', 5: 'Five',
+        6: 'Six', 7: 'Seven', 8: 'Eight', 9: 'Nine', 10: 'Ten',
+        11: 'Eleven', 12: 'Twelve', 13: 'Thirteen', 14: 'Fourteen', 15: 'Fifteen',
+        16: 'Sixteen', 17: 'Seventeen', 18: 'Eighteen', 19: 'Nineteen', 20: 'Twenty',
+        30: 'Thirty', 40: 'Forty', 50: 'Fifty', 60: 'Sixty', 70: 'Seventy',
+        80: 'Eighty', 90: 'Ninety'
+      };
+      
+      let num = Math.floor(amount);
+      if (num === 0) return 'Rupees Zero Only';
+      
+      function convertLessThanOneThousand(n) {
+        if (n === 0) return '';
+        let temp = '';
+        if (n >= 100) {
+          temp += words[Math.floor(n / 100)] + ' Hundred ';
+          n %= 100;
+        }
+        if (n > 0) {
+          if (n <= 20) {
+            temp += words[n] + ' ';
+          } else {
+            temp += words[Math.floor(n / 10) * 10] + ' ' + (words[n % 10] || '') + ' ';
+          }
+        }
+        return temp;
+      }
+
+      let res = '';
+      if (num >= 10000000) {
+        res += convertLessThanOneThousand(Math.floor(num / 10000000)) + 'Crore ';
+        num %= 10000000;
+      }
+      if (num >= 100000) {
+        res += convertLessThanOneThousand(Math.floor(num / 100000)) + 'Lakh ';
+        num %= 100000;
+      }
+      if (num >= 1000) {
+        res += convertLessThanOneThousand(Math.floor(num / 1000)) + 'Thousand ';
+        num %= 1000;
+      }
+      if (num > 0) {
+        res += convertLessThanOneThousand(num);
+      }
+      return 'Rupees ' + res.trim() + ' Only';
+    }
+
     function printVoucher(txnId) {
       const t = App.data.transactions.find(x => x.id === txnId);
       if (!t) return;
 
-      const sub = t.totals && t.totals.subTotal ? parseFloat(t.totals.subTotal) : parseFloat(t.debit);
-      const cgst = t.totals && t.totals.cgst ? parseFloat(t.totals.cgst) : 0;
-      const sgst = t.totals && t.totals.sgst ? parseFloat(t.totals.sgst) : 0;
-      const grand = t.totals && t.totals.grandTotal ? parseFloat(t.totals.grandTotal) : parseFloat(t.debit);
-      const paid = (t.totals && t.totals.paidCash || 0) + (t.totals && t.totals.paidBank || 0);
-      const due = t.totals && t.totals.balanceDue || 0;
+      const p = App.data.parties.find(x => x.id === t.partyId) || {};
+      const company = App.data.companyProfile || {};
 
-      let itemsRows = '';
-      (t.items || []).forEach(x => {
-        itemsRows += `
-          <tr>
-            <td>${x.productName}</td>
-            <td class="text-center">${x.hsn || '--'}</td>
-            <td class="text-right">${x.quantity} ${x.unit}</td>
-            <td class="text-right">${formatCurrency(x.rate)}</td>
-            <td class="text-right">${x.gst}%</td>
-            <td class="text-right">${formatCurrency(x.amount)}</td>
-          </tr>
-        `;
-      });
+      const isInvoice = ['Sale', 'Purchase'].includes(t.txnType);
+      const isReceipt = ['Receipt', 'Payment'].includes(t.txnType);
 
       const w = window.open();
-      w.document.write(`
-        <html>
-          <head>
-            <title>${t.txnType} - ${t.voucherNo}</title>
-            <style>
-              body { font-family: 'Inter', sans-serif; color: #1E293B; padding: 40px; }
-              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-              th, td { padding: 10px; border: 1px solid #CBD5E1; text-align: left; font-size: 13px; }
-              th { background: #F8FAFC; }
-              .text-right { text-align: right; }
-              .text-center { text-align: center; }
-              .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; }
-              .bill-details { text-align: right; }
-              h1 { color: #0B111E; font-size: 26px; font-weight: 800; margin: 0; }
-              .totals-table { width: 300px; margin-left: auto; margin-top: 20px; }
-              .totals-table td { border: none; padding: 6px; }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <div style="display: flex; gap: 20px; align-items: center;">
-                ${App.data.companyProfile.companyLogo ? `<img src="${App.data.companyProfile.companyLogo}" style="max-height: 80px; max-width: 150px; object-fit: contain;">` : ''}
+      let content = '';
+
+      if (isInvoice) {
+        const sub = t.totals && t.totals.subTotal ? parseFloat(t.totals.subTotal) : parseFloat(t.debit);
+        const cgst = t.totals && t.totals.cgst ? parseFloat(t.totals.cgst) : 0;
+        const sgst = t.totals && t.totals.sgst ? parseFloat(t.totals.sgst) : 0;
+        const grand = t.totals && t.totals.grandTotal ? parseFloat(t.totals.grandTotal) : parseFloat(t.debit);
+        const paid = (t.totals && t.totals.paidCash || 0) + (t.totals && t.totals.paidBank || 0);
+        const due = t.totals && t.totals.balanceDue || 0;
+        const discount = t.totals && t.totals.discount || 0;
+
+        let itemsRows = '';
+        (t.items || []).forEach((x, idx) => {
+          itemsRows += `
+            <tr>
+              <td class="text-center">${idx + 1}</td>
+              <td><strong>${x.productName}</strong></td>
+              <td class="text-center">${x.hsn || '--'}</td>
+              <td class="text-right">${x.quantity} ${x.unit || 'Nos'}</td>
+              <td class="text-right">${formatCurrency(x.rate)}</td>
+              <td class="text-right">${x.gst}%</td>
+              <td class="text-right" style="font-weight: 600;">${formatCurrency(x.amount)}</td>
+            </tr>
+          `;
+        });
+
+        content = `
+          <div class="invoice-container">
+            <div class="inv-header">
+              <div class="company-section">
+                ${company.companyLogo ? `<img src="${company.companyLogo}" class="company-logo">` : ''}
                 <div>
-                  <h1>${App.data.companyProfile.companyName || 'Mr.Rahul ERP'}</h1>
-                  <p>${App.data.companyProfile.companyAddress || ''}</p>
-                  <p><strong>GSTIN:</strong> ${App.data.companyProfile.companyGstin || ''}</p>
-                  <p><strong>Mobile:</strong> ${App.data.companyProfile.companyPhone || ''}</p>
+                  <h1 class="company-name">${company.companyName || 'Mr.Rahul ERP'}</h1>
+                  <p class="company-meta">${company.companyAddress || ''}</p>
+                  <p class="company-meta"><strong>GSTIN:</strong> ${company.companyGstin || ''} | <strong>Mobile:</strong> ${company.companyPhone || ''}</p>
                 </div>
               </div>
-              <div class="bill-details">
-                <h2 style="color:var(--pri);">${t.txnType === 'Sale' ? 'TAX INVOICE' : 'PURCHASE BILL'}</h2>
-                <p><strong>Voucher No:</strong> ${t.voucherNo}</p>
-                <p><strong>Date:</strong> ${formatDate(t.date)}</p>
+              <div class="title-section text-right">
+                <span class="inv-badge">${t.txnType === 'Sale' ? 'TAX INVOICE' : 'PURCHASE BILL'}</span>
+                <p style="margin-top: 8px; font-size: 13px;"><strong>Voucher No:</strong> ${t.voucherNo}</p>
+                <p style="font-size: 13px;"><strong>Date:</strong> ${formatDate(t.date)}</p>
               </div>
             </div>
 
-            <hr style="border:none; border-top:1px solid #E2E8F0; margin: 20px 0;">
+            <div class="divider"></div>
 
-            <div class="header">
-              <div>
-                <p style="text-transform: uppercase; font-size:11px; font-weight:700; color:#64748B;">Billed To:</p>
-                <h3 style="margin-top: 4px;">${t.partyName}</h3>
-                <p>${(App.data.parties.find(x => x.id === t.partyId) || {}).address || ''}</p>
-                <p><strong>GSTIN:</strong> ${(App.data.parties.find(x => x.id === t.partyId) || {}).gstin || '--'}</p>
+            <div class="billing-grid">
+              <div class="billing-col">
+                <span class="col-title">${t.txnType === 'Sale' ? 'Billed To:' : 'Billed From:'}</span>
+                <h3 class="party-name">${t.partyName}</h3>
+                <p class="party-meta">${p.address || ''}</p>
+                <p class="party-meta"><strong>GSTIN:</strong> ${p.gstin || '--'}</p>
+                <p class="party-meta"><strong>Mobile:</strong> ${p.mobile || '--'}</p>
+              </div>
+              <div class="billing-col text-right">
+                <span class="col-title">Voucher Details:</span>
+                <p class="party-meta"><strong>Payment Mode:</strong> ${t.paymentMode || 'Cash/Bank'}</p>
+                <p class="party-meta"><strong>Reference / UTR:</strong> ${t.bankRef || '--'}</p>
+                <p class="party-meta"><strong>Remarks:</strong> ${t.description || '--'}</p>
               </div>
             </div>
 
-            <table>
+            <table class="items-table">
               <thead>
                 <tr>
-                  <th>Item Name</th>
-                  <th class="text-center">HSN</th>
-                  <th class="text-right">Qty</th>
-                  <th class="text-right">Rate</th>
-                  <th class="text-right">GST</th>
-                  <th class="text-right">Total</th>
+                  <th class="text-center" style="width: 5%;">#</th>
+                  <th>Item Description</th>
+                  <th class="text-center" style="width: 12%;">HSN</th>
+                  <th class="text-right" style="width: 15%;">Qty</th>
+                  <th class="text-right" style="width: 15%;">Rate</th>
+                  <th class="text-right" style="width: 10%;">GST</th>
+                  <th class="text-right" style="width: 15%;">Amount</th>
                 </tr>
               </thead>
               <tbody>
@@ -7198,44 +7529,433 @@
               </tbody>
             </table>
 
-            <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-              <div style="margin-top: 40px; font-size:12px; max-width:400px;">
-                <p><strong>Terms & Conditions:</strong></p>
-                <p style="white-space:pre-line;">${App.data.companyProfile.termsAndConditions || ''}</p>
+            <div class="summary-section">
+              <div class="terms-box">
+                <h4>Terms & Conditions</h4>
+                <p>${company.termsAndConditions || '1. Goods once sold will not be taken back.\n2. Interest @18% will be charged if payment is not made within due date.'}</p>
               </div>
-              <table class="totals-table">
-                <tr>
-                  <td>Subtotal:</td>
-                  <td class="text-right">${formatCurrency(sub)}</td>
-                </tr>
-                <tr>
-                  <td>CGST Tax:</td>
-                  <td class="text-right">${formatCurrency(cgst)}</td>
-                </tr>
-                <tr>
-                  <td>SGST Tax:</td>
-                  <td class="text-right">${formatCurrency(sgst)}</td>
-                </tr>
-                <tr style="font-weight:700; font-size:15px;">
-                  <td>Grand Total:</td>
-                  <td class="text-right" style="border-top:1px solid #CBD5E1;">${formatCurrency(grand)}</td>
-                </tr>
-                <tr>
-                  <td>Paid Amount:</td>
-                  <td class="text-right" style="color:var(--suc);">${formatCurrency(paid)}</td>
-                </tr>
-                <tr style="font-weight:700; color:var(--dan);">
-                  <td>Balance Due:</td>
-                  <td class="text-right" style="border-top:1px solid #CBD5E1;">${formatCurrency(due)}</td>
-                </tr>
-              </table>
+              <div class="totals-box">
+                <table class="totals-table">
+                  <tr>
+                    <td>Subtotal:</td>
+                    <td class="text-right">${formatCurrency(sub)}</td>
+                  </tr>
+                  <tr>
+                    <td>CGST:</td>
+                    <td class="text-right">${formatCurrency(cgst)}</td>
+                  </tr>
+                  <tr>
+                    <td>SGST:</td>
+                    <td class="text-right">${formatCurrency(sgst)}</td>
+                  </tr>
+                  ${discount > 0 ? `
+                  <tr style="color: #EF4444;">
+                    <td>Discount:</td>
+                    <td class="text-right">-${formatCurrency(discount)}</td>
+                  </tr>
+                  ` : ''}
+                  <tr class="grand-total-row">
+                    <td>Grand Total:</td>
+                    <td class="text-right">${formatCurrency(grand)}</td>
+                  </tr>
+                  <tr style="color: #059669; font-weight: 600;">
+                    <td>Paid Amount:</td>
+                    <td class="text-right">${formatCurrency(paid)}</td>
+                  </tr>
+                  <tr class="due-row">
+                    <td>Balance Due:</td>
+                    <td class="text-right">${formatCurrency(due)}</td>
+                  </tr>
+                </table>
+              </div>
             </div>
 
-            <div style="margin-top:80px; display:flex; justify-content:space-between;">
-              <p style="border-top:1px solid #CBD5E1; width:150px; text-align:center; padding-top:5px; font-size:12px; font-weight:600; color:#475569;">Customer Signature</p>
-              <p style="border-top:1px solid #CBD5E1; width:200px; text-align:center; padding-top:5px; font-size:12px; font-weight:600; color:#475569;">Authorized Signatory</p>
+            <p class="amount-words"><strong>Amount in Words:</strong> ${numberToWords(grand)}</p>
+
+            <div class="signature-section">
+              <div class="sig-col">
+                <div class="sig-line"></div>
+                <p>Received By / Customer Signature</p>
+              </div>
+              <div class="sig-col text-right">
+                <p style="font-size: 11px; margin-bottom: 45px; font-weight: 600; color: #64748B;">For ${company.companyName || 'Mr.Rahul ERP'}</p>
+                <div class="sig-line" style="margin-left: auto;"></div>
+                <p>Authorized Signatory</p>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        const amount = parseFloat(t.credit || t.debit || 0);
+        
+        let prevBal = 0;
+        const sortedTxns = App.data.transactions
+          .filter(x => x.partyId === t.partyId)
+          .sort((a, b) => new Date(a.date) - new Date(b.date) || a.id.localeCompare(b.id));
+
+        let currentRunning = parseFloat(p.openingBalance || 0);
+        for (let i = 0; i < sortedTxns.length; i++) {
+          const txn = sortedTxns[i];
+          if (txn.id === t.id) {
+            prevBal = currentRunning;
+            break;
+          }
+          currentRunning += parseFloat(txn.debit || 0) - parseFloat(txn.credit || 0);
+        }
+
+        const isCustomer = p.type === 'Customer';
+        const totalDuesBefore = isCustomer ? prevBal : Math.abs(prevBal);
+        const paidAmount = amount;
+        const closingDues = totalDuesBefore - paidAmount;
+
+        content = `
+          <div class="invoice-container receipt-container">
+            <div class="inv-header">
+              <div class="company-section">
+                ${company.companyLogo ? `<img src="${company.companyLogo}" class="company-logo">` : ''}
+                <div>
+                  <h1 class="company-name">${company.companyName || 'Mr.Rahul ERP'}</h1>
+                  <p class="company-meta">${company.companyAddress || ''}</p>
+                  <p class="company-meta"><strong>GSTIN:</strong> ${company.companyGstin || ''} | <strong>Mobile:</strong> ${company.companyPhone || ''}</p>
+                </div>
+              </div>
+              <div class="title-section text-right">
+                <span class="inv-badge receipt-badge">${t.txnType === 'Receipt' ? 'RECEIPT VOUCHER' : 'PAYMENT VOUCHER'}</span>
+                <p style="margin-top: 8px; font-size: 13px;"><strong>Receipt No:</strong> ${t.voucherNo || t.id}</p>
+                <p style="font-size: 13px;"><strong>Date:</strong> ${formatDate(t.date)}</p>
+              </div>
             </div>
 
+            <div class="divider" style="background: #F59E0B; height: 3px;"></div>
+
+            <div class="receipt-body">
+              <p class="receipt-text">
+                Received with thanks from <strong class="highlight-text">${t.partyName}</strong> 
+                the sum of <strong class="highlight-text">${formatCurrency(paidAmount)}</strong> 
+                via <strong class="highlight-text">${t.paymentMode || 'Cash'}</strong> payment mode 
+                ${t.bankRef ? `(Ref/UTR: <strong>${t.bankRef}</strong>)` : ''} 
+                on account of dues adjustment.
+              </p>
+              ${t.description ? `<p class="receipt-narration"><strong>Narration / Remarks:</strong> ${t.description}</p>` : ''}
+              <p class="amount-words" style="margin-top: 15px;"><strong>Amount in Words:</strong> ${numberToWords(paidAmount)}</p>
+            </div>
+
+            <div class="dues-summary-box">
+              <h3 class="summary-title"><i class="fa-solid fa-calculator"></i> Ledger Balance Adjustment Summary</h3>
+              <div class="summary-grid">
+                <div class="summary-card">
+                  <span class="card-label">Total Outstanding Dues (Before)</span>
+                  <span class="card-val">${formatCurrency(totalDuesBefore)}</span>
+                </div>
+                <div class="summary-card paid-card">
+                  <span class="card-label">Amount Paid / Adjusted</span>
+                  <span class="card-val">${formatCurrency(paidAmount)}</span>
+                </div>
+                <div class="summary-card due-card">
+                  <span class="card-label">Closing Outstanding Dues</span>
+                  <span class="card-val ${closingDues > 0 ? 'text-danger' : ''}">${formatCurrency(Math.max(0, closingDues))}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="signature-section" style="margin-top: 80px;">
+              <div class="sig-col">
+                <div class="sig-line"></div>
+                <p>Depositor / Party Signature</p>
+              </div>
+              <div class="sig-col text-right">
+                <p style="font-size: 11px; margin-bottom: 45px; font-weight: 600; color: #64748B;">For ${company.companyName || 'Mr.Rahul ERP'}</p>
+                <div class="sig-line" style="margin-left: auto;"></div>
+                <p>Authorized Receiver Signature</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      w.document.write(`
+        <html>
+          <head>
+            <title>${t.txnType} - ${t.voucherNo || t.id}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+            <style>
+              body { 
+                font-family: 'Inter', sans-serif; 
+                color: #0F172A; 
+                background: #FFFFFF; 
+                margin: 0; 
+                padding: 30px; 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact;
+              }
+              .invoice-container {
+                max-width: 800px;
+                margin: 0 auto;
+                border: 1px solid #E2E8F0;
+                padding: 40px;
+                border-radius: 12px;
+                box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+              }
+              .inv-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 20px;
+              }
+              .company-section {
+                display: flex;
+                gap: 20px;
+                align-items: center;
+              }
+              .company-logo {
+                max-height: 70px;
+                max-width: 140px;
+                object-fit: contain;
+              }
+              .company-name {
+                font-size: 22px;
+                font-weight: 800;
+                color: #0F172A;
+                margin: 0 0 6px 0;
+                text-transform: uppercase;
+                letter-spacing: -0.5px;
+              }
+              .company-meta {
+                font-size: 12px;
+                color: #475569;
+                margin: 2px 0;
+              }
+              .inv-badge {
+                display: inline-block;
+                background: #0F172A;
+                color: #FFFFFF;
+                font-weight: 800;
+                font-size: 14px;
+                padding: 6px 16px;
+                border-radius: 6px;
+                text-transform: uppercase;
+              }
+              .receipt-badge {
+                background: #F59E0B;
+              }
+              .divider {
+                height: 4px;
+                background: #0F172A;
+                margin: 15px 0 25px 0;
+                border-radius: 2px;
+              }
+              .billing-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 40px;
+                margin-bottom: 30px;
+              }
+              .col-title {
+                display: block;
+                font-size: 10px;
+                font-weight: 800;
+                color: #64748B;
+                text-transform: uppercase;
+                margin-bottom: 8px;
+                letter-spacing: 0.5px;
+              }
+              .party-name {
+                font-size: 16px;
+                font-weight: 700;
+                color: #0F172A;
+                margin: 0 0 6px 0;
+              }
+              .party-meta {
+                font-size: 12px;
+                color: #475569;
+                margin: 3px 0;
+                line-height: 1.4;
+              }
+              .items-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 25px;
+              }
+              .items-table th {
+                background: #F8FAFC;
+                border-bottom: 2px solid #E2E8F0;
+                color: #334155;
+                font-weight: 700;
+                font-size: 11px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                padding: 12px;
+              }
+              .items-table td {
+                padding: 12px;
+                border-bottom: 1px solid #E2E8F0;
+                font-size: 12.5px;
+                color: #0F172A;
+              }
+              .summary-section {
+                display: flex;
+                justify-content: space-between;
+                gap: 40px;
+                margin-top: 10px;
+              }
+              .terms-box {
+                flex: 1;
+                max-width: 450px;
+              }
+              .terms-box h4 {
+                font-size: 11px;
+                font-weight: 700;
+                color: #475569;
+                margin: 0 0 6px 0;
+                text-transform: uppercase;
+              }
+              .terms-box p {
+                font-size: 11px;
+                color: #64748B;
+                line-height: 1.5;
+                margin: 0;
+                white-space: pre-line;
+              }
+              .totals-box {
+                width: 280px;
+              }
+              .totals-table {
+                width: 100%;
+                border-collapse: collapse;
+              }
+              .totals-table td {
+                padding: 6px 0;
+                font-size: 13px;
+                color: #475569;
+              }
+              .grand-total-row td {
+                font-weight: 700;
+                font-size: 15px;
+                color: #0F172A;
+                border-top: 1px solid #E2E8F0;
+                padding-top: 10px;
+              }
+              .due-row td {
+                font-weight: 700;
+                font-size: 14px;
+                color: #DC2626;
+                border-top: 1px dashed #E2E8F0;
+                padding-top: 8px;
+              }
+              .amount-words {
+                font-size: 11.5px;
+                color: #475569;
+                margin: 20px 0;
+                background: #F8FAFC;
+                padding: 10px 14px;
+                border-radius: 6px;
+                border: 1px dashed #E2E8F0;
+              }
+              .receipt-body {
+                padding: 10px 0;
+                margin-bottom: 25px;
+              }
+              .receipt-text {
+                font-size: 15px;
+                line-height: 1.8;
+                color: #334155;
+                margin: 0 0 15px 0;
+              }
+              .highlight-text {
+                color: #0F172A;
+                font-weight: 700;
+                border-bottom: 1px solid #CBD5E1;
+                padding-bottom: 1px;
+              }
+              .receipt-narration {
+                font-size: 12.5px;
+                color: #475569;
+                background: #F8FAFC;
+                padding: 8px 12px;
+                border-radius: 6px;
+                border-left: 3px solid #F59E0B;
+                margin: 0;
+              }
+              .dues-summary-box {
+                background: #F8FAFC;
+                border: 1px solid #E2E8F0;
+                border-radius: 10px;
+                padding: 20px;
+                margin: 20px 0 35px 0;
+              }
+              .summary-title {
+                font-size: 12px;
+                font-weight: 800;
+                color: #475569;
+                text-transform: uppercase;
+                margin: 0 0 15px 0;
+                letter-spacing: 0.5px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+              }
+              .summary-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 20px;
+              }
+              .summary-card {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+              }
+              .card-label {
+                font-size: 10.5px;
+                color: #64748B;
+                font-weight: 600;
+                text-transform: uppercase;
+              }
+              .card-val {
+                font-size: 17px;
+                font-weight: 700;
+                color: #0F172A;
+              }
+              .paid-card .card-val {
+                color: #059669;
+              }
+              .due-card .card-val {
+                color: #D97706;
+              }
+              .due-card .card-val.text-danger {
+                color: #DC2626;
+              }
+              .signature-section {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 80px;
+                margin-top: 60px;
+              }
+              .sig-col p {
+                font-size: 11px;
+                font-weight: 600;
+                color: #64748B;
+                margin: 8px 0 0 0;
+                text-transform: uppercase;
+              }
+              .sig-line {
+                width: 180px;
+                border-top: 1.5px solid #CBD5E1;
+              }
+              .text-right { text-align: right; }
+              .text-center { text-align: center; }
+              @media print {
+                body { padding: 0; }
+                .invoice-container { 
+                  border: none; 
+                  padding: 0; 
+                  box-shadow: none; 
+                }
+              }
+            </style>
+          </head>
+          <body>
+            ${content}
             <script>
               window.onload = function() {
                 setTimeout(function() {
@@ -8096,11 +8816,13 @@
       }
       
       const companyName = App.data.companyProfile.companyName || 'Mr.Rahul ERP';
+      const companyPhone = App.data.companyProfile.companyPhone || '';
       const formattedBal = formatCurrency(balance);
+      const todayStr = formatDate(new Date().toISOString().split('T')[0]);
       const cleanMobile = p.mobile.replace(/[^0-9]/g, '');
       const mobileWithCode = cleanMobile.length === 10 ? '91' + cleanMobile : cleanMobile;
       
-      const msg = `Hello ${p.name},\n\nThis is a payment reminder from *${companyName}*.\n\nYour outstanding balance is *${formattedBal}*.\n\nPlease clear the dues at your earliest convenience.\n\nThank you!`;
+      const msg = `⚠️ *OUTSTANDING DUES REMINDER* ⚠️\n\nDear *${p.name}*,\n\nThis is a friendly reminder from *${companyName}* regarding your outstanding balance.\n\n🔹 *Outstanding Dues:* *${formattedBal}*\n🔹 *Statement Date:* ${todayStr}\n\nPlease clear the dues at your earliest convenience. You can make payment via Cash, Bank Transfer, or UPI.\n\nIf you have already made the payment, please ignore this statement.\n\nThank you for your business!\n\n📞 *Contact Support:* ${companyPhone}`;
       const url = `https://wa.me/${mobileWithCode}?text=${encodeURIComponent(msg)}`;
       window.open(url, '_blank');
     }
