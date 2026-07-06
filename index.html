@@ -7151,21 +7151,123 @@
       body.innerHTML = '';
 
       App.data.users.forEach(u => {
+        let linkedPartyText = '-';
+        if (u.partyId) {
+          const p = App.data.parties.find(x => x.id === u.partyId);
+          if (p) {
+            linkedPartyText = `<span style="font-weight:600; color:var(--pri);">${p.name}</span> <small style="color:var(--txt2);">(${p.type})</small>`;
+          } else {
+            linkedPartyText = `<span style="color:var(--txt2);">${u.partyId}</span>`;
+          }
+        }
+
         body.innerHTML += `
           <tr>
             <td><strong>${u.id}</strong></td>
             <td><strong>${u.name}</strong></td>
             <td>${u.email}</td>
             <td><span class="badge ${u.role === 'Admin' ? 'badge-primary' : 'badge-warning'}">${u.role}</span></td>
+            <td>${linkedPartyText}</td>
             <td><span class="badge ${u.status === 'Active' ? 'badge-success' : (u.status === 'Pending' ? 'badge-warning' : 'badge-danger')}">${u.status}</span></td>
             <td class="text-center">
               <div class="flex-gap" style="justify-content: center;">
-                <button class="btn btn-icon" onclick="editUser('${u.id}')"><i class="fa-solid fa-user-pen"></i></button>
-                <button class="btn btn-icon" onclick="deleteUser('${u.id}')" style="color:var(--dan);"><i class="fa-solid fa-trash"></i></button>
+                <button class="btn btn-icon" onclick="editUser('${u.id}')" title="Edit User"><i class="fa-solid fa-user-pen"></i></button>
+                <button class="btn btn-icon" onclick="deleteUser('${u.id}')" style="color:var(--dan);" title="Delete User"><i class="fa-solid fa-trash"></i></button>
               </div>
             </td>
           </tr>
         `;
+      });
+    }
+
+    // ---- QUICK PARTY LOGIN ACCESS HELPERS ----
+    function openQuickPartyLoginModal() {
+      document.getElementById('quickPartyLoginForm').reset();
+      const select = document.getElementById('qplPartyId');
+      select.innerHTML = '<option value="">-- Party Choose Karein --</option>';
+
+      // Populate parties sorted alphabetically
+      const sortedParties = [...App.data.parties].sort((a, b) => a.name.localeCompare(b.name));
+      sortedParties.forEach(p => {
+        // Check if this party already has a user account
+        const hasAccount = App.data.users.some(u => u.partyId === p.id);
+        const prefix = hasAccount ? '🔑 ' : '';
+        const suffix = hasAccount ? ' (Already has login)' : '';
+        select.innerHTML += `<option value="${p.id}" data-email="${p.email || ''}" data-mobile="${p.mobile || ''}">${prefix}${p.name} - ${p.type}${suffix}</option>`;
+      });
+
+      openModal('quickPartyLoginModal');
+    }
+
+    function fillPartyLoginDefaults() {
+      const select = document.getElementById('qplPartyId');
+      const selectedOption = select.options[select.selectedIndex];
+      if (!selectedOption || !selectedOption.value) return;
+
+      const email = selectedOption.getAttribute('data-email');
+      const mobile = selectedOption.getAttribute('data-mobile');
+      const partyName = selectedOption.text.split(' - ')[0].replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+
+      // Auto-fill a clean email address
+      if (email) {
+        document.getElementById('qplEmail').value = email;
+      } else if (mobile) {
+        document.getElementById('qplEmail').value = `${mobile}@rahulerp.com`;
+      } else {
+        document.getElementById('qplEmail').value = `${partyName || 'party'}@rahulerp.com`;
+      }
+
+      // Auto-fill a secure default password
+      document.getElementById('qplPassword').value = 'Rahul@123';
+    }
+
+    function saveQuickPartyLogin(e) {
+      e.preventDefault();
+      const partyId = document.getElementById('qplPartyId').value;
+      const email = document.getElementById('qplEmail').value.trim();
+      const password = document.getElementById('qplPassword').value;
+      const status = document.getElementById('qplStatus').value;
+
+      const party = App.data.parties.find(p => p.id === partyId);
+      if (!party) {
+        showToast('Invalid party selected', 'error');
+        return;
+      }
+
+      const userId = 'U' + Date.now();
+      const payload = {
+        id: userId,
+        name: party.name,
+        email: email,
+        password: password,
+        role: 'Party',
+        status: status,
+        partyId: partyId,
+        avatarUrl: '',
+        permissions: {
+          dashboard: true,
+          parties: false,
+          products: false,
+          sales: false,
+          purchase: false,
+          ledger: true,
+          expenses: false,
+          quotations: false,
+          reports: false,
+          banking: false
+        }
+      };
+
+      showLoading(true, 'Creating party login access...');
+      callServer('saveUser', payload, function(res) {
+        showLoading(false);
+        if (res.success) {
+          showToast(`Login credentials created successfully for ${party.name}!`, 'success');
+          closeModal('quickPartyLoginModal');
+          syncAllData(null, ['Users']); // Silent refresh users sheet
+        } else {
+          showToast(res.message || 'Failed to create party login', 'error');
+        }
       });
     }
 
