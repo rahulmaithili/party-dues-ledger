@@ -1903,3 +1903,10 @@ function getAccountApprovedEmailTemplate(userName, companyName, companyLogo, app
     '</html>';
   return html;
 }
+
+function testDrivePermission() {
+  var folderName = "ERP_Payment_Proofs";
+  var folders = DriveApp.getFoldersByName(folderName);
+  var exists = folders.hasNext();
+  Logger.log("Drive Permission Test: Success! Folder exists: " + exists);
+}
