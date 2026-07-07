@@ -4734,6 +4734,7 @@
         if (res.success) {
           if (sheetsList) {
             Object.keys(res).forEach(key => { if (key !== 'success') App.data[key] = res[key]; });
+            if (res.companyProfile) _processCompanyProfile(res);
           } else {
             App.data = res;
             _processCompanyProfile(res);

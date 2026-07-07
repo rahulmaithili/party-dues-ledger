@@ -912,6 +912,7 @@ function doPost(e) {
         if (!found) profileSheet.appendRow([key, val]);
       }
       formatSheetVisuals(profileSheet);
+      clearSpecificCaches(["CompanyProfile"]);
       return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
     }
 
