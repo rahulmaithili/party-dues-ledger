@@ -3649,25 +3649,30 @@
       const el = document.getElementById('loadingSpinner');
       if (el) el.style.display = show ? 'block' : 'none';
 
-      // Animate the active modal's submit button
-      const activeModal = document.querySelector('.modal-backdrop.active');
-      const submitBtn = activeModal
-        ? activeModal.querySelector('button[type="submit"].btn-accent, button[type="submit"].btn')
-        : null;
-
-      if (submitBtn) {
-        if (show) {
-          // Save original text and disable button
+      if (show) {
+        // Find the submit button: first in active modal, then anywhere on page
+        const activeModal = document.querySelector('.modal-backdrop.active');
+        let submitBtn = activeModal
+          ? activeModal.querySelector('button[type="submit"]')
+          : document.querySelector('section.page:not([style*="display: none"]) button[type="submit"], section.page:not([style*="display:none"]) button[type="submit"]');
+        // Also check btn-saving already set to avoid double-animate
+        if (!submitBtn) submitBtn = document.querySelector('button[type="submit"]');
+        if (submitBtn && !submitBtn.classList.contains('btn-saving')) {
+          App.activeSaveBtn = submitBtn;
           submitBtn.dataset.originalHtml = submitBtn.innerHTML;
-          submitBtn.innerHTML = `<i class="fa-solid fa-circle-notch btn-save-spinner" style="margin-right:6px;"></i> Saving...`;
+          submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch btn-save-spinner" style="margin-right:6px;"></i> Saving...';
           submitBtn.classList.add('btn-saving');
-        } else {
-          // Restore button state
+        }
+      } else {
+        // Restore whichever button was saved
+        const submitBtn = App.activeSaveBtn;
+        if (submitBtn) {
           if (submitBtn.dataset.originalHtml) {
             submitBtn.innerHTML = submitBtn.dataset.originalHtml;
             delete submitBtn.dataset.originalHtml;
           }
           submitBtn.classList.remove('btn-saving');
+          App.activeSaveBtn = null;
         }
       }
     }
