@@ -3647,6 +3647,17 @@
       }).format(amount);
     }
 
+    function toDirectDriveLink(url) {
+      if (!url) return '';
+      if (url.indexOf('drive.google.com') !== -1 || url.indexOf('docs.google.com') !== -1) {
+        const match = url.match(/\/d\/([a-zA-Z0-9-_]+)/) || url.match(/[?&]id=([a-zA-Z0-9-_]+)/);
+        if (match && match[1]) {
+          return `https://lh3.googleusercontent.com/d/${match[1]}`;
+        }
+      }
+      return url;
+    }
+
     function formatDate(dateStr) {
       if (!dateStr) return '--';
       try {
@@ -4478,7 +4489,7 @@
       
       const avatarName = document.getElementById('avatarName');
       if (user.avatarUrl) {
-        avatarName.innerHTML = `<img src="${user.avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        avatarName.innerHTML = `<img src="${toDirectDriveLink(user.avatarUrl)}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
       } else {
         avatarName.textContent = user.name.charAt(0).toUpperCase();
       }
@@ -4527,7 +4538,7 @@
 
       const avatarDiv = document.getElementById('profileModalAvatar');
       if (App.currentUser.avatarUrl) {
-        avatarDiv.innerHTML = `<img src="${App.currentUser.avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        avatarDiv.innerHTML = `<img src="${toDirectDriveLink(App.currentUser.avatarUrl)}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
       } else {
         avatarDiv.innerHTML = App.currentUser.name.charAt(0).toUpperCase();
       }
@@ -4579,7 +4590,7 @@
             document.getElementById('userRoleDisplay').textContent = App.currentUser.role;
             const sideAvatar = document.getElementById('avatarName');
             if (App.currentUser.avatarUrl) {
-              sideAvatar.innerHTML = `<img src="${App.currentUser.avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+              sideAvatar.innerHTML = `<img src="${toDirectDriveLink(App.currentUser.avatarUrl)}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
             } else {
               sideAvatar.textContent = App.currentUser.name.charAt(0).toUpperCase();
             }
@@ -8762,7 +8773,7 @@
       
       const avatarPreview = document.getElementById('userFormAvatarPreview');
       if (u.avatarUrl) {
-        avatarPreview.innerHTML = `<img src="${u.avatarUrl}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+        avatarPreview.innerHTML = `<img src="${toDirectDriveLink(u.avatarUrl)}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
       } else {
         avatarPreview.innerHTML = u.name.charAt(0).toUpperCase();
       }
