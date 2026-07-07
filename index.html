@@ -2423,6 +2423,21 @@
 
   <!-- ==================== MODALS ==================== -->
 
+  <!-- CONFIRMATION MODAL -->
+  <div class="modal-backdrop" id="confirmModal">
+    <div class="modal-card" style="max-width: 400px; text-align: center; padding: 24px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);">
+      <div style="margin: 0 auto 16px auto; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center;" id="confirmModalIcon">
+        <i class="fa-solid fa-triangle-exclamation" style="font-size: 26px;"></i>
+      </div>
+      <h3 id="confirmModalTitle" style="font-size: 17px; font-weight: 700; margin-bottom: 8px; color: var(--txt);">Confirm Action</h3>
+      <p id="confirmModalMessage" style="font-size: 13px; color: var(--txt2); line-height: 1.5; margin-bottom: 24px;">Are you sure you want to proceed?</p>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button type="button" class="btn btn-secondary" style="flex: 1; padding: 9px 16px; font-size: 13px; font-weight: 600;" onclick="closeModal('confirmModal'); if(window.confirmModalOptions && window.confirmModalOptions.onCancel) window.confirmModalOptions.onCancel();" id="confirmModalCancelBtn">Cancel</button>
+        <button type="button" class="btn btn-accent" style="flex: 1; padding: 9px 16px; font-size: 13px; font-weight: 600;" id="confirmModalProceedBtn">Proceed</button>
+      </div>
+    </div>
+  </div>
+
   <!-- FORGOT PASSWORD MODAL -->
   <div class="modal-backdrop" id="forgotPasswordModal">
     <div class="modal-card" style="max-width: 420px;">
@@ -3980,10 +3995,16 @@
     }
 
     function disconnectBackend() {
-      if (confirm('Disconnect this database? You will be returned to the Setup screen.')) {
-        SafeStorage.removeItem('googleScriptUrl');
-        location.reload();
-      }
+      showConfirmModal({
+        title: 'Disconnect Database',
+        message: 'Disconnect this database? You will be returned to the Setup screen.',
+        confirmText: 'Disconnect',
+        isDanger: true,
+        onConfirm: function() {
+          SafeStorage.removeItem('googleScriptUrl');
+          location.reload();
+        }
+      });
     }
 
     // Initialize backend URL config on page load
@@ -4289,6 +4310,48 @@
 
     function closeModal(id) {
       document.getElementById(id).style.display = 'none';
+      if (id === 'confirmModal') {
+        // Also remove backdrop class for active modal to prevent lingering backdrop styling issues
+        document.getElementById(id).classList.remove('active');
+      }
+    }
+
+    function showConfirmModal(options) {
+      window.confirmModalOptions = options;
+      
+      const iconContainer = document.getElementById('confirmModalIcon');
+      const titleEl = document.getElementById('confirmModalTitle');
+      const msgEl = document.getElementById('confirmModalMessage');
+      const proceedBtn = document.getElementById('confirmModalProceedBtn');
+      const cancelBtn = document.getElementById('confirmModalCancelBtn');
+      
+      titleEl.textContent = options.title || 'Confirm Action';
+      msgEl.textContent = options.message || 'Are you sure you want to proceed?';
+      cancelBtn.textContent = options.cancelText || 'Cancel';
+      proceedBtn.textContent = options.confirmText || 'Proceed';
+      
+      if (options.isDanger) {
+        iconContainer.style.background = 'rgba(239, 68, 68, 0.1)';
+        iconContainer.style.color = 'var(--dan)';
+        iconContainer.innerHTML = '<i class="fa-solid fa-trash-can" style="font-size: 26px;"></i>';
+        
+        proceedBtn.className = 'btn btn-danger';
+      } else {
+        iconContainer.style.background = 'rgba(245, 158, 11, 0.1)';
+        iconContainer.style.color = 'var(--acc)';
+        iconContainer.innerHTML = '<i class="fa-solid fa-circle-exclamation" style="font-size: 26px;"></i>';
+        
+        proceedBtn.className = 'btn btn-accent';
+      }
+      
+      proceedBtn.onclick = function() {
+        closeModal('confirmModal');
+        if (options.onConfirm) options.onConfirm();
+      };
+      
+      // Ensure active class is set for showLoading submit button tracking if needed
+      document.getElementById('confirmModal').classList.add('active');
+      openModal('confirmModal');
     }
 
     // Sidebar navigation and responsive toggle
@@ -5349,12 +5412,18 @@
     }
 
     function deleteParty(id) {
-      if (confirm('Are you sure you want to permanently delete this party? This action cannot be undone.')) {
-        callServer('deleteParty', { id: id, deletedBy: App.currentUser.id }, function() {
-          showToast('Party deleted successfully', 'success');
-          syncAllData(renderParties, ["Parties", "ActivityLog"]);
-        });
-      }
+      showConfirmModal({
+        title: 'Delete Party',
+        message: 'Are you sure you want to permanently delete this party? This action cannot be undone.',
+        confirmText: 'Delete',
+        isDanger: true,
+        onConfirm: function() {
+          callServer('deleteParty', { id: id, deletedBy: App.currentUser.id }, function() {
+            showToast('Party deleted successfully', 'success');
+            syncAllData(renderParties, ["Parties", "ActivityLog"]);
+          });
+        }
+      });
     }
 
     // ==================== PRODUCTS CRUD ====================
@@ -5576,12 +5645,18 @@
 
     // Admin-level edits and deletes on products
     function deleteProduct(id) {
-      if (confirm('Delete this product permanently?')) {
-        callServer('deleteProduct', { id: id }, function() {
-          showToast('Product removed', 'success');
-          syncAllData(renderProducts, ["Products"]);
-        });
-      }
+      showConfirmModal({
+        title: 'Delete Product',
+        message: 'Delete this product permanently?',
+        confirmText: 'Delete',
+        isDanger: true,
+        onConfirm: function() {
+          callServer('deleteProduct', { id: id }, function() {
+            showToast('Product removed', 'success');
+            syncAllData(renderProducts, ["Products"]);
+          });
+        }
+      });
     }
 
     // ==================== INVOICING LOGIC ====================
@@ -5955,15 +6030,21 @@
     }
 
     function deleteTransaction(id) {
-      if (confirm('Are you sure you want to delete this invoice? The ledger balance, stock count, and bank accounts will be rolled back.')) {
-        callServer('deleteTransaction', { id: id, deletedBy: App.currentUser.id }, function() {
-          showToast('Voucher deleted and balances reverted successfully', 'success');
-          syncAllData(() => {
-            renderSales();
-            renderPurchases();
-          }, ["Transactions", "Products", "BankAccounts", "ActivityLog"]);
-        });
-      }
+      showConfirmModal({
+        title: 'Delete Transaction',
+        message: 'Are you sure you want to delete this invoice? The ledger balance, stock count, and bank accounts will be rolled back.',
+        confirmText: 'Delete',
+        isDanger: true,
+        onConfirm: function() {
+          callServer('deleteTransaction', { id: id, deletedBy: App.currentUser.id }, function() {
+            showToast('Voucher deleted and balances reverted successfully', 'success');
+            syncAllData(() => {
+              renderSales();
+              renderPurchases();
+            }, ["Transactions", "Products", "BankAccounts", "ActivityLog"]);
+          });
+        }
+      });
     }
 
     // ==================== RECEIPTS & PAYMENTS ====================
@@ -6329,12 +6410,18 @@
     }
 
     function deleteExpense(id) {
-      if (confirm('Delete this expense entry? Balance sheets will adjust.')) {
-        callServer('deleteExpense', { id: id }, function() {
-          showToast('Expense removed', 'success');
-          syncAllData(renderExpenses, ["Expenses", "BankAccounts", "ActivityLog"]);
-        });
-      }
+      showConfirmModal({
+        title: 'Delete Expense',
+        message: 'Delete this expense entry? Balance sheets will adjust.',
+        confirmText: 'Delete',
+        isDanger: true,
+        onConfirm: function() {
+          callServer('deleteExpense', { id: id }, function() {
+            showToast('Expense removed', 'success');
+            syncAllData(renderExpenses, ["Expenses", "BankAccounts", "ActivityLog"]);
+          });
+        }
+      });
     }
 
     // ==================== QUOTATIONS & PO & CHALLANS ====================
@@ -6621,18 +6708,24 @@
     }
 
     function deleteDoc(type, id) {
-      if (confirm('Delete this document?')) {
-        const action = type === 'Quotation' ? 'deleteQuotation' : (type === 'PurchaseOrder' ? 'deletePurchaseOrder' : 'deleteDeliveryChallan');
-        const sheetsList = type === 'Quotation' ? ["Quotations", "ActivityLog"] : (type === 'PurchaseOrder' ? ["PurchaseOrders", "ActivityLog"] : ["DeliveryChallans", "ActivityLog"]);
-        callServer(action, { id: id }, function() {
-          showToast('Document removed', 'success');
-          syncAllData(() => {
-            renderQuotations();
-            renderPOs();
-            renderChallans();
-          }, sheetsList);
-        });
-      }
+      showConfirmModal({
+        title: `Delete ${type}`,
+        message: 'Delete this document?',
+        confirmText: 'Delete',
+        isDanger: true,
+        onConfirm: function() {
+          const action = type === 'Quotation' ? 'deleteQuotation' : (type === 'PurchaseOrder' ? 'deletePurchaseOrder' : 'deleteDeliveryChallan');
+          const sheetsList = type === 'Quotation' ? ["Quotations", "ActivityLog"] : (type === 'PurchaseOrder' ? ["PurchaseOrders", "ActivityLog"] : ["DeliveryChallans", "ActivityLog"]);
+          callServer(action, { id: id }, function() {
+            showToast('Document removed', 'success');
+            syncAllData(() => {
+              renderQuotations();
+              renderPOs();
+              renderChallans();
+            }, sheetsList);
+          });
+        }
+      });
     }
 
     function convertQuotToInvoice(id) {
@@ -8705,12 +8798,18 @@
         showToast('Cannot delete your own active session!', 'error');
         return;
       }
-      if (confirm('Delete this user login account?')) {
-        callServer('deleteUser', { id: id }, function() {
-          showToast('User deleted', 'success');
-          syncAllData(renderUsers, ["Users"]);
-        });
-      }
+      showConfirmModal({
+        title: 'Delete User Account',
+        message: 'Delete this user login account?',
+        confirmText: 'Delete',
+        isDanger: true,
+        onConfirm: function() {
+          callServer('deleteUser', { id: id }, function() {
+            showToast('User deleted', 'success');
+            syncAllData(renderUsers, ["Users"]);
+          });
+        }
+      });
     }
 
     // ==================== APP SETTINGS MODULE ====================
@@ -8840,12 +8939,18 @@
     }
 
     function triggerDbAction(action) {
-      if (confirm(`Are you absolutely sure you want to run this database action (${action})? This will alter sheet rows.`)) {
-        callServer(action, {}, function(res) {
-          showToast(res.message || 'Action executed', 'success');
-          syncAllData();
-        });
-      }
+      showConfirmModal({
+        title: 'Run Database Action',
+        message: `Are you absolutely sure you want to run this database action (${action})? This will alter sheet rows.`,
+        confirmText: 'Execute',
+        isDanger: action === 'clearDatabase',
+        onConfirm: function() {
+          callServer(action, {}, function(res) {
+            showToast(res.message || 'Action executed', 'success');
+            syncAllData();
+          });
+        }
+      });
     }
 
     // ==================== NOTIFICATIONS ====================
@@ -8987,41 +9092,53 @@
     }
 
     function approveReset(notificationId, targetUserId) {
-      if (confirm('Are you sure you want to approve this password reset request? This will generate a temporary password and email it to the user.')) {
-        const appUrl = window.location.origin + window.location.pathname;
-        callServer('approvePasswordReset', { notificationId, userId: targetUserId, appUrl }, function(res) {
-          if (res.success) {
-            showToast(res.message, 'success');
-            closeModal('notifModal');
-            syncAllData(() => {
-              // Check unread count
-              const unread = App.data.notifications.filter(x => !x.read).length;
-              document.getElementById('notifBadge').style.display = unread > 0 ? 'block' : 'none';
-            }, ["Notifications", "Users"]);
-          } else {
-            showToast(res.message || 'Approval failed', 'error');
-          }
-        });
-      }
+      showConfirmModal({
+        title: 'Approve Password Reset',
+        message: 'Are you sure you want to approve this password reset request? This will generate a temporary password and email it to the user.',
+        confirmText: 'Approve',
+        isDanger: false,
+        onConfirm: function() {
+          const appUrl = window.location.origin + window.location.pathname;
+          callServer('approvePasswordReset', { notificationId, userId: targetUserId, appUrl }, function(res) {
+            if (res.success) {
+              showToast(res.message, 'success');
+              closeModal('notifModal');
+              syncAllData(() => {
+                // Check unread count
+                const unread = App.data.notifications.filter(x => !x.read).length;
+                document.getElementById('notifBadge').style.display = unread > 0 ? 'block' : 'none';
+              }, ["Notifications", "Users"]);
+            } else {
+              showToast(res.message || 'Approval failed', 'error');
+            }
+          });
+        }
+      });
     }
 
     function approveUserRegistration(notificationId, targetUserId) {
-      if (confirm('Are you sure you want to approve and activate this user account?')) {
-        const appUrl = window.location.origin + window.location.pathname;
-        callServer('approveUserRegistration', { notificationId, userId: targetUserId, appUrl }, function(res) {
-          if (res.success) {
-            showToast(res.message, 'success');
-            closeModal('notifModal');
-            syncAllData(() => {
-              const unread = App.data.notifications.filter(x => !x.read).length;
-              document.getElementById('notifBadge').style.display = unread > 0 ? 'block' : 'none';
-              if (typeof renderUsers === 'function') renderUsers();
-            }, ["Notifications", "Users"]);
-          } else {
-            showToast(res.message || 'Approval failed', 'error');
-          }
-        });
-      }
+      showConfirmModal({
+        title: 'Approve User Registration',
+        message: 'Are you sure you want to approve and activate this user account?',
+        confirmText: 'Approve',
+        isDanger: false,
+        onConfirm: function() {
+          const appUrl = window.location.origin + window.location.pathname;
+          callServer('approveUserRegistration', { notificationId, userId: targetUserId, appUrl }, function(res) {
+            if (res.success) {
+              showToast(res.message, 'success');
+              closeModal('notifModal');
+              syncAllData(() => {
+                const unread = App.data.notifications.filter(x => !x.read).length;
+                document.getElementById('notifBadge').style.display = unread > 0 ? 'block' : 'none';
+                if (typeof renderUsers === 'function') renderUsers();
+              }, ["Notifications", "Users"]);
+            } else {
+              showToast(res.message || 'Approval failed', 'error');
+            }
+          });
+        }
+      });
     }
 
     function openSignUpModal(e) {
@@ -9245,12 +9362,18 @@
     }
 
     function deleteFollowup(id) {
-      if (confirm('Delete this follow-up record?')) {
-        callServer('deleteFollowup', { id: id, deletedBy: App.currentUser.name }, function() {
-          showToast('Follow-up deleted', 'info');
-          syncAllData(renderFollowupList, ["CRMFollowups", "ActivityLog"]);
-        });
-      }
+      showConfirmModal({
+        title: 'Delete Follow-up',
+        message: 'Delete this follow-up record?',
+        confirmText: 'Delete',
+        isDanger: true,
+        onConfirm: function() {
+          callServer('deleteFollowup', { id: id, deletedBy: App.currentUser.name }, function() {
+            showToast('Follow-up deleted', 'info');
+            syncAllData(renderFollowupList, ["CRMFollowups", "ActivityLog"]);
+          });
+        }
+      });
     }
 
     // WhatsApp dues reminder
