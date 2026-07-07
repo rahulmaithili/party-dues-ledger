@@ -632,6 +632,20 @@ function doPost(e) {
     // ---- SECURITY DEPOSIT / REFUND ----
     if (action === "saveSecurityDeposit") {
       var txn = payload;
+      
+      // Preserve existing return/refund values if editing
+      var secSheet = sheet.getSheetByName("CylinderSecurity");
+      var totalIn = 0;
+      var refundAmount = 0;
+      if (secSheet) {
+        var secData = readSheetData(sheet, "CylinderSecurity");
+        var foundSec = secData.filter(function(s) { return s.id === txn.id; });
+        if (foundSec.length > 0) {
+          totalIn = parseFloat(foundSec[0].totalIn || 0);
+          refundAmount = parseFloat(foundSec[0].refundAmount || 0);
+        }
+      }
+
       rollbackSheetBalances(sheet, txn.id);
       upsertRowInSheet(sheet, "Transactions", txn, "id");
       
@@ -642,10 +656,11 @@ function doPost(e) {
         partyName: txn.partyName,
         cylinderType: txn.cylinderType || (txn.items && txn.items[0] && txn.items[0].productName) || "Cylinder",
         totalOut: parseFloat(txn.cylinderOut || 1),
-        totalIn: 0,
-        pending: parseFloat(txn.cylinderOut || 1),
+        totalIn: totalIn,
+        pending: parseFloat(txn.cylinderOut || 1) - totalIn,
         depositAmount: parseFloat(txn.credit || 0),
         depositDate: txn.date,
+        refundAmount: refundAmount,
         notes: txn.description || ""
       };
       upsertRowInSheet(sheet, "CylinderSecurity", secRecord, "id");
@@ -1567,10 +1582,12 @@ function clearSheetDatabase(sheet) {
     "Users": ["id","name","email","passwordHash","role","partyId","status","permissions","otp","otpExpiry","avatarUrl"],
     "Notifications": ["id","message","type","date","read"],
     "CompanyProfile": ["key","value"],
+    "CylinderSecurity": ["id","partyId","partyName","cylinderType","totalOut","totalIn","pending","depositAmount","depositDate","refundAmount","refundDate","notes"],
     "Expenses": ["id","date","category","description","amount","paymentMode","bankRef","voucherId","enteredBy","enteredOn"],
     "Quotations": ["id","date","voucherNo","partyId","partyName","items","totals","validTill","status","notes","enteredBy","enteredOn"],
     "PurchaseOrders": ["id","date","voucherNo","partyId","partyName","items","totals","expectedDelivery","status","notes","enteredBy","enteredOn"],
     "DeliveryChallans": ["id","date","voucherNo","partyId","partyName","items","status","linkedInvoice","notes","enteredBy","enteredOn"],
+    "ActivityLog": ["id","timestamp","userId","userName","action","module","details"],
     "CRMFollowups": ["id","partyId","partyName","date","type","notes","nextFollowUpDate","status","enteredBy","enteredOn"]
   };
 
@@ -1602,6 +1619,7 @@ function clearSheetDatabase(sheet) {
   });
 
   sheet.getSheets().forEach(function(s) { formatSheetVisuals(s); });
+  clearSheetCache();
 }
 
 function seedSheetDatabase(sheet) {
@@ -1652,6 +1670,7 @@ function seedSheetDatabase(sheet) {
   notifications.forEach(function(n) { appendRowToSheet(sheet, "Notifications", n); });
 
   sheet.getSheets().forEach(function(s) { formatSheetVisuals(s); });
+  clearSheetCache();
 }
 
 // ===================== VISUAL FORMATTING =====================
