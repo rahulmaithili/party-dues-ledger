@@ -28,7 +28,16 @@ function doGet(e) {
         "PartyTypes": ["id","name","baseType"]
       };
       Object.keys(schemaHeaders).forEach(function(sName) {
-        updateSheetHeaders(sheet, sName, schemaHeaders[sName]);
+        if (!sheet.getSheetByName(sName)) {
+          var s = sheet.insertSheet(sName);
+          s.appendRow(schemaHeaders[sName]);
+          if (sName === "PartyTypes") {
+            s.appendRow(["PTY001", "Customer", "Customer"]);
+            s.appendRow(["PTY002", "Supplier", "Supplier"]);
+          }
+        } else {
+          updateSheetHeaders(sheet, sName, schemaHeaders[sName]);
+        }
       });
     }
     if (action === "syncHeaders") {
