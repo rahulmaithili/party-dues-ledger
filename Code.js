@@ -24,7 +24,8 @@ function doGet(e) {
       // Always ensure all expected columns exist (handles schema upgrades for existing sheets)
       var schemaHeaders = {
         "Transactions": ["id","date","voucherNo","partyId","partyName","description","txnType","debit","credit","paymentMode","bankRef","items","totals","enteredBy","enteredOn","cylinderOut","cylinderIn","linkedInvoice","returnType","proofUrl","bankAccountId","receivedBy","receivedByRole"],
-        "Parties": ["id","name","type","mobile","email","address","gstin","pan","openingBalance","creditLimit","paymentTerms","bankAccount","bankName","ifsc","documents","securityDeposit","cylinderDeposits","gpsLocation"]
+        "Parties": ["id","name","type","mobile","email","address","gstin","pan","openingBalance","creditLimit","paymentTerms","bankAccount","bankName","ifsc","documents","securityDeposit","cylinderDeposits","gpsLocation"],
+        "PartyTypes": ["id","name","baseType"]
       };
       Object.keys(schemaHeaders).forEach(function(sName) {
         updateSheetHeaders(sheet, sName, schemaHeaders[sName]);
@@ -40,7 +41,8 @@ function doGet(e) {
       var sheetsToRead = [
         "Parties", "Products", "Transactions", "BankAccounts", "Users", 
         "Notifications", "CompanyProfile", "Expenses", "Quotations", 
-        "PurchaseOrders", "DeliveryChallans", "ActivityLog", "CRMFollowups", "CylinderSecurity"
+        "PurchaseOrders", "DeliveryChallans", "ActivityLog", "CRMFollowups", "CylinderSecurity",
+        "PartyTypes"
       ];
       for (var i = 0; i < sheetsToRead.length; i++) {
         var sName = sheetsToRead[i];
@@ -480,6 +482,18 @@ function doPost(e) {
     if (action === "deleteParty") {
       deleteRowFromSheet(sheet, "Parties", payload.id, "id");
       logActivityInternal(sheet, payload.deletedBy || "", "", "Delete Party", "Parties", payload.id);
+      return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ---- PARTY TYPES ----
+    if (action === "savePartyType") {
+      upsertRowInSheet(sheet, "PartyTypes", payload, "id");
+      logActivityInternal(sheet, payload.enteredBy || "", "", "Save Party Type", "PartyTypes", payload.name);
+      return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+    }
+    if (action === "deletePartyType") {
+      deleteRowFromSheet(sheet, "PartyTypes", payload.id, "id");
+      logActivityInternal(sheet, payload.deletedBy || "", "", "Delete Party Type", "PartyTypes", payload.id);
       return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
     }
 
@@ -1031,7 +1045,7 @@ function getCachedSheetData(sheet, sheetName) {
 
 function clearSheetCache() {
   var cache = CacheService.getScriptCache();
-  var sheets = ["Parties", "Products", "Transactions", "BankAccounts", "Users", "Notifications", "CompanyProfile", "Expenses", "Quotations", "PurchaseOrders", "DeliveryChallans", "ActivityLog", "CRMFollowups", "CylinderSecurity"];
+  var sheets = ["Parties", "Products", "Transactions", "BankAccounts", "Users", "Notifications", "CompanyProfile", "Expenses", "Quotations", "PurchaseOrders", "DeliveryChallans", "ActivityLog", "CRMFollowups", "CylinderSecurity", "PartyTypes"];
   sheets.forEach(function(s) {
     try {
       cache.remove("sheet_" + s);
@@ -1524,7 +1538,8 @@ function initDatabase(sheet) {
   var allSheets = [
     "Parties", "Products", "Transactions", "BankAccounts", "Users",
     "Notifications", "CompanyProfile", "CylinderSecurity",
-    "Expenses", "Quotations", "PurchaseOrders", "DeliveryChallans", "ActivityLog", "CRMFollowups"
+    "Expenses", "Quotations", "PurchaseOrders", "DeliveryChallans", "ActivityLog", "CRMFollowups",
+    "PartyTypes"
   ];
 
   var headerMap = {
@@ -1541,7 +1556,8 @@ function initDatabase(sheet) {
     "PurchaseOrders": ["id","date","voucherNo","partyId","partyName","items","totals","expectedDelivery","status","notes","enteredBy","enteredOn"],
     "DeliveryChallans": ["id","date","voucherNo","partyId","partyName","items","status","linkedInvoice","notes","enteredBy","enteredOn"],
     "ActivityLog": ["id","timestamp","userId","userName","action","module","details"],
-    "CRMFollowups": ["id","partyId","partyName","date","type","notes","nextFollowUpDate","status","enteredBy","enteredOn"]
+    "CRMFollowups": ["id","partyId","partyName","date","type","notes","nextFollowUpDate","status","enteredBy","enteredOn"],
+    "PartyTypes": ["id","name","baseType"]
   };
 
   allSheets.forEach(function(name) {
@@ -1562,6 +1578,10 @@ function initDatabase(sheet) {
         s.appendRow(["purchasePrefix", "PUR"]);
         s.appendRow(["receiptPrefix", "REC"]);
         s.appendRow(["expensePrefix", "EXP"]);
+      }
+      if (name === "PartyTypes") {
+        s.appendRow(["PTY001", "Customer", "Customer"]);
+        s.appendRow(["PTY002", "Supplier", "Supplier"]);
       }
     } else {
       if (headerMap[name]) updateSheetHeaders(sheet, name, headerMap[name]);
@@ -1589,7 +1609,8 @@ function clearSheetDatabase(sheet) {
     "PurchaseOrders": ["id","date","voucherNo","partyId","partyName","items","totals","expectedDelivery","status","notes","enteredBy","enteredOn"],
     "DeliveryChallans": ["id","date","voucherNo","partyId","partyName","items","status","linkedInvoice","notes","enteredBy","enteredOn"],
     "ActivityLog": ["id","timestamp","userId","userName","action","module","details"],
-    "CRMFollowups": ["id","partyId","partyName","date","type","notes","nextFollowUpDate","status","enteredBy","enteredOn"]
+    "CRMFollowups": ["id","partyId","partyName","date","type","notes","nextFollowUpDate","status","enteredBy","enteredOn"],
+    "PartyTypes": ["id","name","baseType"]
   };
 
   Object.keys(headerMap).forEach(function(name) {
@@ -1606,6 +1627,8 @@ function clearSheetDatabase(sheet) {
   appendRowToSheet(sheet, "Users", { id: "U001", name: "Admin", email: "admin@mrrahul.com", passwordHash: simpleHash("admin123"), role: "Admin", partyId: "", status: "Active", permissions: JSON.stringify({ dashboard:true,sales:true,purchase:true,ledger:true,reports:true,products:true,parties:true,banking:true,users:true,returns:true,expenses:true,quotations:true }) });
   appendRowToSheet(sheet, "BankAccounts", { id: "BA001", accountName: "Main Cash", bankName: "Cash In Hand", accountNo: "--", ifsc: "--", branch: "Office", openingBalance: 0, balance: 0 });
   appendRowToSheet(sheet, "BankAccounts", { id: "BA002", accountName: "SBI Bank Account", bankName: "State Bank of India", accountNo: "9988776655", ifsc: "SBIN0001234", branch: "Main Branch", openingBalance: 0, balance: 0 });
+  appendRowToSheet(sheet, "PartyTypes", { id: "PTY001", name: "Customer", baseType: "Customer" });
+  appendRowToSheet(sheet, "PartyTypes", { id: "PTY002", name: "Supplier", baseType: "Supplier" });
 
   var defaultProfile = [
     ["companyName","Mr.Rahul ERP"],["companyAddress","123, Industrial Area, Mumbai - 400001"],

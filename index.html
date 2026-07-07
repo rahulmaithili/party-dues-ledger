@@ -2423,6 +2423,67 @@
 
   <!-- ==================== MODALS ==================== -->
 
+  <!-- INPUT MODAL (CUSTOM PROMPT) -->
+  <div class="modal-backdrop" id="inputModal">
+    <div class="modal-card" style="max-width: 400px; padding: 24px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);">
+      <h3 id="inputModalTitle" style="font-size: 17px; font-weight: 700; margin-bottom: 12px; color: var(--txt);">Enter Value</h3>
+      <div class="form-group" style="margin-bottom: 20px;">
+        <label id="inputModalLabel" style="color:var(--txt2); font-size: 13px; margin-bottom: 6px; display: block;"></label>
+        <input type="text" id="inputModalField" class="light-form-control" style="width: 100%;">
+      </div>
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" style="padding: 9px 16px; font-size: 13px; font-weight: 600;" onclick="closeModal('inputModal')">Cancel</button>
+        <button type="button" class="btn btn-primary" style="padding: 9px 16px; font-size: 13px; font-weight: 600;" id="inputModalSubmitBtn">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARTY TYPE MANAGEMENT MODAL -->
+  <div class="modal-backdrop" id="partyTypeModal">
+    <div class="modal-card" style="max-width: 500px; padding: 24px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);">
+      <div class="modal-header" style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: none; padding: 0;">
+        <h3 style="font-size: 18px; font-weight: 700; margin: 0; color: var(--txt);">Manage Party Types</h3>
+        <i class="fa-solid fa-xmark pointer" onclick="closeModal('partyTypeModal')" style="font-size: 18px; color: var(--txt2);"></i>
+      </div>
+      
+      <!-- Form to add new type -->
+      <form id="partyTypeForm" onsubmit="savePartyTypeForm(event)" style="margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid var(--brd);">
+        <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--txt);">Add New Type</h4>
+        <div class="grid-2">
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: var(--txt2); margin-bottom: 4px; display: block;">Type Name *</label>
+            <input type="text" id="newPartyTypeName" class="light-form-control" placeholder="e.g. Wholesaler" required style="width: 100%;">
+          </div>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label style="font-size: 12px; color: var(--txt2); margin-bottom: 4px; display: block;">Base Behavior *</label>
+            <select id="newPartyTypeBase" class="light-form-control" required style="width: 100%;">
+              <option value="Customer">Customer (Receivables)</option>
+              <option value="Supplier">Supplier (Payables)</option>
+            </select>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: 8px; padding: 6px 12px; font-size: 12px;"><i class="fa-solid fa-plus"></i> Add Type</button>
+      </form>
+      
+      <!-- List of existing types -->
+      <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--txt);">Existing Party Types</h4>
+      <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--brd); border-radius: 6px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead>
+            <tr style="background: var(--bg); border-bottom: 1px solid var(--brd); text-align: left;">
+              <th style="padding: 8px 12px; color: var(--txt2); font-weight: 600;">Type Name</th>
+              <th style="padding: 8px 12px; color: var(--txt2); font-weight: 600;">Base Type</th>
+              <th style="padding: 8px 12px; color: var(--txt2); font-weight: 600; text-align: right;">Action</th>
+            </tr>
+          </thead>
+          <tbody id="partyTypesTableBody">
+            <!-- Dynamically populated -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
   <!-- CONFIRMATION MODAL -->
   <div class="modal-backdrop" id="confirmModal">
     <div class="modal-card" style="max-width: 400px; text-align: center; padding: 24px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);">
@@ -2538,10 +2599,12 @@
             </div>
             <div class="form-group">
               <label>Type *</label>
-              <select id="partyType" class="light-form-control" required>
-                <option value="Customer">Customer</option>
-                <option value="Supplier">Supplier</option>
-              </select>
+              <div style="display: flex; gap: 8px;">
+                <select id="partyType" class="light-form-control" required style="flex: 1;">
+                  <!-- Will be dynamically populated -->
+                </select>
+                <button type="button" class="btn btn-secondary" onclick="openPartyTypeModal()" style="padding: 0 12px; margin-bottom: 0;">+</button>
+              </div>
             </div>
           </div>
           <div class="grid-2">
@@ -4761,6 +4824,7 @@
         // Convert to searchable combobox
         initSearchableDropdown(id);
       });
+      populatePartyFilterTypeDropdown();
     }
 
     // ==================== DASHBOARD MODULE ====================
@@ -5038,7 +5102,14 @@
 
       const list = App.data.parties.filter(p => {
         const matchesSearch = p.name.toLowerCase().includes(search) || p.mobile.includes(search) || (p.gstin || '').toLowerCase().includes(search);
-        const matchesType = filter === 'All' || p.type === filter;
+        let matchesType = false;
+        if (filter === 'All') {
+          matchesType = true;
+        } else if (filter === 'Customer' || filter === 'Supplier') {
+          matchesType = getPartyBaseType(p) === filter;
+        } else {
+          matchesType = p.type === filter;
+        }
         return matchesSearch && matchesType;
       });
 
@@ -5064,7 +5135,7 @@
             <tr>
               <td><strong>${p.id}</strong></td>
               <td><strong>${p.name}</strong></td>
-              <td><span class="badge ${p.type === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span></td>
+              <td><span class="badge ${getPartyBaseType(p) === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span></td>
               <td>${p.mobile}</td>
               <td>${p.gstin || '--'}</td>
               <td class="text-right" style="font-weight: 700; color: ${color};">${displayBal}${wsapBtn}</td>
@@ -5085,7 +5156,7 @@
               <div>
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
                   <span style="font-size: 11px; font-weight: 700; color: var(--txt2); background: var(--bg); padding: 4px 8px; border-radius: 4px;">${p.id}</span>
-                  <span class="badge ${p.type === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span>
+                  <span class="badge ${getPartyBaseType(p) === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span>
                 </div>
                 <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--txt);">${p.name}</h3>
                 <p style="font-size: 13px; color: var(--txt2); margin-bottom: 4px;"><i class="fa-solid fa-phone" style="margin-right: 6px; width: 14px;"></i>${p.mobile}</p>
@@ -5347,6 +5418,7 @@
     function openPartyModal() {
       document.getElementById('partyForm').reset();
       document.getElementById('partyId').value = '';
+      populatePartyTypesDropdown('');
       document.getElementById('partyGpsLocation').value = '';
       document.getElementById('partyDocUrl').value = '';
       document.getElementById('partyDocFile').value = '';
@@ -5436,7 +5508,7 @@
 
       document.getElementById('partyId').value = p.id;
       document.getElementById('partyName').value = p.name;
-      document.getElementById('partyType').value = p.type;
+      populatePartyTypesDropdown(p.type);
       document.getElementById('partyMobile').value = p.mobile;
       document.getElementById('partyEmail').value = p.email || '';
       document.getElementById('partyAddress').value = p.address || '';
@@ -5620,27 +5692,220 @@
       }
     }
 
+    function showInputModal(options) {
+      document.getElementById('inputModalTitle').textContent = options.title || 'Enter Value';
+      document.getElementById('inputModalLabel').textContent = options.label || '';
+      const field = document.getElementById('inputModalField');
+      field.value = options.defaultValue || '';
+      field.placeholder = options.placeholder || '';
+      
+      const submitBtn = document.getElementById('inputModalSubmitBtn');
+      submitBtn.onclick = function() {
+        const val = field.value.trim();
+        if (options.required && !val) {
+          showToast(options.requiredMessage || 'Value is required', 'warning');
+          return;
+        }
+        closeModal('inputModal');
+        if (options.onSubmit) options.onSubmit(val);
+      };
+      
+      openModal('inputModal');
+      setTimeout(() => field.focus(), 100);
+    }
+
     function addNewCategoryPrompt() {
-      const newCat = prompt("Enter new category name:");
-      if (newCat && newCat.trim()) {
-        const select = document.getElementById('productCategory');
-        const trimmed = newCat.trim();
-        let exists = false;
-        for (let i = 0; i < select.options.length; i++) {
-          if (select.options[i].value === trimmed) {
-            exists = true;
-            select.value = trimmed;
-            break;
+      showInputModal({
+        title: 'Add New Category',
+        label: 'Enter new category name:',
+        placeholder: 'e.g., Industrial Gases',
+        required: true,
+        requiredMessage: 'Category name cannot be empty',
+        onSubmit: function(newCat) {
+          if (newCat) {
+            const select = document.getElementById('productCategory');
+            const trimmed = newCat.trim();
+            let exists = false;
+            for (let i = 0; i < select.options.length; i++) {
+              if (select.options[i].value === trimmed) {
+                exists = true;
+                select.value = trimmed;
+                break;
+              }
+            }
+            if (!exists) {
+              const opt = document.createElement('option');
+              opt.value = trimmed;
+              opt.textContent = trimmed;
+              select.appendChild(opt);
+              select.value = trimmed;
+            }
           }
         }
-        if (!exists) {
-          const opt = document.createElement('option');
-          opt.value = trimmed;
-          opt.textContent = trimmed;
-          select.appendChild(opt);
-          select.value = trimmed;
+      });
+    }
+
+    function getPartyBaseType(party) {
+      if (!party) return 'Customer';
+      if (App.data.partyTypes) {
+        const found = App.data.partyTypes.find(pt => pt.name === party.type);
+        if (found) return found.baseType;
+      }
+      if (party.type === 'Supplier') return 'Supplier';
+      return 'Customer';
+    }
+
+    function populatePartyTypesDropdown(selectedValue) {
+      const select = document.getElementById('partyType');
+      if (!select) return;
+      select.innerHTML = '';
+      
+      const partyTypes = App.data.partyTypes || [
+        { id: "PTY001", name: "Customer", baseType: "Customer" },
+        { id: "PTY002", name: "Supplier", baseType: "Supplier" }
+      ];
+      
+      partyTypes.forEach(pt => {
+        select.innerHTML += `<option value="${pt.name}">${pt.name}</option>`;
+      });
+      
+      if (selectedValue) {
+        select.value = selectedValue;
+      } else if (partyTypes.length > 0) {
+        select.value = partyTypes[0].name;
+      }
+    }
+
+    function populatePartyFilterTypeDropdown() {
+      const select = document.getElementById('partyFilterType');
+      if (!select) return;
+      
+      const currentVal = select.value || 'All';
+      select.innerHTML = `
+        <option value="All">All Parties</option>
+        <option value="Customer">All Customers</option>
+        <option value="Supplier">All Suppliers</option>
+      `;
+      
+      const partyTypes = App.data.partyTypes || [];
+      partyTypes.forEach(pt => {
+        if (pt.name !== 'Customer' && pt.name !== 'Supplier') {
+          select.innerHTML += `<option value="${pt.name}">${pt.name}</option>`;
+        }
+      });
+      
+      // Keep selected value if it exists in new options, else default to 'All'
+      let exists = false;
+      for (let i = 0; i < select.options.length; i++) {
+        if (select.options[i].value === currentVal) {
+          exists = true;
+          break;
         }
       }
+      select.value = exists ? currentVal : 'All';
+    }
+
+    function openPartyTypeModal() {
+      document.getElementById('partyTypeForm').reset();
+      renderPartyTypesList();
+      openModal('partyTypeModal');
+    }
+
+    function renderPartyTypesList() {
+      const tbody = document.getElementById('partyTypesTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      
+      const partyTypes = App.data.partyTypes || [
+        { id: "PTY001", name: "Customer", baseType: "Customer" },
+        { id: "PTY002", name: "Supplier", baseType: "Supplier" }
+      ];
+      
+      partyTypes.forEach(pt => {
+        const isSystem = (pt.name === 'Customer' || pt.name === 'Supplier');
+        const deleteBtn = isSystem 
+          ? `<span style="font-size: 11px; color: var(--txt2); font-style: italic;">System</span>`
+          : `<button type="button" class="btn btn-danger btn-sm" onclick="deletePartyType('${pt.id}', '${pt.name}')" style="padding: 2px 6px; font-size: 11px; margin-bottom: 0;"><i class="fa-solid fa-trash-can"></i></button>`;
+          
+        tbody.innerHTML += `
+          <tr style="border-bottom: 1px solid var(--brd);">
+            <td style="padding: 8px 12px; font-weight: 500;">${pt.name}</td>
+            <td style="padding: 8px 12px;"><span class="badge ${pt.baseType === 'Customer' ? 'badge-primary' : 'badge-warning'}">${pt.baseType}</span></td>
+            <td style="padding: 8px 12px; text-align: right;">${deleteBtn}</td>
+          </tr>
+        `;
+      });
+    }
+
+    function savePartyTypeForm(e) {
+      e.preventDefault();
+      const name = document.getElementById('newPartyTypeName').value.trim();
+      const baseType = document.getElementById('newPartyTypeBase').value;
+      
+      if (!name) return;
+      
+      // Check if exists
+      const partyTypes = App.data.partyTypes || [];
+      if (partyTypes.some(pt => pt.name.toLowerCase() === name.toLowerCase())) {
+        showToast('This Party Type already exists!', 'warning');
+        return;
+      }
+      
+      const id = 'PTY' + Date.now();
+      const payload = {
+        id: id,
+        name: name,
+        baseType: baseType,
+        enteredBy: App.currentUser ? App.currentUser.name : 'User'
+      };
+      
+      showLoading(true, 'Saving Party Type...');
+      callServer('savePartyType', payload, function(res) {
+        showLoading(false);
+        if (res.success) {
+          showToast('Party Type added successfully!', 'success');
+          document.getElementById('partyTypeForm').reset();
+          syncAllData(function() {
+            renderPartyTypesList();
+            populatePartyTypesDropdown(name);
+            populatePartyFilterTypeDropdown();
+          }, ['PartyTypes']);
+        } else {
+          showToast(res.message || 'Failed to save Party Type', 'error');
+        }
+      });
+    }
+
+    function deletePartyType(id, name) {
+      // Check if any party uses it
+      const inUse = App.data.parties.some(p => p.type === name);
+      if (inUse) {
+        showToast(`Cannot delete "${name}" because it is currently assigned to one or more parties.`, 'warning');
+        return;
+      }
+      
+      showConfirmModal({
+        title: 'Delete Party Type',
+        message: `Are you sure you want to delete the party type "${name}"?`,
+        isDanger: true,
+        confirmText: 'Delete',
+        onConfirm: function() {
+          showLoading(true, 'Deleting Party Type...');
+          callServer('deletePartyType', { id: id, deletedBy: App.currentUser ? App.currentUser.name : 'User' }, function(res) {
+            showLoading(false);
+            if (res.success) {
+              showToast('Party Type deleted successfully!', 'success');
+              syncAllData(function() {
+                renderPartyTypesList();
+                populatePartyTypesDropdown();
+                populatePartyFilterTypeDropdown();
+              }, ['PartyTypes']);
+            } else {
+              showToast(res.message || 'Failed to delete Party Type', 'error');
+            }
+          });
+        }
+      });
     }
 
     function openProductModal() {
@@ -5819,7 +6084,7 @@
       // Populate Party selector
       const pSelect = document.getElementById('invoicePartyId');
       pSelect.innerHTML = '<option value="">-- Choose Party --</option>';
-      App.data.parties.filter(x => isSale ? x.type === 'Customer' : x.type === 'Supplier').forEach(p => {
+      App.data.parties.filter(x => isSale ? getPartyBaseType(x) === 'Customer' : getPartyBaseType(x) === 'Supplier').forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
       initSearchableDropdown('invoicePartyId');
@@ -6165,7 +6430,7 @@
       // Populate Party selector
       const pSelect = document.getElementById('receiptPartyId');
       pSelect.innerHTML = '<option value="">-- Choose Party --</option>';
-      App.data.parties.filter(x => isReceipt ? x.type === 'Customer' : x.type === 'Supplier').forEach(p => {
+      App.data.parties.filter(x => isReceipt ? getPartyBaseType(x) === 'Customer' : getPartyBaseType(x) === 'Supplier').forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
       initSearchableDropdown('receiptPartyId');
@@ -6339,7 +6604,7 @@
 
       const pSelect = document.getElementById('receiptPartyId');
       pSelect.innerHTML = '<option value="">-- Choose Party --</option>';
-      App.data.parties.filter(x => t.txnType === 'Receipt' ? x.type === 'Customer' : x.type === 'Supplier').forEach(p => {
+      App.data.parties.filter(x => t.txnType === 'Receipt' ? getPartyBaseType(x) === 'Customer' : getPartyBaseType(x) === 'Supplier').forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
       pSelect.value = t.partyId;
@@ -6547,7 +6812,7 @@
       // Populate Party selector
       const pSelect = document.getElementById('docPartyId');
       pSelect.innerHTML = '<option value="">-- Choose Party --</option>';
-      App.data.parties.filter(x => isPO ? x.type === 'Supplier' : x.type === 'Customer').forEach(p => {
+      App.data.parties.filter(x => isPO ? getPartyBaseType(x) === 'Supplier' : getPartyBaseType(x) === 'Customer').forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
       initSearchableDropdown('docPartyId');
@@ -6708,7 +6973,7 @@
       const isPO = type === 'PurchaseOrder';
       const pSelect = document.getElementById('docPartyId');
       pSelect.innerHTML = '<option value="">-- Choose Party --</option>';
-      App.data.parties.filter(x => isPO ? x.type === 'Supplier' : x.type === 'Customer').forEach(p => {
+      App.data.parties.filter(x => isPO ? getPartyBaseType(x) === 'Supplier' : getPartyBaseType(x) === 'Customer').forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
       pSelect.value = doc.partyId;
@@ -6908,7 +7173,7 @@
       select.innerHTML = '<option value="">-- Select Party --</option>';
       
       const filterType = type === 'Sales' ? 'Customer' : 'Supplier';
-      App.data.parties.filter(x => x.type === filterType).forEach(p => {
+      App.data.parties.filter(x => getPartyBaseType(x) === filterType).forEach(p => {
         select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
       initSearchableDropdown('returnPartyId');
@@ -7113,7 +7378,7 @@
       // Populate customers selector
       const pSelect = document.getElementById('secDepPartyId');
       pSelect.innerHTML = '<option value="">-- Select Customer --</option>';
-      App.data.parties.filter(p => p.type === 'Customer').forEach(p => {
+      App.data.parties.filter(p => getPartyBaseType(p) === 'Customer').forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
 
@@ -7353,7 +7618,7 @@
       // Populate customers selector
       const pSelect = document.getElementById('secDepPartyId');
       pSelect.innerHTML = '<option value="">-- Select Customer --</option>';
-      App.data.parties.filter(p => p.type === 'Customer').forEach(p => {
+      App.data.parties.filter(p => getPartyBaseType(p) === 'Customer').forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
 
@@ -7826,7 +8091,7 @@
                 <tr>
                   <td>${p.id}</td>
                   <td><strong>${p.name}</strong></td>
-                  <td><span class="badge ${p.type === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span></td>
+                  <td><span class="badge ${getPartyBaseType(p) === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span></td>
                   <td>${p.mobile}</td>
                   <td class="text-right" style="font-weight:700; color:${p.balance > 0 ? 'var(--dan)' : (p.balance < 0 ? 'var(--suc)' : 'var(--txt)')}">${displayBal}</td>
                   <td class="text-center">
@@ -8361,7 +8626,7 @@
           currentRunning += parseFloat(txn.debit || 0) - parseFloat(txn.credit || 0);
         }
 
-        const isCustomer = p.type === 'Customer';
+        const isCustomer = getPartyBaseType(p) === 'Customer';
         const totalDuesBefore = isCustomer ? prevBal : Math.abs(prevBal);
         const paidAmount = amount;
         const closingDues = totalDuesBefore - paidAmount;
