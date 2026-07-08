@@ -145,10 +145,16 @@
     }
 
     body.dark-theme .toast {
-      background: #151F32 !important;
+      background: rgba(21, 31, 50, 0.9) !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-left: 5px solid var(--pri) !important;
       color: #F1F5F9 !important;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
     }
+    body.dark-theme .toast.success { border-left-color: var(--suc) !important; }
+    body.dark-theme .toast.error { border-left-color: var(--dan) !important; }
+    body.dark-theme .toast.warning { border-left-color: var(--war) !important; }
+    body.dark-theme .toast.info { border-left-color: var(--pri) !important; }
 
     body.dark-theme .invoice-line-item {
       background: #0B0F19 !important;
@@ -856,28 +862,61 @@
       gap: 10px;
     }
 
-    .toast {
-      background: white;
-      border-left: 4px solid var(--pri);
-      padding: 16px 24px;
-      border-radius: var(--r);
-      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+     .toast {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(226, 232, 240, 0.8);
+      border-left: 5px solid var(--pri);
+      padding: 14px 20px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
       display: flex;
       align-items: center;
       gap: 12px;
-      min-width: 300px;
+      min-width: 320px;
+      max-width: 450px;
       color: var(--txt);
       font-size: 14px;
       font-weight: 500;
-      animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.35s cubic-bezier(0.215, 0.610, 0.355, 1);
+      position: relative;
+      overflow: hidden;
+      animation: toastIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
 
     .toast.success { border-left-color: var(--suc); }
+    .toast.success i { color: var(--suc); }
     .toast.error { border-left-color: var(--dan); }
+    .toast.error i { color: var(--dan); }
     .toast.warning { border-left-color: var(--war); }
+    .toast.warning i { color: var(--war); }
+    .toast.info { border-left-color: var(--pri); }
+    .toast.info i { color: var(--pri); }
+
+    .toast::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 3px;
+      width: 100%;
+      background: var(--pri);
+      transform-origin: left;
+      animation: toastProgress 3.5s linear forwards;
+    }
+    .toast.success::after { background: var(--suc); }
+    .toast.error::after { background: var(--dan); }
+    .toast.warning::after { background: var(--war); }
+    .toast.info::after { background: var(--pri); }
+
+    @keyframes toastProgress {
+      from { transform: scaleX(1); }
+      to { transform: scaleX(0); }
+    }
 
     @keyframes toastIn {
-      from { transform: translateY(100%) scale(0.9); opacity: 0; }
+      from { transform: translateY(20px) scale(0.9); opacity: 0; }
       to { transform: translateY(0) scale(1); opacity: 1; }
     }
 
@@ -4709,6 +4748,11 @@
         // ---- SAVE: saveUser ----
         if (action === 'saveUser') {
           const id = payload.id || ('U_' + _fbId());
+          payload.id = id;
+          const avatarUrl = await _uploadBase64File(payload, 'avatars');
+          if (avatarUrl) {
+            payload.avatarUrl = avatarUrl;
+          }
           await db.collection('users').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
           _logActivity('SAVE', 'Users', `Saved user: ${payload.email}`);
           success({ success: true, user: Object.assign({}, payload, { id }) });
@@ -4725,8 +4769,13 @@
 
         // ---- SAVE: saveUserProfile ----
         if (action === 'saveUserProfile') {
+          const avatarUrl = await _uploadBase64File(payload, 'avatars');
           const updates = {};
-          if (payload.avatarUrl !== undefined) updates.avatarUrl = payload.avatarUrl;
+          if (avatarUrl) {
+            updates.avatarUrl = avatarUrl;
+          } else if (payload.avatarUrl !== undefined) {
+            updates.avatarUrl = payload.avatarUrl;
+          }
           if (payload.newPassword && payload.newPassword.trim()) {
             updates.passwordHash = simpleHash(payload.newPassword.trim());
           }
@@ -5595,6 +5644,7 @@
           showLoading(false);
           if (res.success && res.user) {
             App.currentUser = res.user;
+            SafeStorage.setItem('currentUserSession', JSON.stringify(res.user));
             
             // Re-render sidebar profile elements
             document.getElementById('userNameDisplay').textContent = App.currentUser.name;
