@@ -2860,11 +2860,12 @@
             <table id="invoiceItemsTable">
               <thead>
                 <tr>
-                  <th style="width: 35%;">Product</th>
-                  <th style="width: 15%;">Quantity</th>
-                  <th style="width: 15%;">Rate (₹)</th>
-                  <th style="width: 15%;">GST %</th>
-                  <th style="width: 15%;" class="text-right">Total (₹)</th>
+                  <th style="width: 30%;">Product</th>
+                  <th style="width: 12%;">Quantity</th>
+                  <th style="width: 12%;">Empty Return</th>
+                  <th style="width: 12%;">Rate (₹)</th>
+                  <th style="width: 12%;">GST %</th>
+                  <th style="width: 17%;" class="text-right">Total (₹)</th>
                   <th style="width: 5%;"></th>
                 </tr>
               </thead>
@@ -2889,7 +2890,7 @@
                   </div>
                   <div>
                     <label style="font-size: 12px; font-weight:600; display:block; margin-bottom:4px;">Empty Cylinders Returned</label>
-                    <input type="number" id="invoiceCylinderIn" class="light-form-control" value="0" min="0" style="height:38px;">
+                    <input type="number" id="invoiceCylinderIn" class="light-form-control" value="0" min="0" style="height:38px;" oninput="isCylinderInManuallyModified = true;">
                   </div>
                 </div>
               </div>
@@ -7187,6 +7188,7 @@
     function openInvoiceModal(type, preselectedPartyId) {
       userSavedTransaction = false;
       window.isCylinderOutManuallyModified = false;
+      window.isCylinderInManuallyModified = false;
       document.getElementById('invoiceForm').reset();
       document.getElementById('invoiceId').value = '';
       document.getElementById('invoiceTxnType').value = type;
@@ -7223,7 +7225,7 @@
 
     function addInvoiceItemRow() {
       const idx = activeInvoiceItems.length;
-      activeInvoiceItems.push({ productId: '', quantity: 1, rate: 0, gst: 18, amount: 0 });
+      activeInvoiceItems.push({ productId: '', quantity: 1, emptyReturn: 0, rate: 0, gst: 18, amount: 0 });
 
       let prodOptions = '<option value="">-- Select Product --</option>';
       App.data.products.forEach(p => {
@@ -7240,6 +7242,9 @@
         </td>
         <td>
           <input type="number" class="light-form-control" value="1" min="1" oninput="handleInvoiceItemQtyChange(${idx}, this.value)" required>
+        </td>
+        <td>
+          <input type="number" class="light-form-control" value="0" min="0" oninput="handleInvoiceItemEmptyReturnChange(${idx}, this.value)">
         </td>
         <td>
           <input type="number" class="light-form-control text-right" step="0.01" value="0" oninput="handleInvoiceItemRateChange(${idx}, this.value)" required>
@@ -7274,14 +7279,19 @@
       activeInvoiceItems[idx].gst = (p.gst !== undefined && p.gst !== null) ? p.gst : 18;
 
       const row = document.getElementById(`invItemRow_${idx}`);
-      row.cells[2].querySelector('input').value = rate;
-      row.cells[3].querySelector('input').value = p.gst;
+      row.cells[3].querySelector('input').value = rate;
+      row.cells[4].querySelector('input').value = p.gst;
 
       calculateInvoiceTotals();
     }
 
     function handleInvoiceItemQtyChange(idx, val) {
       activeInvoiceItems[idx].quantity = parseFloat(val || 1);
+      calculateInvoiceTotals();
+    }
+
+    function handleInvoiceItemEmptyReturnChange(idx, val) {
+      activeInvoiceItems[idx].emptyReturn = parseFloat(val || 0);
       calculateInvoiceTotals();
     }
 
@@ -7316,6 +7326,17 @@
           }
         });
         document.getElementById('invoiceCylinderOut').value = totalQty;
+      }
+
+      // Update Empty Cylinders Returned automatically if not manually overridden
+      if (!window.isCylinderInManuallyModified) {
+        let totalEmpty = 0;
+        activeInvoiceItems.forEach(item => {
+          if (item && item.productId) {
+            totalEmpty += parseFloat(item.emptyReturn || 0);
+          }
+        });
+        document.getElementById('invoiceCylinderIn').value = totalEmpty;
       }
 
       const discount = parseFloat(document.getElementById('invDiscount') ? document.getElementById('invDiscount').value : 0) || 0;
@@ -7353,6 +7374,7 @@
           productName: prod.name,
           hsn: prod.hsn || '',
           quantity: x.quantity,
+          emptyReturn: x.emptyReturn || 0,
           unit: prod.unit,
           rate: x.rate,
           gst: x.gst,
@@ -7436,6 +7458,7 @@
       if (!t) return;
 
       window.isCylinderOutManuallyModified = true;
+      window.isCylinderInManuallyModified = true;
       document.getElementById('invoiceId').value = t.id;
       document.getElementById('invoiceTxnType').value = t.txnType;
       document.getElementById('invoiceModalTitle').textContent = `Edit ${t.txnType} Invoice`;
@@ -7465,6 +7488,7 @@
         activeInvoiceItems.push({
           productId: item.productId,
           quantity: item.quantity,
+          emptyReturn: item.emptyReturn || 0,
           rate: item.rate,
           gst: (item.gst !== undefined && item.gst !== null) ? item.gst : 18,
           amount: item.amount
@@ -7485,6 +7509,9 @@
           </td>
           <td>
             <input type="number" class="light-form-control" value="${item.quantity}" min="1" oninput="handleInvoiceItemQtyChange(${idx}, this.value)" required>
+          </td>
+          <td>
+            <input type="number" class="light-form-control" value="${item.emptyReturn || 0}" min="0" oninput="handleInvoiceItemEmptyReturnChange(${idx}, this.value)">
           </td>
           <td>
             <input type="number" class="light-form-control text-right" step="0.01" value="${item.rate}" oninput="handleInvoiceItemRateChange(${idx}, this.value)" required>
@@ -10348,6 +10375,7 @@
               <td><strong>${x.productName}</strong></td>
               <td class="text-center">${x.hsn || '--'}</td>
               <td class="text-right">${x.quantity} ${x.unit || 'Nos'}</td>
+              <td class="text-right">${x.emptyReturn || 0} ${x.unit || 'Nos'}</td>
               <td class="text-right">${formatCurrency(x.rate)}</td>
               <td class="text-right">${x.gst}%</td>
               <td class="text-right" style="font-weight: 600;">${formatCurrency(x.amount)}</td>
@@ -10401,8 +10429,9 @@
                   <th class="text-center" style="width: 5%;">#</th>
                   <th>Item Description</th>
                   <th class="text-center" style="width: 12%;">HSN</th>
-                  <th class="text-right" style="width: 15%;">Qty</th>
-                  <th class="text-right" style="width: 15%;">Rate</th>
+                  <th class="text-right" style="width: 12%;">Qty</th>
+                  <th class="text-right" style="width: 12%;">Empty Ret</th>
+                  <th class="text-right" style="width: 12%;">Rate</th>
                   <th class="text-right" style="width: 10%;">GST</th>
                   <th class="text-right" style="width: 15%;">Amount</th>
                 </tr>
