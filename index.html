@@ -14,6 +14,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
   <script>
     // ===== FIREBASE INITIALIZATION =====
     const FIREBASE_CONFIG = {
@@ -27,6 +28,7 @@
     };
     firebase.initializeApp(FIREBASE_CONFIG);
     const db = firebase.firestore();
+    const storage = firebase.storage();
     // Firestore offline persistence for better performance
     db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
     // Active real-time unsubscribe handles
@@ -2517,6 +2519,25 @@
     </div>
   </div>
 
+  <!-- PARTY DOCUMENT / KYC VIEWER MODAL -->
+  <div class="modal-backdrop" id="partyDocViewerModal">
+    <div class="modal-card" style="max-width: 800px; width: 90%;">
+      <div class="modal-header">
+        <h3 id="partyDocViewerTitle">KYC Document Viewer</h3>
+        <i class="fa-solid fa-xmark pointer" onclick="closeModal('partyDocViewerModal')"></i>
+      </div>
+      <div class="modal-body" style="padding: 0; min-height: 500px; display: flex; flex-direction: column; background: #F1F5F9;">
+        <div id="partyDocViewerContent" style="flex: 1; display: flex; justify-content: center; align-items: center; overflow: auto; padding: 20px;">
+          <!-- Content dynamically rendered here -->
+        </div>
+      </div>
+      <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px;">
+        <button class="btn btn-primary" onclick="printPartyDoc()"><i class="fa-solid fa-print"></i> Print Document</button>
+        <button class="btn btn-secondary" onclick="closeModal('partyDocViewerModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- CONFIRMATION MODAL -->
   <div class="modal-backdrop" id="confirmModal">
     <div class="modal-card" style="max-width: 400px; text-align: center; padding: 24px; border-radius: 12px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04);">
@@ -2708,9 +2729,9 @@
               <input type="hidden" id="partyDocUrl">
             </div>
             <div class="form-group" id="partyCurrentDocGroup" style="display: none; align-items: flex-end; padding-bottom: 6px;">
-              <a id="btnViewCurrentPartyDoc" href="#" target="_blank" class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
+              <button type="button" id="btnViewCurrentPartyDoc" class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; height: 38px;">
                 <i class="fa-solid fa-paperclip"></i> View Current Document
-              </a>
+              </button>
             </div>
           </div>
         </div>
@@ -2859,7 +2880,7 @@
                 <div class="grid-2">
                   <div>
                     <label style="font-size: 12px; font-weight:600; display:block; margin-bottom:4px;">Filled Cylinders Delivered</label>
-                    <input type="number" id="invoiceCylinderOut" class="light-form-control" value="0" min="0" style="height:38px;">
+                    <input type="number" id="invoiceCylinderOut" class="light-form-control" value="0" min="0" style="height:38px;" oninput="isCylinderOutManuallyModified = true;">
                   </div>
                   <div>
                     <label style="font-size: 12px; font-weight:600; display:block; margin-bottom:4px;">Empty Cylinders Returned</label>
@@ -4184,6 +4205,45 @@
       }
     }
 
+    async function _uploadBase64File(payload, folder) {
+      const base64Str = payload ? (payload.proofBase64 || payload.avatarBase64) : null;
+      if (!payload || !base64Str) return null;
+      try {
+        let base64Data = base64Str;
+        if (base64Data.indexOf("base64,") !== -1) {
+          base64Data = base64Data.split("base64,")[1];
+        }
+        
+        const binaryStr = atob(base64Data);
+        const len = binaryStr.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryStr.charCodeAt(i);
+        }
+        
+        const mimeType = payload.proofMimeType || payload.avatarMimeType;
+        const filename = payload.proofFilename || payload.avatarFilename;
+        
+        const blob = new Blob([bytes], { type: mimeType });
+        const ref = storage.ref().child(`${folder}/${payload.id}/${filename}`);
+        await ref.put(blob);
+        const url = await ref.getDownloadURL();
+        
+        // Clean up base64 payload properties so they are not written to Firestore
+        delete payload.proofBase64;
+        delete payload.proofFilename;
+        delete payload.proofMimeType;
+        delete payload.avatarBase64;
+        delete payload.avatarFilename;
+        delete payload.avatarMimeType;
+        
+        return url;
+      } catch (e) {
+        console.error("Storage upload failed", e);
+        return null;
+      }
+    }
+
     // Main Firebase action dispatcher (drop-in replacement for callServer)
     async function callServer(action, payload, callback, failCallback, silentMode) {
       const isReadAction = ['getAllData', 'getDashboardStats', 'getReport'].includes(action);
@@ -4271,6 +4331,11 @@
         // ---- SAVE: saveParty ----
         if (action === 'saveParty') {
           const id = payload.id || ('PT_' + _fbId());
+          payload.id = id;
+          const docUrl = await _uploadBase64File(payload, 'parties');
+          if (docUrl) {
+            payload.documents = docUrl;
+          }
           await db.collection('parties').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
           _logActivity('SAVE', 'Parties', `Saved party: ${payload.name}`);
           success({ success: true });
@@ -4304,9 +4369,14 @@
 
         // ---- SAVE: saveInvoice / savePurchase ----
         if (action === 'saveInvoice' || action === 'savePurchase') {
+          const id = payload.id || ('TXN_' + _fbId());
+          payload.id = id;
+          const proofUrl = await _uploadBase64File(payload, 'transactions');
+          if (proofUrl) {
+            payload.proofUrl = proofUrl;
+          }
           const isEdit = !!(payload.id && App.data.transactions.find(t => t.id === payload.id));
           const batch = db.batch();
-          const id = payload.id || ('TXN_' + _fbId());
           const txnRef = db.collection('transactions').doc(id);
 
           const updates = {};
@@ -4337,8 +4407,13 @@
 
         // ---- SAVE: saveReceipt / savePayment ----
         if (action === 'saveReceipt' || action === 'savePayment') {
-          const isEdit = !!(payload.id && App.data.transactions.find(t => t.id === payload.id));
           const id = payload.id || ('TXN_' + _fbId());
+          payload.id = id;
+          const proofUrl = await _uploadBase64File(payload, 'transactions');
+          if (proofUrl) {
+            payload.proofUrl = proofUrl;
+          }
+          const isEdit = !!(payload.id && App.data.transactions.find(t => t.id === payload.id));
           const batch = db.batch();
           const txnRef = db.collection('transactions').doc(id);
 
@@ -5946,7 +6021,7 @@
                 <div class="flex-gap" style="justify-content: center;">
                   <button class="btn btn-secondary btn-sm" onclick="viewPartyLedger('${p.id}')"><i class="fa-solid fa-file-invoice"></i> Ledger</button>
                   ${p.gpsLocation ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(p.gpsLocation)}" target="_blank" class="btn btn-icon" title="View GPS Location" style="color:var(--acc);"><i class="fa-solid fa-map-location-dot"></i></a>` : ''}
-                  ${p.documents ? `<a href="${p.documents}" target="_blank" class="btn btn-icon" title="View Document / KYC Proof" style="color: var(--acc);"><i class="fa-solid fa-paperclip"></i></a>` : ''}
+                  ${p.documents ? `<button class="btn btn-icon" onclick="openPartyDocViewer('${p.id}')" title="View Document / KYC Proof" style="color: var(--acc); background: none; border: none; cursor: pointer;"><i class="fa-solid fa-paperclip"></i></button>` : ''}
                   <button class="btn btn-icon" onclick="editParty('${p.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
                   <button class="btn btn-icon admin-only" onclick="deleteParty('${p.id}')" style="color:var(--dan);"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -5973,7 +6048,7 @@
                 <div class="flex-gap" style="gap: 4px;">
                   <button class="btn btn-icon" onclick="viewPartyLedger('${p.id}')" title="View Ledger"><i class="fa-solid fa-file-invoice"></i></button>
                   ${p.gpsLocation ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(p.gpsLocation)}" target="_blank" class="btn btn-icon" title="View GPS Location" style="color:var(--acc);"><i class="fa-solid fa-map-location-dot"></i></a>` : ''}
-                  ${p.documents ? `<a href="${p.documents}" target="_blank" class="btn btn-icon" title="View Document / KYC Proof" style="color:var(--acc);"><i class="fa-solid fa-paperclip"></i></a>` : ''}
+                  ${p.documents ? `<button class="btn btn-icon" onclick="openPartyDocViewer('${p.id}')" title="View Document / KYC Proof" style="color:var(--acc); background: none; border: none; cursor: pointer;"><i class="fa-solid fa-paperclip"></i></button>` : ''}
                   <button class="btn btn-icon" onclick="editParty('${p.id}')" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
                   <button class="btn btn-icon admin-only" onclick="deleteParty('${p.id}')" style="color:var(--dan);" title="Delete"><i class="fa-solid fa-trash"></i></button>
                 </div>
@@ -6487,7 +6562,7 @@
       const docGroup = document.getElementById('partyCurrentDocGroup');
       const docBtn = document.getElementById('btnViewCurrentPartyDoc');
       if (p.documents) {
-        docBtn.href = p.documents;
+        docBtn.onclick = () => { openPartyDocViewer(p.id); };
         docGroup.style.display = 'flex';
       } else {
         docGroup.style.display = 'none';
@@ -6510,6 +6585,61 @@
           });
         }
       });
+    }
+
+    let currentViewingDocUrl = '';
+    function openPartyDocViewer(partyId) {
+      const p = App.data.parties.find(x => x.id === partyId);
+      if (!p || !p.documents) {
+        showToast('No KYC document uploaded for this party.', 'warning');
+        return;
+      }
+      
+      currentViewingDocUrl = p.documents;
+      document.getElementById('partyDocViewerTitle').textContent = `KYC Proof - ${p.name}`;
+      
+      const container = document.getElementById('partyDocViewerContent');
+      container.innerHTML = '';
+      
+      // Determine if image or PDF
+      const isPdf = p.documents.toLowerCase().includes('.pdf') || p.documents.startsWith('data:application/pdf');
+      
+      if (isPdf) {
+        container.innerHTML = `<iframe src="${p.documents}" style="width: 100%; height: 500px; border: none; border-radius: var(--r);"></iframe>`;
+      } else {
+        container.innerHTML = `<img src="${p.documents}" style="max-width: 100%; max-height: 500px; object-fit: contain; border-radius: var(--r); box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">`;
+      }
+      
+      openModal('partyDocViewerModal');
+    }
+
+    function printPartyDoc() {
+      if (!currentViewingDocUrl) return;
+      const w = window.open();
+      const isPdf = currentViewingDocUrl.toLowerCase().includes('.pdf') || currentViewingDocUrl.startsWith('data:application/pdf');
+      
+      if (isPdf) {
+        w.location.href = currentViewingDocUrl;
+      } else {
+        w.document.write(`
+          <html>
+            <head>
+              <title>Print Document</title>
+              <style>
+                body { margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
+                img { max-width: 100%; max-height: 100%; object-fit: contain; }
+                @media print {
+                  img { max-width: 100%; max-height: 100%; }
+                }
+              </style>
+            </head>
+            <body onload="window.print(); window.close();">
+              <img src="${currentViewingDocUrl}">
+            </body>
+          </html>
+        `);
+        w.document.close();
+      }
     }
 
     // ==================== PRODUCTS CRUD ====================
@@ -7028,6 +7158,7 @@
 
     function openInvoiceModal(type, preselectedPartyId) {
       userSavedTransaction = false;
+      window.isCylinderOutManuallyModified = false;
       document.getElementById('invoiceForm').reset();
       document.getElementById('invoiceId').value = '';
       document.getElementById('invoiceTxnType').value = type;
@@ -7148,6 +7279,17 @@
         document.getElementById(`invItemTotal_${idx}`).textContent = formatCurrency(lineTotal);
       });
 
+      // Update Filled Cylinders Delivered automatically if not manually overridden
+      if (!window.isCylinderOutManuallyModified) {
+        let totalQty = 0;
+        activeInvoiceItems.forEach(item => {
+          if (item && item.productId) {
+            totalQty += parseFloat(item.quantity || 0);
+          }
+        });
+        document.getElementById('invoiceCylinderOut').value = totalQty;
+      }
+
       const discount = parseFloat(document.getElementById('invDiscount') ? document.getElementById('invDiscount').value : 0) || 0;
       const grandTotal = subTotal + totalTax;
       const roundedGrandTotal = Math.round(Math.max(0, grandTotal - discount));
@@ -7265,6 +7407,7 @@
       const t = App.data.transactions.find(x => x.id === id);
       if (!t) return;
 
+      window.isCylinderOutManuallyModified = true;
       document.getElementById('invoiceId').value = t.id;
       document.getElementById('invoiceTxnType').value = t.txnType;
       document.getElementById('invoiceModalTitle').textContent = `Edit ${t.txnType} Invoice`;
@@ -9264,6 +9407,19 @@
           }
         }
         
+        // Show Cylinder out/in counts in ledger list
+        if (t.cylinderOut > 0 || t.cylinderIn > 0) {
+          let cylText = `<div style="margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap;">`;
+          if (t.cylinderOut > 0) {
+            cylText += `<span class="badge" style="font-size:10px; padding:2px 6px; font-weight:600; background: rgba(59, 130, 246, 0.1); color: var(--pri); border: 1px solid rgba(59, 130, 246, 0.25);"><i class="fa-solid fa-arrow-up-from-bracket" style="margin-right:4px;"></i>Cyl Out: ${t.cylinderOut}</span>`;
+          }
+          if (t.cylinderIn > 0) {
+            cylText += `<span class="badge" style="font-size:10px; padding:2px 6px; font-weight:600; background: rgba(16, 185, 129, 0.1); color: var(--suc); border: 1px solid rgba(16, 185, 129, 0.25);"><i class="fa-solid fa-arrow-down-to-bracket" style="margin-right:4px;"></i>Cyl In: ${t.cylinderIn}</span>`;
+          }
+          cylText += `</div>`;
+          descHTML += cylText;
+        }
+        
         body.innerHTML += `
           <tr>
             <td>${formatDate(t.date)}</td>
@@ -10203,6 +10359,10 @@
                 <span class="col-title">Voucher Details:</span>
                 <p class="party-meta"><strong>Payment Mode:</strong> ${t.paymentMode || 'Cash/Bank'}</p>
                 <p class="party-meta"><strong>Reference / UTR:</strong> ${t.bankRef || '--'}</p>
+                ${(t.cylinderOut > 0 || t.cylinderIn > 0) ? `
+                  <p class="party-meta"><strong>Cylinders Delivered:</strong> ${t.cylinderOut || 0}</p>
+                  <p class="party-meta"><strong>Cylinders Returned:</strong> ${t.cylinderIn || 0}</p>
+                ` : ''}
                 <p class="party-meta"><strong>Remarks:</strong> ${t.description || '--'}</p>
               </div>
             </div>
