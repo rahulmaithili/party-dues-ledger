@@ -2855,6 +2855,18 @@
                 <label>Terms or Notes</label>
                 <textarea id="invoiceDescription" class="light-form-control" style="height: 120px; resize: none;"></textarea>
               </div>
+              <div class="form-group" style="margin-top: 12px;">
+                <div class="grid-2">
+                  <div>
+                    <label style="font-size: 12px; font-weight:600; display:block; margin-bottom:4px;">Filled Cylinders Delivered</label>
+                    <input type="number" id="invoiceCylinderOut" class="light-form-control" value="0" min="0" style="height:38px;">
+                  </div>
+                  <div>
+                    <label style="font-size: 12px; font-weight:600; display:block; margin-bottom:4px;">Empty Cylinders Returned</label>
+                    <input type="number" id="invoiceCylinderIn" class="light-form-control" value="0" min="0" style="height:38px;">
+                  </div>
+                </div>
+              </div>
             </div>
             <div>
               <table style="font-weight: 500;">
@@ -3644,6 +3656,7 @@
           <div class="text-right">
             <p><strong>Opening Balance:</strong> <span id="ledgerOpeningBalance">₹0.00</span></p>
             <p style="font-size: 16px; font-weight:700; margin-top:4px;"><strong>Closing Balance:</strong> <span id="ledgerClosingBalance">₹0.00</span></p>
+            <p style="font-size: 13.5px; font-weight:600; margin-top:4px; color: var(--acc);"><strong>Cylinders Holding:</strong> <span id="ledgerCylindersHolding">0</span></p>
           </div>
         </div>
         <div class="tabs" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--brd); padding-bottom: 10px;">
@@ -3724,7 +3737,8 @@
         </div>
         <div style="display: flex; gap: 8px; margin-left: auto;">
           <button class="btn btn-primary" onclick="printPartyLedger()"><i class="fa-solid fa-print"></i> Print Statement</button>
-          <button class="btn btn-accent hide-for-party" onclick="emailPartyLedger()"><i class="fa-solid fa-envelope"></i> Email Statement</button>
+          <button class="btn btn-info hide-for-party" id="ledgerNoDuesBtn" onclick="printNoDuesLetter()"><i class="fa-solid fa-file-invoice"></i> No Dues Certificate</button>
+          <button class="btn btn-accent hide-for-party" id="ledgerNocBtn" onclick="printNocLetter()"><i class="fa-solid fa-shield-halved"></i> NOC Certificate</button>
           <button class="btn btn-secondary" onclick="closeModal('ledgerModal')">Close</button>
         </div>
       </div>
@@ -4457,11 +4471,86 @@
           return;
         }
 
-        // ---- SAVE: saveSecurityDeposit / saveSecurityRefund ----
-        if (action === 'saveSecurityDeposit' || action === 'saveSecurityRefund') {
-          const id = payload.id || ('SEC_' + _fbId());
-          await db.collection('cylinderSecurity').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
-          _logActivity('SAVE', 'CylinderSecurity', `Saved security deposit/refund`);
+        // ---- SAVE: saveSecurityDeposit ----
+        if (action === 'saveSecurityDeposit') {
+          const txn = payload;
+          const id = txn.id || ('TXN_' + _fbId());
+          txn.id = id;
+          const batch = db.batch();
+          
+          let totalIn = 0;
+          let refundAmount = 0;
+          const foundSec = App.data.cylinderSecurity ? App.data.cylinderSecurity.find(s => s.id === txn.id) : null;
+          if (foundSec) {
+            totalIn = parseFloat(foundSec.totalIn || 0);
+            refundAmount = parseFloat(foundSec.refundAmount || 0);
+          }
+
+          const updates = {};
+          rollbackLocalBalances(txn.id, updates);
+          
+          const credit = parseFloat(txn.credit || 0);
+          adjustLocalBankForVoucher(txn.paymentMode, credit, 'Receipt', updates);
+
+          _applyCalculatedUpdates(updates, batch);
+
+          batch.set(db.collection('transactions').doc(txn.id), txn, { merge: true });
+
+          const secRecord = {
+            id: txn.id,
+            partyId: txn.partyId,
+            partyName: txn.partyName,
+            cylinderType: txn.cylinderType || "Cylinder",
+            totalOut: parseFloat(txn.cylinderOut || 1),
+            totalIn: totalIn,
+            pending: parseFloat(txn.cylinderOut || 1) - totalIn,
+            depositAmount: parseFloat(txn.credit || 0),
+            depositDate: txn.date,
+            refundAmount: refundAmount,
+            notes: txn.description || ""
+          };
+          batch.set(db.collection('cylinderSecurity').doc(txn.id), secRecord, { merge: true });
+
+          await batch.commit();
+          _logActivity('SAVE', 'CylinderSecurity', `Saved security deposit: ${txn.id}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: saveSecurityRefund ----
+        if (action === 'saveSecurityRefund') {
+          const txn = payload;
+          const id = txn.id || ('TXN_' + _fbId());
+          txn.id = id;
+          const batch = db.batch();
+
+          const updates = {};
+          rollbackLocalBalances(txn.id, updates);
+
+          const amount = parseFloat(txn.debit || 0);
+          adjustLocalBankForVoucher(txn.paymentMode, amount, 'Payment', updates);
+
+          _applyCalculatedUpdates(updates, batch);
+
+          batch.set(db.collection('transactions').doc(txn.id), txn, { merge: true });
+
+          const secRecord = App.data.cylinderSecurity ? App.data.cylinderSecurity.find(s => s.id === txn.securityRecordId) : null;
+          if (secRecord) {
+            const returnQty = parseFloat(txn.cylinderIn || 0);
+            const refundPaid = parseFloat(txn.debit || 0);
+            
+            const updatedSecRecord = Object.assign({}, secRecord, {
+              totalIn: parseFloat(secRecord.totalIn || 0) + returnQty,
+              pending: parseFloat(secRecord.totalOut || 0) - (parseFloat(secRecord.totalIn || 0) + returnQty),
+              refundAmount: parseFloat(secRecord.refundAmount || 0) + refundPaid,
+              refundDate: txn.date,
+              notes: txn.description || secRecord.notes || ""
+            });
+            batch.set(db.collection('cylinderSecurity').doc(txn.securityRecordId), updatedSecRecord, { merge: true });
+          }
+
+          await batch.commit();
+          _logActivity('SAVE', 'CylinderSecurity', `Saved security refund: ${txn.id}`);
           success({ success: true });
           return;
         }
@@ -4990,6 +5079,27 @@
           const base = updates['/bankAccounts/' + toAcc.id] || Object.assign({}, toAcc);
           base.balance = parseFloat(base.balance || 0) - amt;
           updates['/bankAccounts/' + toAcc.id] = base;
+        }
+      }
+      else if (oldTxn.txnType === 'SecurityDeposit') {
+        const credit = parseFloat(oldTxn.credit || 0);
+        adjustLocalBankForVoucher(oldTxn.paymentMode, credit, 'Payment', updates);
+        updates['/cylinderSecurity/' + oldTxn.id] = null; 
+      }
+      else if (oldTxn.txnType === 'SecurityRefund') {
+        const debit = parseFloat(oldTxn.debit || 0);
+        adjustLocalBankForVoucher(oldTxn.paymentMode, debit, 'Receipt', updates);
+        
+        const secRecord = App.data.cylinderSecurity.find(s => s.id === oldTxn.securityRecordId);
+        if (secRecord) {
+          const returnQty = parseFloat(oldTxn.cylinderIn || 0);
+          const refundPaid = parseFloat(oldTxn.debit || 0);
+          
+          const base = updates['/cylinderSecurity/' + oldTxn.securityRecordId] || Object.assign({}, secRecord);
+          base.totalIn = parseFloat(base.totalIn || 0) - returnQty;
+          base.pending = parseFloat(base.totalOut || 0) - base.totalIn;
+          base.refundAmount = parseFloat(base.refundAmount || 0) - refundPaid;
+          updates['/cylinderSecurity/' + oldTxn.securityRecordId] = base;
         }
       }
     }
@@ -6921,6 +7031,8 @@
       document.getElementById('invoiceForm').reset();
       document.getElementById('invoiceId').value = '';
       document.getElementById('invoiceTxnType').value = type;
+      document.getElementById('invoiceCylinderOut').value = 0;
+      document.getElementById('invoiceCylinderIn').value = 0;
       
       const isSale = type === 'Sale';
       document.getElementById('invoiceModalTitle').textContent = isSale ? 'Create Sales Invoice' : 'Create Purchase Bill';
@@ -7097,6 +7209,9 @@
       const paidBank = parseFloat(document.getElementById('invPaidBank').value || 0);
       const due = grand - (paidCash + paidBank);
 
+      const cylinderOut = parseFloat(document.getElementById('invoiceCylinderOut').value || 0);
+      const cylinderIn = parseFloat(document.getElementById('invoiceCylinderIn').value || 0);
+
       const payload = {
         id: id,
         date: document.getElementById('invoiceDate').value,
@@ -7107,6 +7222,8 @@
         txnType: type,
         debit: type === 'Sale' ? grand : 0,
         credit: type === 'Purchase' ? grand : 0,
+        cylinderOut: cylinderOut,
+        cylinderIn: cylinderIn,
         items: items,
         totals: {
           subTotal: subTotal,
@@ -7162,6 +7279,8 @@
       initSearchableDropdown('invoicePartyId');
 
       document.getElementById('invoiceDescription').value = t.description || '';
+      document.getElementById('invoiceCylinderOut').value = t.cylinderOut || 0;
+      document.getElementById('invoiceCylinderIn').value = t.cylinderIn || 0;
       document.getElementById('invDiscount').value = t.totals && t.totals.discount || 0;
       document.getElementById('invPaidCash').value = t.totals && t.totals.paidCash || 0;
       document.getElementById('invPaidBank').value = t.totals && t.totals.paidBank || 0;
@@ -9162,6 +9281,13 @@
 
       document.getElementById('ledgerOpeningBalance').textContent = formatCurrency(openingBal);
       document.getElementById('ledgerClosingBalance').innerHTML = `${formatCurrency(runningBal)}${wsapBtn}`;
+
+      // Calculate cylinders holding
+      let cylindersHolding = 0;
+      ledger.forEach(t => {
+        cylindersHolding += parseFloat(t.cylinderOut || 0) - parseFloat(t.cylinderIn || 0);
+      });
+      document.getElementById('ledgerCylindersHolding').textContent = cylindersHolding;
       
       // Update the add sale / add payment buttons dynamically
       const isCustomer = getPartyBaseType(p) === 'Customer';
@@ -9249,6 +9375,237 @@
                 }, 500);
               };
             ${'</scr' + 'ipt>'}
+          </body>
+        </html>
+      `);
+      w.document.close();
+    }
+
+    function printNoDuesLetter(partyId) {
+      const id = partyId || document.getElementById('followupPartyId').value;
+      const p = App.data.parties.find(x => x.id === id);
+      if (!p) return;
+
+      // Calculate closing balance
+      const ledger = App.data.transactions.filter(t => t.partyId === p.id);
+      let runningBal = parseFloat(p.openingBalance || 0);
+      ledger.forEach(t => {
+        runningBal += parseFloat(t.debit || 0) - parseFloat(t.credit || 0);
+      });
+
+      if (runningBal !== 0) {
+        showToast(`Cannot issue No Dues Certificate. Account has outstanding balance of ${formatCurrency(runningBal)}.`, 'warning');
+        return;
+      }
+
+      const cp = App.data.companyProfile || {};
+      const companyName = cp.companyName || 'Mr.Rahul ERP';
+      const logoHtml = cp.companyLogo ? `<img src="${cp.companyLogo}" class="logo">` : '';
+
+      const w = window.open();
+      w.document.write(`
+        <html>
+          <head>
+            <title>No Dues Certificate - ${p.name}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+              body { font-family: 'Inter', sans-serif; color: #1E293B; padding: 60px 40px; margin: 0; background: #FFF; line-height: 1.6; }
+              .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 2px solid #0F172A;
+                padding-bottom: 20px;
+                margin-bottom: 40px;
+              }
+              .company-details h1 { font-size: 24px; font-weight: 700; color: #0F172A; margin: 0 0 6px 0; }
+              .company-details p { font-size: 12px; color: #475569; margin: 2px 0; }
+              .logo { max-height: 70px; max-width: 150px; object-fit: contain; }
+              .cert-title {
+                text-align: center;
+                font-size: 22px;
+                font-weight: 700;
+                color: #0F172A;
+                margin: 40px 0;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                text-decoration: underline;
+              }
+              .content { font-size: 15px; margin-bottom: 60px; text-align: justify; }
+              .meta-info { margin-bottom: 30px; font-size: 14px; }
+              .meta-info table { width: 100%; margin-top: 10px; border-collapse: collapse; }
+              .meta-info td { padding: 6px 0; }
+              .signature-section {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 100px;
+                font-size: 14px;
+              }
+              .signature-box { text-align: center; width: 200px; border-top: 1px solid #94A3B8; padding-top: 8px; }
+              @media print {
+                body { padding: 20px; }
+                .no-print { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="no-print" style="background: #F1F5F9; padding: 12px; margin-bottom: 20px; display: flex; justify-content: flex-end; border-radius: 6px;">
+              <button onclick="window.print()" style="background: #0F172A; color: #FFF; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 600; cursor: pointer;">Print Certificate</button>
+            </div>
+            <div class="header">
+              <div class="company-details">
+                <h1>${companyName}</h1>
+                <p>${cp.companyAddress || ''}</p>
+                <p>Mobile: ${cp.companyMobile || ''} | Email: ${cp.companyEmail || ''}</p>
+                <p>GSTIN: ${cp.companyGstin || ''}</p>
+              </div>
+              ${logoHtml}
+            </div>
+            
+            <div class="meta-info">
+              <p style="text-align: right;"><strong>Date:</strong> ${formatDate(new Date().toISOString().split('T')[0])}</p>
+              <p><strong>To,</strong></p>
+              <p style="font-size: 16px; font-weight: 700; margin: 4px 0;">${p.name}</p>
+              <p style="margin: 2px 0;">${p.address || ''}</p>
+              <p style="margin: 2px 0;">Mobile: ${p.mobile}</p>
+              ${p.gstin ? `<p style="margin: 2px 0;">GSTIN: ${p.gstin}</p>` : ''}
+            </div>
+
+            <div class="cert-title">No Dues Certificate</div>
+
+            <div class="content">
+              <p>This is to certify that the account of <strong>${p.name}</strong> (Party ID: <strong>${p.id}</strong>) has been fully settled and reconciled in our books of accounts. As of today, there are no outstanding payments, debit balances, or dues pending against their name.</p>
+              <p>We confirm that all transactions have been successfully cleared, and we hold no financial claims or liabilities against the said party. This certificate is issued upon their request for account closure/reconciliation purposes.</p>
+            </div>
+
+            <div class="signature-section">
+              <div class="signature-box">
+                <p>Prepared By</p>
+              </div>
+              <div class="signature-box">
+                <p>Authorized Signatory</p>
+                <p style="font-size: 12px; color: #64748B; margin-top: 4px;">${companyName}</p>
+              </div>
+            </div>
+          </body>
+        </html>
+      `);
+      w.document.close();
+    }
+
+    function printNocLetter(partyId) {
+      const id = partyId || document.getElementById('followupPartyId').value;
+      const p = App.data.parties.find(x => x.id === id);
+      if (!p) return;
+
+      // Calculate closing balance and cylinders holding
+      const ledger = App.data.transactions.filter(t => t.partyId === p.id);
+      let runningBal = parseFloat(p.openingBalance || 0);
+      let cylindersHolding = 0;
+      ledger.forEach(t => {
+        runningBal += parseFloat(t.debit || 0) - parseFloat(t.credit || 0);
+        cylindersHolding += parseFloat(t.cylinderOut || 0) - parseFloat(t.cylinderIn || 0);
+      });
+
+      if (runningBal !== 0) {
+        showToast(`Cannot issue NOC. Account has outstanding balance of ${formatCurrency(runningBal)}.`, 'warning');
+        return;
+      }
+
+      if (cylindersHolding > 0) {
+        showToast(`Cannot issue NOC. Party currently holds ${cylindersHolding} pending cylinders. Please record their return first.`, 'warning');
+        return;
+      }
+
+      const cp = App.data.companyProfile || {};
+      const companyName = cp.companyName || 'Mr.Rahul ERP';
+      const logoHtml = cp.companyLogo ? `<img src="${cp.companyLogo}" class="logo">` : '';
+
+      const w = window.open();
+      w.document.write(`
+        <html>
+          <head>
+            <title>No Objection Certificate - ${p.name}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+              body { font-family: 'Inter', sans-serif; color: #1E293B; padding: 60px 40px; margin: 0; background: #FFF; line-height: 1.6; }
+              .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 2px solid #0F172A;
+                padding-bottom: 20px;
+                margin-bottom: 40px;
+              }
+              .company-details h1 { font-size: 24px; font-weight: 700; color: #0F172A; margin: 0 0 6px 0; }
+              .company-details p { font-size: 12px; color: #475569; margin: 2px 0; }
+              .logo { max-height: 70px; max-width: 150px; object-fit: contain; }
+              .cert-title {
+                text-align: center;
+                font-size: 22px;
+                font-weight: 700;
+                color: #0F172A;
+                margin: 40px 0;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                text-decoration: underline;
+              }
+              .content { font-size: 15px; margin-bottom: 60px; text-align: justify; }
+              .meta-info { margin-bottom: 30px; font-size: 14px; }
+              .meta-info table { width: 100%; margin-top: 10px; border-collapse: collapse; }
+              .meta-info td { padding: 6px 0; }
+              .signature-section {
+                display: flex;
+                justify-content: space-between;
+                margin-top: 100px;
+                font-size: 14px;
+              }
+              .signature-box { text-align: center; width: 200px; border-top: 1px solid #94A3B8; padding-top: 8px; }
+              @media print {
+                body { padding: 20px; }
+                .no-print { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="no-print" style="background: #F1F5F9; padding: 12px; margin-bottom: 20px; display: flex; justify-content: flex-end; border-radius: 6px;">
+              <button onclick="window.print()" style="background: #0F172A; color: #FFF; border: none; padding: 8px 16px; border-radius: 4px; font-weight: 600; cursor: pointer;">Print NOC</button>
+            </div>
+            <div class="header">
+              <div class="company-details">
+                <h1>${companyName}</h1>
+                <p>${cp.companyAddress || ''}</p>
+                <p>Mobile: ${cp.companyMobile || ''} | Email: ${cp.companyEmail || ''}</p>
+                <p>GSTIN: ${cp.companyGstin || ''}</p>
+              </div>
+              ${logoHtml}
+            </div>
+            
+            <div class="meta-info">
+              <p style="text-align: right;"><strong>Date:</strong> ${formatDate(new Date().toISOString().split('T')[0])}</p>
+              <p><strong>To,</strong></p>
+              <p style="font-size: 16px; font-weight: 700; margin: 4px 0;">${p.name}</p>
+              <p style="margin: 2px 0;">${p.address || ''}</p>
+              <p style="margin: 2px 0;">Mobile: ${p.mobile}</p>
+              ${p.gstin ? `<p style="margin: 2px 0;">GSTIN: ${p.gstin}</p>` : ''}
+            </div>
+
+            <div class="cert-title">No Objection Certificate (NOC)</div>
+
+            <div class="content">
+              <p>This is to certify that <strong>${p.name}</strong> (Party ID: <strong>${p.id}</strong>) has returned all rental/deposit cylinders in good, clean, and merchantable condition. There are no outstanding or pending cylinders remaining under their name in our records.</p>
+              <p>Furthermore, all financial ledger balances, security deposits, and invoices have been fully settled and closed with zero outstanding dues. Consequently, <strong>${companyName}</strong> has no objection to the closure of their account or termination of the cylinder rental contract.</p>
+            </div>
+
+            <div class="signature-section">
+              <div class="signature-box">
+                <p>Verified By</p>
+              </div>
+              <div class="signature-box">
+                <p>Authorized Signatory</p>
+                <p style="font-size: 12px; color: #64748B; margin-top: 4px;">${companyName}</p>
+              </div>
+            </div>
           </body>
         </html>
       `);
