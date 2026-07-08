@@ -5123,7 +5123,7 @@
       });
 
       const list = App.data.parties.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(search) || (p.mobile || '').includes(search) || (p.gstin || '').toLowerCase().includes(search);
+        const matchesSearch = String(p.name || '').toLowerCase().includes(search) || String(p.mobile || '').includes(search) || String(p.gstin || '').toLowerCase().includes(search);
         let matchesType = false;
         if (filter === 'All') {
           matchesType = true;
@@ -5605,7 +5605,7 @@
       });
 
       const list = App.data.products.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(search) || p.category.toLowerCase().includes(search) || (p.hsn || '').includes(search);
+        const matchesSearch = String(p.name || '').toLowerCase().includes(search) || String(p.category || '').toLowerCase().includes(search) || String(p.hsn || '').includes(search);
         const matchesCat = filter === 'All' || p.category === filter;
         return matchesSearch && matchesCat;
       });
@@ -6009,7 +6009,7 @@
       const body = document.getElementById('salesTableBody');
       body.innerHTML = '';
 
-      const list = App.data.transactions.filter(t => t.txnType === 'Sale' && (t.voucherNo.toLowerCase().includes(search) || t.partyName.toLowerCase().includes(search)));
+      const list = App.data.transactions.filter(t => t.txnType === 'Sale' && (String(t.voucherNo || '').toLowerCase().includes(search) || String(t.partyName || '').toLowerCase().includes(search)));
 
       if (list.length === 0) {
         body.innerHTML = '<tr><td colspan="8" class="text-center">No sales invoices recorded.</td></tr>';
@@ -6051,7 +6051,7 @@
       const body = document.getElementById('purchasesTableBody');
       body.innerHTML = '';
 
-      const list = App.data.transactions.filter(t => t.txnType === 'Purchase' && (t.voucherNo.toLowerCase().includes(search) || t.partyName.toLowerCase().includes(search)));
+      const list = App.data.transactions.filter(t => t.txnType === 'Purchase' && (String(t.voucherNo || '').toLowerCase().includes(search) || String(t.partyName || '').toLowerCase().includes(search)));
 
       if (list.length === 0) {
         body.innerHTML = '<tr><td colspan="8" class="text-center">No purchases recorded.</td></tr>';
@@ -6413,7 +6413,7 @@
       body.innerHTML = '';
 
       const list = App.data.transactions.filter(t => {
-        const matchesSearch = (t.voucherNo || '').toLowerCase().includes(search) || t.partyName.toLowerCase().includes(search);
+        const matchesSearch = String(t.voucherNo || '').toLowerCase().includes(search) || String(t.partyName || '').toLowerCase().includes(search);
         const matchesType = filter === 'All' ? (t.txnType === 'Receipt' || t.txnType === 'Payment') : t.txnType === filter;
         return matchesSearch && matchesType;
       });
@@ -6676,7 +6676,7 @@
       const body = document.getElementById('expensesTableBody');
       body.innerHTML = '';
 
-      const list = App.data.expenses.filter(e => e.category.toLowerCase().includes(search) || e.description.toLowerCase().includes(search));
+      const list = App.data.expenses.filter(e => String(e.category || '').toLowerCase().includes(search) || String(e.description || '').toLowerCase().includes(search));
       
       // Calculate category totals
       const catTotals = {};
@@ -6806,7 +6806,7 @@
       const body = document.getElementById('quotTableBody');
       body.innerHTML = '';
 
-      const list = App.data.quotations.filter(q => q.voucherNo.toLowerCase().includes(search) || q.partyName.toLowerCase().includes(search));
+      const list = App.data.quotations.filter(q => String(q.voucherNo || '').toLowerCase().includes(search) || String(q.partyName || '').toLowerCase().includes(search));
 
       if (list.length === 0) {
         body.innerHTML = '<tr><td colspan="7" class="text-center">No quotations found.</td></tr>';
@@ -7124,7 +7124,7 @@
       const search = document.getElementById('poSearch').value.toLowerCase();
       const body = document.getElementById('poTableBody');
       body.innerHTML = '';
-      const list = App.data.purchaseOrders.filter(p => p.voucherNo.toLowerCase().includes(search) || p.partyName.toLowerCase().includes(search));
+      const list = App.data.purchaseOrders.filter(p => String(p.voucherNo || '').toLowerCase().includes(search) || String(p.partyName || '').toLowerCase().includes(search));
 
       if (list.length === 0) {
         body.innerHTML = '<tr><td colspan="7" class="text-center">No purchase orders found.</td></tr>';
@@ -7159,7 +7159,7 @@
       const search = document.getElementById('challanSearch').value.toLowerCase();
       const body = document.getElementById('challanTableBody');
       body.innerHTML = '';
-      const list = App.data.deliveryChallans.filter(c => c.voucherNo.toLowerCase().includes(search) || c.partyName.toLowerCase().includes(search));
+      const list = App.data.deliveryChallans.filter(c => String(c.voucherNo || '').toLowerCase().includes(search) || String(c.partyName || '').toLowerCase().includes(search));
 
       if (list.length === 0) {
         body.innerHTML = '<tr><td colspan="6" class="text-center">No delivery challans found.</td></tr>';
@@ -7196,7 +7196,7 @@
       const search = document.getElementById('returnSearch').value.toLowerCase();
       const body = document.getElementById('returnsTableBody');
       body.innerHTML = '';
-      const list = App.data.transactions.filter(t => t.txnType === 'Return' && (t.voucherNo.toLowerCase().includes(search) || t.partyName.toLowerCase().includes(search)));
+      const list = App.data.transactions.filter(t => t.txnType === 'Return' && (String(t.voucherNo || '').toLowerCase().includes(search) || String(t.partyName || '').toLowerCase().includes(search)));
 
       if (list.length === 0) {
         body.innerHTML = '<tr><td colspan="6" class="text-center">No return entries recorded.</td></tr>';
@@ -7382,7 +7382,7 @@
       if (!App.data.cylinderSecurity) App.data.cylinderSecurity = [];
 
       const list = App.data.cylinderSecurity.filter(s => {
-        const matchesSearch = s.partyName.toLowerCase().includes(search) || s.cylinderType.toLowerCase().includes(search);
+        const matchesSearch = String(s.partyName || '').toLowerCase().includes(search) || String(s.cylinderType || '').toLowerCase().includes(search);
         
         let matchesStatus = true;
         const pending = parseFloat(s.pending || 0);
@@ -8696,7 +8696,7 @@
       const filter = document.getElementById('partyFilterType').value;
 
       const filteredParties = App.data.parties.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(search) || (p.mobile || '').includes(search) || (p.gstin || '').toLowerCase().includes(search);
+        const matchesSearch = String(p.name || '').toLowerCase().includes(search) || String(p.mobile || '').includes(search) || String(p.gstin || '').toLowerCase().includes(search);
         let matchesType = false;
         if (filter === 'All') {
           matchesType = true;
