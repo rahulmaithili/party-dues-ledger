@@ -4713,7 +4713,7 @@
           if (payload.newPassword && payload.newPassword.trim()) {
             updates.passwordHash = simpleHash(payload.newPassword.trim());
           }
-          await db.collection('users').doc(payload.id).update(updates);
+          await db.collection('users').doc(payload.id).set(updates, { merge: true });
           const updatedUser = Object.assign({}, App.currentUser, updates);
           _logActivity('UPDATE', 'Users', `Profile updated: ${payload.id}`);
           success({ success: true, user: updatedUser });
@@ -4772,7 +4772,7 @@
           }
           const userSnap = await db.collection('users').where('email', '==', payload.email).get();
           if (!userSnap.empty) {
-            await db.collection('users').doc(userSnap.docs[0].id).update({ passwordHash: payload.newPasswordHash });
+            await db.collection('users').doc(userSnap.docs[0].id).set({ passwordHash: payload.newPasswordHash }, { merge: true });
           }
           await db.collection('passwordResets').doc(resetSnap.docs[0].id).update({ used: true });
           success({ success: true, message: 'Password reset successfully' });
@@ -4785,7 +4785,7 @@
             await db.collection('notifications').doc(payload.notificationId).update({ status: 'Approved', read: true });
           }
           if (action === 'approveUserRegistration' && payload.userId) {
-            await db.collection('users').doc(payload.userId).update({ status: 'Active' });
+            await db.collection('users').doc(payload.userId).set({ status: 'Active' }, { merge: true });
           }
           _logActivity('APPROVE', 'Admin', `Approved: ${action}`);
           success({ success: true, message: 'Approved successfully' });
