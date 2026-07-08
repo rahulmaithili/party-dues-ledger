@@ -2432,19 +2432,19 @@
 
             <div class="dashboard-card">
               <div class="card-header">
-                <h3>Google Sheets Connection</h3>
+                <h3>Firebase Connection</h3>
               </div>
               <p style="font-size: 13.5px; color: var(--txt2); margin-bottom: 20px; line-height: 1.5;">
-                Your application is currently connected to Google Sheets Database via Apps Script. You can disconnect or connect to a different database below.
+                Your application is currently connected to Firebase Realtime Database and Firestore for real-time synchronization.
               </p>
               <div style="font-size: 13px; color: var(--txt); margin-bottom: 20px; background: var(--bg); padding: 12px; border-radius: var(--r); border: 1px solid var(--brd);">
                 <div style="display: flex; flex-direction: column; gap: 8px;">
-                  <span style="font-weight: 600; color: var(--txt2);">Web App URL:</span>
-                  <span id="googleScriptUrlText" style="font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px;">-</span>
+                  <span style="font-weight: 600; color: var(--txt2);">Firebase Project ID:</span>
+                  <span id="googleScriptUrlText" style="font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px;">gas-agency-mr</span>
                 </div>
               </div>
-              <button class="btn btn-danger" onclick="disconnectBackend()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                <i class="fa-solid fa-right-from-bracket"></i> Disconnect Database
+              <button class="btn btn-secondary" onclick="disconnectBackend()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" disabled>
+                <i class="fa-solid fa-lock"></i> Firebase Always Connected
               </button>
             </div>
           </div>
@@ -3778,7 +3778,9 @@
         purchaseOrders: [],
         deliveryChallans: [],
         activityLog: [],
-        crmFollowups: []
+        crmFollowups: [],
+        cylinderSecurity: [],
+        partyTypes: []
       },
       currentUser: null,
       currentPage: 'dashboard',
@@ -4155,6 +4157,19 @@
       } catch(e) { /* silent */ }
     }
 
+    function _applyCalculatedUpdates(updates, batch) {
+      for (const [path, val] of Object.entries(updates)) {
+        const parts = path.replace(/^\//, '').split('/');
+        const col = parts[0];
+        const docId = parts[1];
+        if (val === null) {
+          batch.delete(db.collection(col).doc(docId));
+        } else {
+          batch.set(db.collection(col).doc(docId), val, { merge: true });
+        }
+      }
+    }
+
     // Main Firebase action dispatcher (drop-in replacement for callServer)
     async function callServer(action, payload, callback, failCallback, silentMode) {
       const isReadAction = ['getAllData', 'getDashboardStats', 'getReport'].includes(action);
@@ -4179,7 +4194,8 @@
             Users: 'users', CompanyProfile: 'companyProfile', Transactions: 'transactions',
             Expenses: 'expenses', Quotations: 'quotations', PurchaseOrders: 'purchaseOrders',
             DeliveryChallans: 'deliveryChallans', ActivityLog: 'activityLog',
-            Notifications: 'notifications', CylinderSecurity: 'cylinderSecurity'
+            Notifications: 'notifications', CylinderSecurity: 'cylinderSecurity',
+            CRMFollowups: 'crmFollowups', PartyTypes: 'partyTypes'
           };
           let sheetsToLoad = Object.keys(sheetMap);
           if (payload && payload.sheets) {
@@ -4233,7 +4249,7 @@
           const newUser = { id: newId, name: payload.name, email: payload.email, passwordHash: payload.passwordHash, role: 'Staff', status: 'Pending' };
           await db.collection('users').doc(newId).set(newUser);
           // Create approval notification
-          await db.collection('notifications').add({ id: _fbId(), type: 'UserRegistration', message: `New user registration: ${payload.name} (${payload.email})`, status: 'Pending', targetUserId: newId, createdAt: new Date().toISOString(), read: false });
+          await db.collection('notifications').add({ id: _fbId(), type: 'UserRegistration', message: `New user registration: ${payload.name} (${payload.email})`, status: 'Pending', targetUserId: newId, createdAt: new Date().toISOString(), date: new Date().toISOString(), read: false });
           success({ success: true, message: 'Registration submitted. Waiting for admin approval.' });
           return;
         }
@@ -4279,66 +4295,26 @@
           const id = payload.id || ('TXN_' + _fbId());
           const txnRef = db.collection('transactions').doc(id);
 
-          // On EDIT: rollback old stock and bank before applying new values
+          const updates = {};
           if (isEdit) {
-            const oldTxn = App.data.transactions.find(t => t.id === payload.id);
-            if (oldTxn && oldTxn.items) {
-              oldTxn.items.forEach(item => {
-                if (item.productId) {
-                  const prod = App.data.products.find(p => p.id === item.productId);
-                  if (prod) {
-                    const reverseStock = action === 'saveInvoice'
-                      ? (parseFloat(prod.stock || 0) + parseFloat(item.quantity || 0))
-                      : (parseFloat(prod.stock || 0) - parseFloat(item.quantity || 0));
-                    batch.update(db.collection('products').doc(item.productId), { stock: reverseStock });
-                  }
-                }
-              });
-            }
-            if (oldTxn && oldTxn.totals) {
-              const oldCash = parseFloat(oldTxn.totals.paidCash || 0);
-              const oldBank = parseFloat(oldTxn.totals.paidBank || 0);
-              const ba001 = App.data.bankAccounts.find(b => b.id === 'BA001');
-              const ba002 = App.data.bankAccounts.find(b => b.id === 'BA002');
-              if (ba001 && oldCash) batch.update(db.collection('bankAccounts').doc('BA001'), { balance: parseFloat(ba001.balance || 0) - (action === 'saveInvoice' ? oldCash : -oldCash) });
-              if (ba002 && oldBank) batch.update(db.collection('bankAccounts').doc('BA002'), { balance: parseFloat(ba002.balance || 0) - (action === 'saveInvoice' ? oldBank : -oldBank) });
-            }
+            rollbackLocalBalances(payload.id, updates);
           }
 
-          batch.set(txnRef, Object.assign({}, payload, { id }), { merge: true });
+          // Apply new updates on top
+          const revMode = action === 'saveInvoice' ? 'sale' : 'purchase';
+          adjustLocalStock(payload.items, revMode, updates);
 
-          // Update stock with new values
-          if (payload.items) {
-            payload.items.forEach(item => {
-              if (item.productId) {
-                const prod = App.data.products.find(p => p.id === item.productId);
-                if (prod) {
-                  // Get current stock from batch or App.data
-                  const currentStock = parseFloat(prod.stock || 0);
-                  const newStock = action === 'saveInvoice'
-                    ? (currentStock - parseFloat(item.quantity || 0))
-                    : (currentStock + parseFloat(item.quantity || 0));
-                  batch.update(db.collection('products').doc(item.productId), { stock: newStock });
-                }
-              }
-            });
-          }
-
-          // Update bank accounts with new values
           const paidCash = parseFloat(payload.totals && payload.totals.paidCash || 0);
           const paidBank = parseFloat(payload.totals && payload.totals.paidBank || 0);
-          if (paidCash || paidBank) {
-            App.data.bankAccounts.forEach(ba => {
-              if (ba.id === 'BA001' && paidCash) {
-                const newBal = parseFloat(ba.balance || 0) + (action === 'saveInvoice' ? paidCash : -paidCash);
-                batch.update(db.collection('bankAccounts').doc('BA001'), { balance: newBal });
-              }
-              if (ba.id === 'BA002' && paidBank) {
-                const newBal = parseFloat(ba.balance || 0) + (action === 'saveInvoice' ? paidBank : -paidBank);
-                batch.update(db.collection('bankAccounts').doc('BA002'), { balance: newBal });
-              }
-            });
-          }
+          adjustLocalBankForVoucher('Cash', paidCash, action === 'saveInvoice' ? 'Receipt' : 'Payment', updates);
+          adjustLocalBankForVoucher('Bank', paidBank, action === 'saveInvoice' ? 'Receipt' : 'Payment', updates);
+
+          // Write compiled changes to the batch
+          _applyCalculatedUpdates(updates, batch);
+
+          // Save main transaction document
+          batch.set(txnRef, Object.assign({}, payload, { id }), { merge: true });
+
           await batch.commit();
           _logActivity('SAVE', 'Transactions', `Saved ${action === 'saveInvoice' ? 'Sale' : 'Purchase'} voucher: ${payload.voucherNo}`);
           success({ success: true });
@@ -4351,50 +4327,25 @@
           const id = payload.id || ('TXN_' + _fbId());
           const batch = db.batch();
           const txnRef = db.collection('transactions').doc(id);
+
+          const updates = {};
+          if (isEdit) {
+            rollbackLocalBalances(payload.id, updates);
+          }
+
+          // Apply new updates on top
+          const amt = parseFloat(payload.credit || payload.debit || 0);
+          adjustLocalBankForVoucher(payload.paymentMode, amt, action === 'saveReceipt' ? 'Receipt' : 'Payment', updates);
+          if (payload.linkedInvoice) {
+            adjustLocalLinkedInvoice(payload.linkedInvoice, amt, payload.paymentMode, false, updates);
+          }
+
+          // Write compiled changes to the batch
+          _applyCalculatedUpdates(updates, batch);
+
+          // Save main transaction document
           batch.set(txnRef, Object.assign({}, payload, { id }), { merge: true });
 
-          // On EDIT: rollback old bank entry first
-          if (isEdit) {
-            const oldTxn = App.data.transactions.find(t => t.id === payload.id);
-            if (oldTxn && oldTxn.paymentMode) {
-              const oldAmt = parseFloat(oldTxn.credit || oldTxn.debit || 0);
-              const oldBaId = oldTxn.paymentMode === 'Cash' ? 'BA001' : 'BA002';
-              const oldBa = App.data.bankAccounts.find(b => b.id === oldBaId);
-              if (oldBa && oldAmt) {
-                const rollbackBal = action === 'saveReceipt'
-                  ? (parseFloat(oldBa.balance || 0) - oldAmt)
-                  : (parseFloat(oldBa.balance || 0) + oldAmt);
-                batch.update(db.collection('bankAccounts').doc(oldBaId), { balance: rollbackBal });
-              }
-            }
-          }
-
-          // Apply new bank entry
-          const amt = parseFloat(payload.credit || payload.debit || 0);
-          if (payload.paymentMode && amt) {
-            const baId = payload.paymentMode === 'Cash' ? 'BA001' : 'BA002';
-            const ba = App.data.bankAccounts.find(b => b.id === baId);
-            if (ba) {
-              const baRef = db.collection('bankAccounts').doc(baId);
-              const newBal = action === 'saveReceipt'
-                ? (parseFloat(ba.balance || 0) + amt)
-                : (parseFloat(ba.balance || 0) - amt);
-              batch.update(baRef, { balance: newBal });
-            }
-            // Update linked invoice balance due
-            if (payload.linkedInvoice) {
-              const inv = App.data.transactions.find(t => t.voucherNo === payload.linkedInvoice);
-              if (inv) {
-                const invRef = db.collection('transactions').doc(inv.id);
-                const totals = Object.assign({}, inv.totals || {});
-                const delta = action === 'saveReceipt' ? amt : -amt;
-                if (payload.paymentMode === 'Cash') totals.paidCash = parseFloat(totals.paidCash || 0) + delta;
-                else totals.paidBank = parseFloat(totals.paidBank || 0) + delta;
-                totals.balanceDue = parseFloat(totals.balanceDue || 0) - delta;
-                batch.update(invRef, { totals });
-              }
-            }
-          }
           await batch.commit();
           _logActivity('SAVE', 'Transactions', `Saved ${action === 'saveReceipt' ? 'Receipt' : 'Payment'}: ${payload.voucherNo}`);
           success({ success: true });
@@ -4403,7 +4354,17 @@
 
         // ---- DELETE: deleteTransaction ----
         if (action === 'deleteTransaction') {
-          await db.collection('transactions').doc(payload.id).delete();
+          const batch = db.batch();
+          const updates = {};
+          rollbackLocalBalances(payload.id, updates);
+
+          // Write compiled rollback changes to the batch
+          _applyCalculatedUpdates(updates, batch);
+
+          // Delete transaction document
+          batch.delete(db.collection('transactions').doc(payload.id));
+
+          await batch.commit();
           _logActivity('DELETE', 'Transactions', `Deleted transaction ID: ${payload.id}`);
           success({ success: true });
           return;
@@ -4414,26 +4375,23 @@
           const isEdit = !!(payload.id && App.data.expenses.find(e => e.id === payload.id));
           const id = payload.id || ('EXP_' + _fbId());
           const batch = db.batch();
-          batch.set(db.collection('expenses').doc(id), Object.assign({}, payload, { id }), { merge: true });
+          const expRef = db.collection('expenses').doc(id);
 
-          const amt = parseFloat(payload.amount || 0);
-          const baId = payload.paymentMode === 'Cash' ? 'BA001' : 'BA002';
-          const ba = App.data.bankAccounts.find(b => b.id === baId);
-
+          const updates = {};
           if (isEdit) {
-            // Rollback old expense bank deduction, then apply new
-            const oldExp = App.data.expenses.find(e => e.id === payload.id);
-            if (oldExp && ba) {
-              const oldAmt = parseFloat(oldExp.amount || 0);
-              const oldBaId = oldExp.paymentMode === 'Cash' ? 'BA001' : 'BA002';
-              const oldBa = App.data.bankAccounts.find(b => b.id === oldBaId);
-              if (oldBa) batch.update(db.collection('bankAccounts').doc(oldBaId), { balance: parseFloat(oldBa.balance || 0) + oldAmt });
-            }
+            rollbackLocalExpense(payload.id, updates);
           }
 
-          if (ba) {
-            batch.update(db.collection('bankAccounts').doc(baId), { balance: parseFloat(ba.balance || 0) - amt });
-          }
+          // Apply new updates on top
+          const amt = parseFloat(payload.amount || 0);
+          adjustLocalBankForVoucher(payload.paymentMode, amt, 'Payment', updates);
+
+          // Write compiled changes to the batch
+          _applyCalculatedUpdates(updates, batch);
+
+          // Save expense document
+          batch.set(expRef, Object.assign({}, payload, { id }), { merge: true });
+
           await batch.commit();
           _logActivity('SAVE', 'Expenses', `Saved expense: ${payload.category}`);
           success({ success: true });
@@ -4442,7 +4400,17 @@
 
         // ---- DELETE: deleteExpense ----
         if (action === 'deleteExpense') {
-          await db.collection('expenses').doc(payload.id).delete();
+          const batch = db.batch();
+          const updates = {};
+          rollbackLocalExpense(payload.id, updates);
+
+          // Write compiled rollback changes to the batch
+          _applyCalculatedUpdates(updates, batch);
+
+          // Delete expense document
+          batch.delete(db.collection('expenses').doc(payload.id));
+
+          await batch.commit();
           _logActivity('DELETE', 'Expenses', `Deleted expense ID: ${payload.id}`);
           success({ success: true });
           return;
@@ -4694,12 +4662,119 @@
         if (action === 'getReport') {
           const fromD = new Date(payload.dateFrom + 'T00:00:00');
           const toD = new Date(payload.dateTo + 'T23:59:59');
-          let txns = App.data.transactions.filter(t => {
-            const d = new Date(t.date);
+          const isDateInRange = (dateStr) => {
+            if (!dateStr) return false;
+            const d = new Date(dateStr);
             return d >= fromD && d <= toD;
-          });
-          if (payload.partyId) txns = txns.filter(t => t.partyId === payload.partyId);
-          success({ success: true, transactions: txns });
+          };
+
+          const type = payload.type;
+          
+          if (type === 'daybook') {
+            const txns = App.data.transactions.filter(t => isDateInRange(t.date));
+            txns.sort((a, b) => new Date(a.date) - new Date(b.date));
+            success({ success: true, type: 'daybook', data: txns });
+            return;
+          }
+          
+          if (type === 'pl') {
+            let totalSales = 0, totalPurchase = 0, totalExpenses = 0;
+            App.data.transactions.forEach(t => {
+              if (isDateInRange(t.date)) {
+                if (t.txnType === 'Sale') totalSales += parseFloat(t.totals && t.totals.grandTotal || t.debit || 0);
+                if (t.txnType === 'Purchase') totalPurchase += parseFloat(t.totals && t.totals.grandTotal || t.credit || 0);
+              }
+            });
+            App.data.expenses.forEach(e => {
+              if (isDateInRange(e.date)) {
+                totalExpenses += parseFloat(e.amount || 0);
+              }
+            });
+            const netProfit = totalSales - totalPurchase - totalExpenses;
+            success({ success: true, type: 'pl', data: { totalSales, totalPurchase, totalExpenses, netProfit } });
+            return;
+          }
+          
+          if (type === 'stock') {
+            const data = App.data.products.map(p => {
+              const stock = parseFloat(p.stock || 0);
+              const rate = parseFloat(p.purchaseRate || 0);
+              return Object.assign({}, p, {
+                value: stock * rate
+              });
+            });
+            success({ success: true, type: 'stock', data: data });
+            return;
+          }
+          
+          if (type === 'partyLedger') {
+            const pid = payload.partyId;
+            const party = App.data.parties.find(p => p.id === pid);
+            if (!party) {
+              success({ success: false, message: 'Party not found' });
+              return;
+            }
+            
+            // Ledger calculations
+            let openingBalance = parseFloat(party.openingBalance || 0);
+            let runningBal = openingBalance;
+            const ledgerData = [];
+            
+            const partyTxns = App.data.transactions
+              .filter(t => t.partyId === pid)
+              .sort((a, b) => new Date(a.date) - new Date(b.date));
+              
+            partyTxns.forEach(t => {
+              const debit = parseFloat(t.debit || 0);
+              const credit = parseFloat(t.credit || 0);
+              const txnDate = new Date(t.date);
+              
+              if (txnDate < fromD) {
+                runningBal += debit - credit;
+                openingBalance += debit - credit;
+              } else if (txnDate <= toD) {
+                runningBal += debit - credit;
+                ledgerData.push(Object.assign({}, t, {
+                  balance: runningBal
+                }));
+              }
+            });
+            
+            success({
+              success: true,
+              type: 'partyLedger',
+              party: party,
+              data: ledgerData,
+              openingBalance: openingBalance,
+              closingBalance: runningBal
+            });
+            return;
+          }
+          
+          if (type === 'outstanding') {
+            const data = App.data.parties.map(p => {
+              let balance = parseFloat(p.openingBalance || 0);
+              App.data.transactions.forEach(t => {
+                if (t.partyId === p.id) {
+                  balance += parseFloat(t.debit || 0) - parseFloat(t.credit || 0);
+                }
+              });
+              return Object.assign({}, p, { balance: balance });
+            }).filter(p => p.balance !== 0);
+            
+            success({ success: true, type: 'outstanding', data: data });
+            return;
+          }
+          
+          if (type === 'sales' || type === 'purchase') {
+            const targetType = type === 'sales' ? 'Sale' : 'Purchase';
+            const txns = App.data.transactions.filter(t => t.txnType === targetType && isDateInRange(t.date));
+            txns.sort((a, b) => new Date(b.date) - new Date(b.date));
+            success({ success: true, type: type, data: txns });
+            return;
+          }
+          
+          success({ success: false, message: 'Invalid report type' });
           return;
         }
 
@@ -4735,12 +4810,15 @@
       Object.keys(_fbListeners).forEach(k => delete _fbListeners[k]);
 
       const liveCollections = [
-        { col: 'parties',       key: 'parties' },
-        { col: 'products',      key: 'products' },
-        { col: 'transactions',  key: 'transactions' },
-        { col: 'bankAccounts',  key: 'bankAccounts' },
-        { col: 'expenses',      key: 'expenses' },
-        { col: 'notifications', key: 'notifications' }
+        { col: 'parties',          key: 'parties' },
+        { col: 'products',         key: 'products' },
+        { col: 'transactions',     key: 'transactions' },
+        { col: 'bankAccounts',     key: 'bankAccounts' },
+        { col: 'expenses',         key: 'expenses' },
+        { col: 'notifications',    key: 'notifications' },
+        { col: 'cylinderSecurity', key: 'cylinderSecurity' },
+        { col: 'crmFollowups',     key: 'crmFollowups' },
+        { col: 'partyTypes',       key: 'partyTypes' }
       ];
 
       liveCollections.forEach(({ col, key }) => {
@@ -4758,6 +4836,13 @@
             else if (p === 'receipts') renderReceipts();
             else if (p === 'expenses') renderExpenses();
             else if (p === 'banking') renderBanking();
+            else if (p === 'cylinderSecurity') renderSecurityDeposits();
+            
+            // Re-render followups if currently open for any party
+            const followupPartyIdEl = document.getElementById('followupPartyId');
+            if (followupPartyIdEl && followupPartyIdEl.value) {
+              renderFollowupList();
+            }
           });
         }, err => console.warn('[Firebase listener]', col, err));
       });
@@ -5212,7 +5297,7 @@
       window.location.hash = '';
       
       App.currentUser = null;
-      App.data = { parties:[], products:[], transactions:[], bankAccounts:[], users:[], notifications:[], companyProfile:{}, expenses:[], quotations:[], purchaseOrders:[], deliveryChallans:[], activityLog:[], crmFollowups:[] };
+      App.data = { parties:[], products:[], transactions:[], bankAccounts:[], users:[], notifications:[], companyProfile:{}, expenses:[], quotations:[], purchaseOrders:[], deliveryChallans:[], activityLog:[], crmFollowups:[], cylinderSecurity:[], partyTypes:[] };
       document.body.classList.remove('not-admin');
       document.body.classList.remove('role-party');
       document.getElementById('loginForm').reset();
@@ -5347,7 +5432,7 @@
       }).catch(() => {});
 
       // PHASE 1: Load critical sheets silently
-      const criticalSheets = ['Parties', 'Products', 'BankAccounts', 'Users', 'CompanyProfile'];
+      const criticalSheets = ['Parties', 'Products', 'BankAccounts', 'Users', 'CompanyProfile', 'PartyTypes'];
       callServer('getAllData', { sheets: criticalSheets.join(',') }, function(res) {
         if (res.success) {
           Object.keys(res).forEach(k => { if (k !== 'success') App.data[k] = res[k]; });
@@ -5365,7 +5450,7 @@
         }
 
         // PHASE 2: Load transaction data silently in background
-        const secondarySheets = ['Transactions', 'Expenses', 'Quotations', 'PurchaseOrders', 'DeliveryChallans', 'ActivityLog', 'Notifications', 'CylinderSecurity'];
+        const secondarySheets = ['Transactions', 'Expenses', 'Quotations', 'PurchaseOrders', 'DeliveryChallans', 'ActivityLog', 'Notifications', 'CylinderSecurity', 'CRMFollowups'];
         callServer('getAllData', { sheets: secondarySheets.join(',') }, function(res2) {
           if (res2.success) {
             Object.keys(res2).forEach(k => { if (k !== 'success') App.data[k] = res2[k]; });
@@ -5398,7 +5483,7 @@
 
     function syncAllData(callback, sheetsList) {
       // After a write action, silently refresh only the affected sheets
-      const sheetsParam = (sheetsList && sheetsList.length) ? sheetsList.join(',') : 'Parties,Products,BankAccounts,Transactions,Expenses,Quotations,PurchaseOrders,DeliveryChallans,ActivityLog,Notifications,CylinderSecurity,CompanyProfile';
+      const sheetsParam = (sheetsList && sheetsList.length) ? sheetsList.join(',') : 'Parties,Products,BankAccounts,Transactions,Expenses,Quotations,PurchaseOrders,DeliveryChallans,ActivityLog,Notifications,CylinderSecurity,CompanyProfile,CRMFollowups,PartyTypes';
       callServer('getAllData', { sheets: sheetsParam }, function(res) {
         if (res.success) {
           if (sheetsList && sheetsList.length) {
@@ -6845,7 +6930,7 @@
       // Auto generate voucher no
       const prefix = isSale ? (App.data.companyProfile.invoicePrefix || 'INV') : (App.data.companyProfile.purchasePrefix || 'PUR');
       const count = App.data.transactions.filter(t => t.txnType === type).length + 1;
-      document.getElementById('invoiceVoucherNo').value = `${prefix}-2026-${count.toString().padStart(3, '0')}`;
+      document.getElementById('invoiceVoucherNo').value = `${prefix}-${new Date().getFullYear()}-${count.toString().padStart(3, '0')}`;
 
       // Populate Party selector
       const pSelect = document.getElementById('invoicePartyId');
@@ -7286,7 +7371,7 @@
       const fileInput = document.getElementById('receiptProofFile');
       
       const proceedSave = (base64, filename, mimeType) => {
-        const id = document.getElementById('receiptId').value || 'TXN' + Date.now();
+        const id = document.getElementById('receiptId').value;
         const type = document.getElementById('receiptTxnType').value;
         const pid = document.getElementById('receiptPartyId').value;
         if (!pid) {
@@ -7296,13 +7381,14 @@
         const party = App.data.parties.find(x => x.id === pid);
         const amt = parseFloat(document.getElementById('receiptAmount').value || 0);
 
-        // Auto generate voucher no
+        const existingTxn = id ? App.data.transactions.find(t => t.id === id) : null;
         const prefix = type === 'Receipt' ? (App.data.companyProfile.receiptPrefix || 'REC') : 'PAY';
         const count = App.data.transactions.filter(t => t.txnType === type).length + 1;
-        const vNo = `${prefix}-2026-${count.toString().padStart(3, '0')}`;
+        const vNo = (existingTxn && existingTxn.voucherNo) ? existingTxn.voucherNo : `${prefix}-${new Date().getFullYear()}-${count.toString().padStart(3, '0')}`;
+        const finalId = id || ('TXN_' + _fbId());
 
         const payload = {
-          id: id,
+          id: finalId,
           date: document.getElementById('receiptDate').value,
           voucherNo: vNo,
           partyId: party.id,
@@ -7604,7 +7690,7 @@
       // Auto generate voucher no
       const prefix = isQuot ? 'QTN' : (isPO ? 'PO' : 'DC');
       const count = App.data[isQuot ? 'quotations' : (isPO ? 'purchaseOrders' : 'deliveryChallans')].length + 1;
-      document.getElementById('docVoucherNo').value = `${prefix}-2026-${count.toString().padStart(3, '0')}`;
+      document.getElementById('docVoucherNo').value = `${prefix}-${new Date().getFullYear()}-${count.toString().padStart(3, '0')}`;
 
       // Populate Party selector
       const pSelect = document.getElementById('docPartyId');
@@ -7851,7 +7937,7 @@
       const invPrefix = App.data.companyProfile.invoicePrefix || 'INV';
       const count = App.data.transactions.filter(t => t.txnType === 'Sale').length + 1;
       const newInvoiceId = 'TXN' + Date.now();
-      const newVoucherNo = `${invPrefix}-2026-${count.toString().padStart(3, '0')}`;
+      const newVoucherNo = `${invPrefix}-${new Date().getFullYear()}-${count.toString().padStart(3, '0')}`;
 
       callServer('convertQuotationToInvoice', { quotationId: q.id, quotation: q, newInvoiceId, newVoucherNo }, function() {
         showToast('Quotation successfully converted to Invoice!', 'success');
@@ -8088,7 +8174,7 @@
       items.forEach(x => grandTotal += x.amount);
 
       const count = App.data.transactions.filter(t => t.txnType === 'Return').length + 1;
-      const voucherNo = `${retType === 'Sales' ? 'CN' : 'DN'}-2026-${count.toString().padStart(3, '0')}`;
+      const voucherNo = `${retType === 'Sales' ? 'CN' : 'DN'}-${new Date().getFullYear()}-${count.toString().padStart(3, '0')}`;
 
       const payload = {
         id: 'TXN' + Date.now(),
@@ -8633,7 +8719,7 @@
       const amt = parseFloat(document.getElementById('bankingAmount').value || 0);
 
       const count = App.data.transactions.filter(t => t.txnType === 'Banking').length + 1;
-      const vNo = `BNK-2026-${count.toString().padStart(3, '0')}`;
+      const vNo = `BNK-${new Date().getFullYear()}-${count.toString().padStart(3, '0')}`;
 
       const payload = {
         id: 'TXN' + Date.now(),
@@ -10705,7 +10791,7 @@
       if (App.data.notifications.length === 0) {
         container.innerHTML = '<p class="text-center text-secondary" style="font-size:13.5px; padding:12px;">No notifications found.</p>';
       } else {
-        App.data.notifications.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(n => {
+        App.data.notifications.sort((a,b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date)).forEach(n => {
           let actionBtnHtml = '';
           if (!n.read) {
             if (n.type && n.type.indexOf('PasswordReset|') === 0 && App.isAdmin) {
@@ -10725,7 +10811,7 @@
             <div style="padding:12px; background:${n.read ? '#fff' : '#EFF6FF'}; border:1px solid var(--brd); border-radius:var(--r); display:flex; justify-content:space-between; align-items:center;">
               <div>
                 <p style="font-size:13.5px; font-weight:600;">${n.message}</p>
-                <span style="font-size:11px; color:var(--txt2)">${formatDate(n.date)}</span>
+                <span style="font-size:11px; color:var(--txt2)">${formatDate(n.createdAt || n.date)}</span>
               </div>
               <div style="display: flex; gap: 8px; align-items: center;">
                 ${actionBtnHtml}
