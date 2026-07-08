@@ -2733,9 +2733,12 @@
               <input type="file" id="partyDocFile" class="light-form-control" accept="image/*,application/pdf">
               <input type="hidden" id="partyDocUrl">
             </div>
-            <div class="form-group" id="partyCurrentDocGroup" style="display: none; align-items: flex-end; padding-bottom: 6px;">
-              <button type="button" id="btnViewCurrentPartyDoc" class="btn btn-secondary" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; height: 38px;">
+            <div class="form-group" id="partyCurrentDocGroup" style="display: none; align-items: flex-end; padding-bottom: 6px; gap: 8px;">
+              <button type="button" id="btnViewCurrentPartyDoc" class="btn btn-secondary" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; height: 38px;">
                 <i class="fa-solid fa-paperclip"></i> View Current Document
+              </button>
+              <button type="button" id="btnDeleteCurrentPartyDoc" class="btn btn-secondary" style="color: var(--dan); border-color: var(--dan); padding: 0 12px; display: flex; align-items: center; justify-content: center; height: 38px;" title="Delete Current Document">
+                <i class="fa-solid fa-trash"></i>
               </button>
             </div>
           </div>
@@ -3199,11 +3202,16 @@
           <div class="form-group">
             <label>Payment Proof (PDF, JPG, PNG)</label>
             <div style="display: flex; gap: 8px; align-items: center;">
-              <input type="file" id="receiptProofFile" class="light-form-control" accept=".pdf,image/png,image/jpeg,image/jpg" style="padding: 6px 12px; font-size: 13px;">
+              <input type="file" id="receiptProofFile" class="light-form-control" accept=".pdf,image/png,image/jpeg,image/jpg" style="padding: 6px 12px; font-size: 13px; flex: 1;">
               <input type="hidden" id="receiptProofUrl">
-              <a id="btnViewCurrentProof" href="#" target="_blank" class="btn btn-secondary btn-sm" style="display: none; align-items: center; gap: 4px; padding: 8px 12px; height: 38px;">
-                <i class="fa-solid fa-file-image"></i> View
-              </a>
+              <div id="receiptCurrentProofGroup" style="display: none; gap: 8px; align-items: center;">
+                <button type="button" id="btnViewCurrentProof" class="btn btn-secondary btn-sm" style="display: flex; align-items: center; gap: 4px; padding: 8px 12px; height: 38px;">
+                  <i class="fa-solid fa-file-image"></i> View
+                </button>
+                <button type="button" id="btnDeleteCurrentProof" class="btn btn-secondary btn-sm" style="color: var(--dan); border-color: var(--dan); padding: 0 12px; display: flex; align-items: center; justify-content: center; height: 38px;" title="Delete Current Proof">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -6601,8 +6609,23 @@
       document.getElementById('partyDocFile').value = '';
       const docGroup = document.getElementById('partyCurrentDocGroup');
       const docBtn = document.getElementById('btnViewCurrentPartyDoc');
+      const docDeleteBtn = document.getElementById('btnDeleteCurrentPartyDoc');
       if (p.documents) {
         docBtn.onclick = () => { openPartyDocViewer(p.id); };
+        docDeleteBtn.onclick = () => {
+          showConfirmModal({
+            title: 'Delete KYC Document',
+            message: 'Are you sure you want to remove this KYC document from the party? You will need to save the party to apply this change.',
+            confirmText: 'Remove',
+            isDanger: true,
+            onConfirm: function() {
+              document.getElementById('partyDocUrl').value = '';
+              document.getElementById('partyDocFile').value = '';
+              docGroup.style.display = 'none';
+              showToast('Document removed from form. Click "Save Party" to save changes.', 'info');
+            }
+          });
+        };
         docGroup.style.display = 'flex';
       } else {
         docGroup.style.display = 'none';
@@ -7623,7 +7646,7 @@
       document.getElementById('receiptTxnType').value = type;
       document.getElementById('receiptProofUrl').value = '';
       document.getElementById('receiptProofFile').value = '';
-      document.getElementById('btnViewCurrentProof').style.display = 'none';
+      document.getElementById('receiptCurrentProofGroup').style.display = 'none';
 
       const isReceipt = type === 'Receipt';
       document.getElementById('receiptModalTitle').textContent = isReceipt ? 'Customer Receipt' : 'Supplier Payment';
@@ -7813,12 +7836,29 @@
       // Set current proof
       document.getElementById('receiptProofUrl').value = t.proofUrl || '';
       document.getElementById('receiptProofFile').value = '';
+      const proofGroup = document.getElementById('receiptCurrentProofGroup');
       const viewProofBtn = document.getElementById('btnViewCurrentProof');
+      const deleteProofBtn = document.getElementById('btnDeleteCurrentProof');
       if (t.proofUrl) {
         viewProofBtn.onclick = (e) => { e.preventDefault(); openDocumentViewer(t.proofUrl, 'Payment Proof - ' + (t.voucherNo || t.id)); };
-        viewProofBtn.style.display = 'inline-flex';
+        deleteProofBtn.onclick = (e) => {
+          e.preventDefault();
+          showConfirmModal({
+            title: 'Delete Payment Proof',
+            message: 'Are you sure you want to remove this payment proof? You will need to save the transaction to apply this change.',
+            confirmText: 'Remove',
+            isDanger: true,
+            onConfirm: function() {
+              document.getElementById('receiptProofUrl').value = '';
+              document.getElementById('receiptProofFile').value = '';
+              proofGroup.style.display = 'none';
+              showToast('Payment proof removed from form. Click "Save Transaction" to save changes.', 'info');
+            }
+          });
+        };
+        proofGroup.style.display = 'flex';
       } else {
-        viewProofBtn.style.display = 'none';
+        proofGroup.style.display = 'none';
       }
 
       const pSelect = document.getElementById('receiptPartyId');
