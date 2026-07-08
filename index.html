@@ -3727,6 +3727,10 @@
       }
     })();
 
+    // Global flags for ledger redirection
+    let reopenLedgerPartyId = null;
+    let userSavedTransaction = false;
+
     // State management
     const App = {
       data: {
@@ -4436,6 +4440,17 @@
       if (id === 'confirmModal') {
         // Also remove backdrop class for active modal to prevent lingering backdrop styling issues
         document.getElementById(id).classList.remove('active');
+      }
+      
+      // Reopen ledger modal if transaction was closed/canceled instead of saved
+      if ((id === 'invoiceModal' || id === 'receiptModal') && typeof reopenLedgerPartyId !== 'undefined' && reopenLedgerPartyId) {
+        const tempPartyId = reopenLedgerPartyId;
+        if (typeof userSavedTransaction === 'undefined' || !userSavedTransaction) {
+          reopenLedgerPartyId = null;
+          viewPartyLedger(tempPartyId);
+        } else {
+          userSavedTransaction = false;
+        }
       }
     }
 
@@ -6074,6 +6089,7 @@
     }
 
     function openInvoiceModal(type, preselectedPartyId) {
+      userSavedTransaction = false;
       document.getElementById('invoiceForm').reset();
       document.getElementById('invoiceId').value = '';
       document.getElementById('invoiceTxnType').value = type;
@@ -6282,9 +6298,21 @@
 
       const action = type === 'Sale' ? 'saveInvoice' : 'savePurchase';
       callServer(action, payload, function() {
+        userSavedTransaction = true;
         closeModal('invoiceModal');
         showToast('Invoice created successfully', 'success');
-        syncAllData(type === 'Sale' ? renderSales : renderPurchases, ["Transactions", "Products", "BankAccounts", "ActivityLog"]);
+        syncAllData(function() {
+          if (type === 'Sale') {
+            renderSales();
+          } else {
+            renderPurchases();
+          }
+          if (typeof reopenLedgerPartyId !== 'undefined' && reopenLedgerPartyId) {
+            const tempPartyId = reopenLedgerPartyId;
+            reopenLedgerPartyId = null;
+            viewPartyLedger(tempPartyId);
+          }
+        }, ["Transactions", "Products", "BankAccounts", "ActivityLog"]);
       });
     }
 
@@ -6425,6 +6453,7 @@
     }
 
     function openReceiptModal(type, preselectedPartyId) {
+      userSavedTransaction = false;
       document.getElementById('receiptForm').reset();
       document.getElementById('receiptId').value = '';
       document.getElementById('receiptTxnType').value = type;
@@ -6558,9 +6587,17 @@
 
         const action = type === 'Receipt' ? 'saveReceipt' : 'savePayment';
         callServer(action, payload, function() {
+          userSavedTransaction = true;
           closeModal('receiptModal');
           showToast('Receipt/Payment entry recorded successfully', 'success');
-          syncAllData(renderReceipts, ["Transactions", "BankAccounts", "ActivityLog"]);
+          syncAllData(function() {
+            renderReceipts();
+            if (typeof reopenLedgerPartyId !== 'undefined' && reopenLedgerPartyId) {
+              const tempPartyId = reopenLedgerPartyId;
+              reopenLedgerPartyId = null;
+              viewPartyLedger(tempPartyId);
+            }
+          }, ["Transactions", "BankAccounts", "ActivityLog"]);
         });
       };
 
@@ -8305,24 +8342,28 @@
       if (isCustomer) {
         addSaleBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Sale';
         addSaleBtn.onclick = () => {
+          reopenLedgerPartyId = p.id;
           closeModal('ledgerModal');
           openInvoiceModal('Sale', p.id);
         };
         addPaymentBtn.innerHTML = '<i class="fa-solid fa-arrow-down-long"></i> Add Receipt';
         addPaymentBtn.className = 'btn btn-success hide-for-party';
         addPaymentBtn.onclick = () => {
+          reopenLedgerPartyId = p.id;
           closeModal('ledgerModal');
           openReceiptModal('Receipt', p.id);
         };
       } else {
         addSaleBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Purchase';
         addSaleBtn.onclick = () => {
+          reopenLedgerPartyId = p.id;
           closeModal('ledgerModal');
           openInvoiceModal('Purchase', p.id);
         };
         addPaymentBtn.innerHTML = '<i class="fa-solid fa-arrow-up-long"></i> Add Payment';
         addPaymentBtn.className = 'btn btn-danger hide-for-party';
         addPaymentBtn.onclick = () => {
+          reopenLedgerPartyId = p.id;
           closeModal('ledgerModal');
           openReceiptModal('Payment', p.id);
         };
