@@ -10,7 +10,28 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Google Sheets API Connection -->
+  <!-- ===== FIREBASE SDK ===== -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script>
+    // ===== FIREBASE INITIALIZATION =====
+    const FIREBASE_CONFIG = {
+      apiKey: "AIzaSyAGe4TFz0qBM187zbdc4OxG3xzppxnMU6E",
+      authDomain: "gas-agency-mr.firebaseapp.com",
+      projectId: "gas-agency-mr",
+      storageBucket: "gas-agency-mr.firebasestorage.app",
+      messagingSenderId: "833726884284",
+      appId: "1:833726884284:web:fe3224edaeff6ccb48e3b9",
+      databaseURL: "https://gas-agency-mr-default-rtdb.asia-southeast1.firebasedatabase.app"
+    };
+    firebase.initializeApp(FIREBASE_CONFIG);
+    const db = firebase.firestore();
+    // Firestore offline persistence for better performance
+    db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+    // Active real-time unsubscribe handles
+    const _fbListeners = {};
+  </script>
   
   <style>
     :root {
@@ -1715,22 +1736,33 @@
             <div class="flex-gap">
               <div style="position:relative; display:inline-block;">
                 <button class="btn btn-secondary" onclick="toggleImportMenu()" id="importMenuBtn">
-                  <i class="fa-solid fa-file-import"></i> Import CSV / Excel <i class="fa-solid fa-chevron-down" style="font-size:11px; margin-left:4px;"></i>
+                  <i class="fa-solid fa-file-import"></i> Import Data <i class="fa-solid fa-chevron-down" style="font-size:11px; margin-left:4px;"></i>
                 </button>
-                <div id="importDropdownMenu" style="display:none; position:absolute; top:calc(100% + 6px); right:0; background:var(--card); border:1px solid var(--brd); border-radius:10px; min-width:230px; box-shadow:0 10px 30px rgba(0,0,0,0.15); z-index:999; overflow:hidden;">
-                  <div style="padding:10px 14px 6px; font-size:11px; font-weight:700; color:var(--txt2); text-transform:uppercase; letter-spacing:0.5px;">Import Steps</div>
+                <div id="importDropdownMenu" style="display:none; position:absolute; top:calc(100% + 6px); right:0; background:var(--card); border:1px solid var(--brd); border-radius:10px; min-width:320px; box-shadow:0 10px 30px rgba(0,0,0,0.15); z-index:999; overflow:hidden;">
+                  <div style="padding:10px 14px 6px; font-size:11px; font-weight:700; color:var(--txt2); text-transform:uppercase; letter-spacing:0.5px;">Import Data</div>
+                  <div style="padding:6px 14px 4px; font-size:11px; font-weight:700; color:var(--txt2);">Parties</div>
                   <a onclick="downloadPartyTemplate()" style="display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; color:var(--txt); font-size:13px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
                     <i class="fa-solid fa-download" style="color:#10B981; width:16px;"></i>
-                    Step 1: Download Template
+                    Download Party Template
                   </a>
-                  <div style="height:1px; background:var(--brd); margin:0 10px;"></div>
                   <label for="partyCsvInput" style="display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; color:var(--txt); font-size:13px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
                     <i class="fa-solid fa-upload" style="color:#3B82F6; width:16px;"></i>
-                    Step 2: Upload Filled CSV
+                    Upload Party CSV
                   </label>
                   <input type="file" id="partyCsvInput" accept=".csv" style="display:none;" onchange="importPartyCSV(event)">
+                  <div style="height:1px; background:var(--brd); margin:0 10px;"></div>
+                  <div style="padding:6px 14px 4px; font-size:11px; font-weight:700; color:var(--txt2);">Transactions</div>
+                  <a onclick="downloadTransactionTemplate()" style="display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; color:var(--txt); font-size:13px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+                    <i class="fa-solid fa-download" style="color:#10B981; width:16px;"></i>
+                    Download Transaction Template
+                  </a>
+                  <label for="transactionCsvInput" style="display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; color:var(--txt); font-size:13px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+                    <i class="fa-solid fa-upload" style="color:#3B82F6; width:16px;"></i>
+                    Upload Transaction CSV
+                  </label>
+                  <input type="file" id="transactionCsvInput" accept=".csv" style="display:none;" onchange="importTransactionCSV(event)">
                   <div style="padding:8px 14px 10px; font-size:11px; color:var(--txt2); line-height:1.5; border-top:1px solid var(--brd); margin-top:2px;">
-                    <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>Template download karo, usme apna data bharo, phir upload karo.
+                    <i class="fa-solid fa-circle-info" style="margin-right:4px;"></i>Party import ke liye Name aur Type zaroori hai. Transaction import ke liye partyName, date, type aur amount zaroori hai.
                   </div>
                 </div>
               </div>
@@ -3884,14 +3916,7 @@
     };
 
     function initBackend() {
-      let scriptUrl = SafeStorage.getItem('googleScriptUrl');
-      if (!scriptUrl) {
-        // Hardcoded default fallback so the app works out-of-the-box everywhere!
-        scriptUrl = 'https://script.google.com/macros/s/AKfycbxat87ykvgbGr5sCoDLiUeP_OENdA325fBxBSuWLSDspyUKNMvrB2ETow_JNMUCV9ll/exec';
-        SafeStorage.setItem('googleScriptUrl', scriptUrl);
-      }
-      
-      // Update setup display
+      // Firebase is already initialized — skip Google Script URL setup
       document.getElementById('backendSetupPage').style.display = 'none';
 
       // Check if session exists to restore it directly
@@ -3907,46 +3932,14 @@
       }
 
       document.getElementById('loginPage').style.display = 'flex';
-
-      // Update settings labels
-      const label = document.getElementById('googleScriptUrlText');
-      if (label) {
-        label.textContent = scriptUrl;
-        label.title = scriptUrl;
-      }
       return true;
     }
 
     function handleBackendSetupSubmit(e) {
       e.preventDefault();
-      const inputVal = document.getElementById('googleScriptUrlInput').value.trim();
-      
-      if (!inputVal.startsWith('http://') && !inputVal.startsWith('https://')) {
-        showToast('Please enter a valid Web App URL (starts with http or https)', 'error');
-        return;
-      }
-
-      SafeStorage.setItem('googleScriptUrl', inputVal);
-      showToast('Backend URL saved! Testing connection...', 'info');
-      
-      fetch(`${inputVal}?action=getAllData`)
-        .then(response => {
-          if (!response.ok) throw new Error('Failed to reach Web App URL');
-          return response.json();
-        })
-        .then(res => {
-          if (res && res.success !== false) {
-            showToast('Connected successfully!', 'success');
-            setTimeout(() => location.reload(), 1000);
-          } else {
-            showToast('Test failed: ' + (res.message || 'Unknown error'), 'error');
-            SafeStorage.removeItem('googleScriptUrl');
-          }
-        })
-        .catch(err => {
-          showToast('Connection failed: ' + err.message, 'error');
-          SafeStorage.removeItem('googleScriptUrl');
-        });
+      // Firebase is configured directly — no URL needed
+      showToast('Firebase is already connected!', 'success');
+      setTimeout(() => location.reload(), 800);
     }
 
     // ---- SEARCHABLE COMBOBOX COMPONENT ----
@@ -4122,94 +4115,591 @@
     }
 
     function disconnectBackend() {
-      showConfirmModal({
-        title: 'Disconnect Database',
-        message: 'Disconnect this database? You will be returned to the Setup screen.',
-        confirmText: 'Disconnect',
-        isDanger: true,
-        onConfirm: function() {
-          SafeStorage.removeItem('googleScriptUrl');
-          location.reload();
-        }
-      });
+      showToast('Firebase is always connected. To change project, update the config in code.', 'info');
     }
 
-    // Initialize backend URL config on page load
+    // Initialize backend on page load
     setTimeout(initBackend, 100);
 
-    // Call server helper - performs fetch API requests to Google Apps Script Web App
-    function callServer(action, payload, callback, failCallback, silentMode) {
-      // Only show loader for write/save actions, not for background data reads
+    // ===================================================================
+    // FIREBASE ADAPTER — replaces Google Apps Script callServer() entirely
+    // ===================================================================
+    function _fbId() {
+      return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
+    }
+
+    // Convert Firestore snapshot to plain array with id field
+    function _snapToArr(snap) {
+      const arr = [];
+      snap.forEach(doc => arr.push(Object.assign({ id: doc.id }, doc.data())));
+      return arr;
+    }
+
+    // Log activity to Firestore
+    async function _logActivity(action, module, details, status = 'SUCCESS') {
+      try {
+        const user = App.currentUser;
+        await db.collection('activityLog').add({
+          logId: _fbId(),
+          actionType: action,
+          moduleName: module,
+          details: details || '',
+          status: status,
+          userId: user ? user.id : 'SYSTEM',
+          userRole: user ? user.role : 'System',
+          ipAddress: '',
+          timestamp: new Date().toISOString()
+        });
+      } catch(e) { /* silent */ }
+    }
+
+    // Main Firebase action dispatcher (drop-in replacement for callServer)
+    async function callServer(action, payload, callback, failCallback, silentMode) {
       const isReadAction = ['getAllData', 'getDashboardStats', 'getReport'].includes(action);
       if (!silentMode && !isReadAction) showLoading(true);
-
-      const scriptUrl = SafeStorage.getItem('googleScriptUrl');
-      if (!scriptUrl) {
-        if (!silentMode && !isReadAction) showLoading(false);
-        const err = new Error('Backend URL not configured');
-        if (failCallback) failCallback(err);
-        else showToast(err.message, 'error');
-        return;
-      }
 
       const success = (res) => {
         if (!silentMode && !isReadAction) showLoading(false);
         if (callback) callback(res);
       };
-
       const fail = (err) => {
         if (!silentMode && !isReadAction) showLoading(false);
+        console.error('[Firebase]', action, err);
         if (failCallback) failCallback(err);
-        else if (!silentMode) showToast(err.message || 'Operation failed', 'error');
+        else if (!silentMode) showToast((err && err.message) || 'Operation failed', 'error');
       };
-      
-      if (isReadAction) {
-        // Build query parameters
-        let url = `${scriptUrl}?action=${action}`;
-        if (payload) {
-          Object.keys(payload).forEach(key => {
-            url += `&${encodeURIComponent(key)}=${encodeURIComponent(payload[key])}`;
+
+      try {
+        // ---- READ: getAllData ----
+        if (action === 'getAllData') {
+          const sheetMap = {
+            Parties: 'parties', Products: 'products', BankAccounts: 'bankAccounts',
+            Users: 'users', CompanyProfile: 'companyProfile', Transactions: 'transactions',
+            Expenses: 'expenses', Quotations: 'quotations', PurchaseOrders: 'purchaseOrders',
+            DeliveryChallans: 'deliveryChallans', ActivityLog: 'activityLog',
+            Notifications: 'notifications', CylinderSecurity: 'cylinderSecurity'
+          };
+          let sheetsToLoad = Object.keys(sheetMap);
+          if (payload && payload.sheets) {
+            sheetsToLoad = payload.sheets.split(',').map(s => s.trim()).filter(s => sheetMap[s]);
+          }
+
+          const result = { success: true };
+          const promises = sheetsToLoad.map(async (sheet) => {
+            const col = sheetMap[sheet];
+            if (col === 'companyProfile') {
+              const doc = await db.collection('companyProfile').doc('main').get();
+              result.companyProfile = doc.exists ? doc.data() : {};
+            } else {
+              const snap = await db.collection(col).get();
+              result[col] = _snapToArr(snap);
+            }
           });
+          await Promise.all(promises);
+          success(result);
+          return;
         }
-        
-        fetch(url)
-          .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-          })
-          .then(res => {
-            if (res && res.success !== false) {
-               success(res);
+
+        // ---- AUTH: login ----
+        if (action === 'login') {
+          const snap = await db.collection('users')
+            .where('email', '==', payload.email)
+            .where('passwordHash', '==', payload.passwordHash)
+            .get();
+          if (snap.empty) {
+            success({ success: false, message: 'Invalid email or password' });
+          } else {
+            const user = Object.assign({ id: snap.docs[0].id }, snap.docs[0].data());
+            if (user.status && user.status !== 'Active') {
+              success({ success: false, message: 'Account is not active. Contact admin.' });
             } else {
-               fail(new Error(res.message || 'Failed to fetch data'));
+              _logActivity('LOGIN', 'Auth', `User ${user.email} logged in`);
+              success({ success: true, user });
             }
-          })
-          .catch(fail);
-      } else {
-        // POST request for write actions
-        const url = `${scriptUrl}?action=${action}`;
-        fetch(url, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'text/plain;charset=utf-8'
-          },
-          body: JSON.stringify(payload)
-        })
-          .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-          })
-          .then(res => {
-            if (res && res.success !== false) {
-              success(res);
-            } else {
-              fail(new Error(res.message || 'Operation failed'));
+          }
+          return;
+        }
+
+        // ---- AUTH: registerUser ----
+        if (action === 'registerUser') {
+          const existing = await db.collection('users').where('email', '==', payload.email).get();
+          if (!existing.empty) {
+            success({ success: false, message: 'Email already registered' });
+            return;
+          }
+          const newId = 'U_' + _fbId();
+          const newUser = { id: newId, name: payload.name, email: payload.email, passwordHash: payload.passwordHash, role: 'Staff', status: 'Pending' };
+          await db.collection('users').doc(newId).set(newUser);
+          // Create approval notification
+          await db.collection('notifications').add({ id: _fbId(), type: 'UserRegistration', message: `New user registration: ${payload.name} (${payload.email})`, status: 'Pending', targetUserId: newId, createdAt: new Date().toISOString(), read: false });
+          success({ success: true, message: 'Registration submitted. Waiting for admin approval.' });
+          return;
+        }
+
+        // ---- SAVE: saveParty ----
+        if (action === 'saveParty') {
+          const id = payload.id || ('PT_' + _fbId());
+          await db.collection('parties').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
+          _logActivity('SAVE', 'Parties', `Saved party: ${payload.name}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- DELETE: deleteParty ----
+        if (action === 'deleteParty') {
+          await db.collection('parties').doc(payload.id).delete();
+          _logActivity('DELETE', 'Parties', `Deleted party ID: ${payload.id}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: saveProduct ----
+        if (action === 'saveProduct') {
+          const id = payload.id || ('P_' + _fbId());
+          await db.collection('products').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
+          _logActivity('SAVE', 'Products', `Saved product: ${payload.name}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- DELETE: deleteProduct ----
+        if (action === 'deleteProduct') {
+          await db.collection('products').doc(payload.id).delete();
+          _logActivity('DELETE', 'Products', `Deleted product ID: ${payload.id}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: saveInvoice / savePurchase ----
+        if (action === 'saveInvoice' || action === 'savePurchase') {
+          const batch = db.batch();
+          const id = payload.id || ('TXN_' + _fbId());
+          const txnRef = db.collection('transactions').doc(id);
+          batch.set(txnRef, Object.assign({}, payload, { id }), { merge: true });
+          // Update stock
+          if (payload.items) {
+            payload.items.forEach(item => {
+              if (item.productId) {
+                const pRef = db.collection('products').doc(item.productId);
+                const prod = App.data.products.find(p => p.id === item.productId);
+                if (prod) {
+                  const newStock = action === 'saveInvoice'
+                    ? (parseFloat(prod.stock || 0) - parseFloat(item.quantity || 0))
+                    : (parseFloat(prod.stock || 0) + parseFloat(item.quantity || 0));
+                  batch.update(pRef, { stock: newStock });
+                }
+              }
+            });
+          }
+          // Update bank accounts
+          const paidCash = parseFloat(payload.totals && payload.totals.paidCash || 0);
+          const paidBank = parseFloat(payload.totals && payload.totals.paidBank || 0);
+          if (paidCash || paidBank) {
+            App.data.bankAccounts.forEach(ba => {
+              if (ba.id === 'BA001' && paidCash) {
+                const baRef = db.collection('bankAccounts').doc('BA001');
+                const newBal = parseFloat(ba.balance || 0) + (action === 'saveInvoice' ? paidCash : -paidCash);
+                batch.update(baRef, { balance: newBal });
+              }
+              if (ba.id === 'BA002' && paidBank) {
+                const baRef = db.collection('bankAccounts').doc('BA002');
+                const newBal = parseFloat(ba.balance || 0) + (action === 'saveInvoice' ? paidBank : -paidBank);
+                batch.update(baRef, { balance: newBal });
+              }
+            });
+          }
+          await batch.commit();
+          _logActivity('SAVE', 'Transactions', `Saved ${action === 'saveInvoice' ? 'Sale' : 'Purchase'} voucher: ${payload.voucherNo}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: saveReceipt / savePayment ----
+        if (action === 'saveReceipt' || action === 'savePayment') {
+          const id = payload.id || ('TXN_' + _fbId());
+          const batch = db.batch();
+          const txnRef = db.collection('transactions').doc(id);
+          batch.set(txnRef, Object.assign({}, payload, { id }), { merge: true });
+          // Update bank
+          const amt = parseFloat(payload.credit || payload.debit || 0);
+          if (payload.paymentMode) {
+            const baId = payload.paymentMode === 'Cash' ? 'BA001' : 'BA002';
+            const ba = App.data.bankAccounts.find(b => b.id === baId);
+            if (ba) {
+              const baRef = db.collection('bankAccounts').doc(baId);
+              const newBal = action === 'saveReceipt'
+                ? (parseFloat(ba.balance || 0) + amt)
+                : (parseFloat(ba.balance || 0) - amt);
+              batch.update(baRef, { balance: newBal });
             }
-          })
-          .catch(fail);
+            // Update linked invoice balance due
+            if (payload.linkedInvoice) {
+              const inv = App.data.transactions.find(t => t.voucherNo === payload.linkedInvoice);
+              if (inv) {
+                const invRef = db.collection('transactions').doc(inv.id);
+                const totals = Object.assign({}, inv.totals || {});
+                const delta = action === 'saveReceipt' ? amt : -amt;
+                if (payload.paymentMode === 'Cash') totals.paidCash = parseFloat(totals.paidCash || 0) + delta;
+                else totals.paidBank = parseFloat(totals.paidBank || 0) + delta;
+                totals.balanceDue = parseFloat(totals.balanceDue || 0) - delta;
+                batch.update(invRef, { totals });
+              }
+            }
+          }
+          await batch.commit();
+          _logActivity('SAVE', 'Transactions', `Saved ${action === 'saveReceipt' ? 'Receipt' : 'Payment'}: ${payload.voucherNo}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- DELETE: deleteTransaction ----
+        if (action === 'deleteTransaction') {
+          await db.collection('transactions').doc(payload.id).delete();
+          _logActivity('DELETE', 'Transactions', `Deleted transaction ID: ${payload.id}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: saveExpense ----
+        if (action === 'saveExpense') {
+          const id = payload.id || ('EXP_' + _fbId());
+          const batch = db.batch();
+          batch.set(db.collection('expenses').doc(id), Object.assign({}, payload, { id }), { merge: true });
+          // Deduct from bank
+          const amt = parseFloat(payload.amount || 0);
+          const baId = payload.paymentMode === 'Cash' ? 'BA001' : 'BA002';
+          const ba = App.data.bankAccounts.find(b => b.id === baId);
+          if (ba && !payload.id) { // only adjust on new expense
+            batch.update(db.collection('bankAccounts').doc(baId), { balance: parseFloat(ba.balance || 0) - amt });
+          }
+          await batch.commit();
+          _logActivity('SAVE', 'Expenses', `Saved expense: ${payload.category}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- DELETE: deleteExpense ----
+        if (action === 'deleteExpense') {
+          await db.collection('expenses').doc(payload.id).delete();
+          _logActivity('DELETE', 'Expenses', `Deleted expense ID: ${payload.id}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: saveQuotation / savePO / saveChallan ----
+        if (action === 'saveQuotation' || action === 'savePO' || action === 'saveChallan') {
+          const colMap = { saveQuotation: 'quotations', savePO: 'purchaseOrders', saveChallan: 'deliveryChallans' };
+          const col = colMap[action];
+          const id = payload.id || (col.charAt(0).toUpperCase() + '_' + _fbId());
+          await db.collection(col).doc(id).set(Object.assign({}, payload, { id }), { merge: true });
+          _logActivity('SAVE', col, `Saved document: ${payload.voucherNo || id}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- DELETE: deleteQuotation / deletePO / deleteChallan ----
+        if (action === 'deleteQuotation' || action === 'deletePO' || action === 'deleteChallan') {
+          const colMap = { deleteQuotation: 'quotations', deletePO: 'purchaseOrders', deleteChallan: 'deliveryChallans' };
+          await db.collection(colMap[action]).doc(payload.id).delete();
+          success({ success: true });
+          return;
+        }
+
+        // ---- CONVERT: convertQuotationToInvoice ----
+        if (action === 'convertQuotationToInvoice') {
+          const batch = db.batch();
+          batch.delete(db.collection('quotations').doc(payload.quotationId));
+          const txnId = payload.newInvoiceId || ('TXN_' + _fbId());
+          const txnData = Object.assign({}, payload.quotation, { id: txnId, txnType: 'Sale', voucherNo: payload.newVoucherNo, convertedFrom: payload.quotationId });
+          batch.set(db.collection('transactions').doc(txnId), txnData);
+          await batch.commit();
+          _logActivity('CONVERT', 'Quotations', `Converted to Invoice: ${payload.newVoucherNo}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: saveReturn ----
+        if (action === 'saveReturn') {
+          const id = payload.id || ('RET_' + _fbId());
+          await db.collection('transactions').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
+          _logActivity('SAVE', 'Returns', `Saved return: ${payload.voucherNo}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: saveSecurityDeposit / saveSecurityRefund ----
+        if (action === 'saveSecurityDeposit' || action === 'saveSecurityRefund') {
+          const id = payload.id || ('SEC_' + _fbId());
+          await db.collection('cylinderSecurity').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
+          _logActivity('SAVE', 'CylinderSecurity', `Saved security deposit/refund`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: saveBankAccount ----
+        if (action === 'saveBankAccount') {
+          const id = payload.id || ('BA_' + _fbId());
+          await db.collection('bankAccounts').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
+          _logActivity('SAVE', 'Banking', `Saved bank account: ${payload.accountName}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: saveBankingTransaction ----
+        if (action === 'saveBankingTransaction') {
+          const id = payload.id || ('TXN_' + _fbId());
+          const batch = db.batch();
+          batch.set(db.collection('transactions').doc(id), Object.assign({}, payload, { id }), { merge: true });
+          // Transfer between accounts
+          const amt = parseFloat(payload.totals && payload.totals.grandTotal || 0);
+          const fromId = payload.totals && payload.totals.fromAccountId;
+          const toId = payload.totals && payload.totals.toAccountId;
+          if (fromId && toId && amt) {
+            const fromAcc = App.data.bankAccounts.find(b => b.id === fromId);
+            const toAcc = App.data.bankAccounts.find(b => b.id === toId);
+            if (fromAcc) batch.update(db.collection('bankAccounts').doc(fromId), { balance: parseFloat(fromAcc.balance || 0) - amt });
+            if (toAcc) batch.update(db.collection('bankAccounts').doc(toId), { balance: parseFloat(toAcc.balance || 0) + amt });
+          }
+          await batch.commit();
+          _logActivity('SAVE', 'Banking', `Banking transaction: ${payload.voucherNo}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: saveUser ----
+        if (action === 'saveUser') {
+          const id = payload.id || ('U_' + _fbId());
+          await db.collection('users').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
+          _logActivity('SAVE', 'Users', `Saved user: ${payload.email}`);
+          success({ success: true, user: Object.assign({}, payload, { id }) });
+          return;
+        }
+
+        // ---- DELETE: deleteUser ----
+        if (action === 'deleteUser') {
+          await db.collection('users').doc(payload.id).delete();
+          _logActivity('DELETE', 'Users', `Deleted user ID: ${payload.id}`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: saveUserProfile ----
+        if (action === 'saveUserProfile') {
+          const updates = {};
+          if (payload.avatarUrl !== undefined) updates.avatarUrl = payload.avatarUrl;
+          if (payload.newPassword && payload.newPassword.trim()) {
+            updates.passwordHash = simpleHash(payload.newPassword.trim());
+          }
+          await db.collection('users').doc(payload.id).update(updates);
+          const updatedUser = Object.assign({}, App.currentUser, updates);
+          _logActivity('UPDATE', 'Users', `Profile updated: ${payload.id}`);
+          success({ success: true, user: updatedUser });
+          return;
+        }
+
+        // ---- SAVE: saveSettings ----
+        if (action === 'saveSettings') {
+          await db.collection('companyProfile').doc('main').set(payload, { merge: true });
+          _logActivity('SAVE', 'Settings', 'Company profile updated');
+          success({ success: true });
+          return;
+        }
+
+        // ---- SAVE: savePartyType ----
+        if (action === 'savePartyType') {
+          const id = payload.id || ('PT_TYPE_' + _fbId());
+          await db.collection('partyTypes').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
+          success({ success: true });
+          return;
+        }
+
+        // ---- DELETE: deletePartyType ----
+        if (action === 'deletePartyType') {
+          await db.collection('partyTypes').doc(payload.id).delete();
+          success({ success: true });
+          return;
+        }
+
+        // ---- NOTIFICATIONS: markNotificationRead ----
+        if (action === 'markNotificationRead') {
+          await db.collection('notifications').doc(payload.id).update({ read: true });
+          success({ success: true });
+          return;
+        }
+
+        // ---- AUTH: requestPasswordReset ----
+        if (action === 'requestPasswordReset') {
+          const otp = Math.floor(100000 + Math.random() * 900000).toString();
+          await db.collection('passwordResets').add({ email: payload.email, otp, createdAt: new Date().toISOString(), used: false });
+          showToast('OTP generated: ' + otp + ' (check with admin)', 'info');
+          success({ success: true, message: 'OTP sent to admin. Contact admin for OTP.' });
+          return;
+        }
+
+        // ---- AUTH: resetPasswordWithOtp ----
+        if (action === 'resetPasswordWithOtp') {
+          const resetSnap = await db.collection('passwordResets')
+            .where('email', '==', payload.email)
+            .where('otp', '==', payload.otp)
+            .where('used', '==', false)
+            .get();
+          if (resetSnap.empty) {
+            success({ success: false, message: 'Invalid or expired OTP' });
+            return;
+          }
+          const userSnap = await db.collection('users').where('email', '==', payload.email).get();
+          if (!userSnap.empty) {
+            await db.collection('users').doc(userSnap.docs[0].id).update({ passwordHash: payload.newPasswordHash });
+          }
+          await db.collection('passwordResets').doc(resetSnap.docs[0].id).update({ used: true });
+          success({ success: true, message: 'Password reset successfully' });
+          return;
+        }
+
+        // ---- NOTIFICATIONS: approvePasswordReset / approveUserRegistration ----
+        if (action === 'approvePasswordReset' || action === 'approveUserRegistration') {
+          if (payload.notificationId) {
+            await db.collection('notifications').doc(payload.notificationId).update({ status: 'Approved', read: true });
+          }
+          if (action === 'approveUserRegistration' && payload.userId) {
+            await db.collection('users').doc(payload.userId).update({ status: 'Active' });
+          }
+          _logActivity('APPROVE', 'Admin', `Approved: ${action}`);
+          success({ success: true, message: 'Approved successfully' });
+          return;
+        }
+
+        // ---- IMPORT: importTransactions ----
+        if (action === 'importTransactions') {
+          const batch = db.batch();
+          (payload.rows || []).forEach(row => {
+            const id = row.id || ('TXN_' + _fbId());
+            batch.set(db.collection('transactions').doc(id), Object.assign({}, row, { id }));
+          });
+          await batch.commit();
+          _logActivity('IMPORT', 'Transactions', `Imported ${(payload.rows || []).length} transactions`);
+          success({ success: true });
+          return;
+        }
+
+        // ---- DB ACTIONS: seedDatabase / clearDatabase ----
+        if (action === 'seedDatabase') {
+          const batch = db.batch();
+          const updates = {};
+          seedLocalDatabase(updates);
+          for (const [path, val] of Object.entries(updates)) {
+            if (!val) continue;
+            const parts = path.replace(/^\//, '').split('/');
+            const col = parts[0];
+            const docId = parts[1] || 'main';
+            batch.set(db.collection(col).doc(docId), val);
+          }
+          await batch.commit();
+          success({ success: true, message: 'Database seeded with demo data' });
+          return;
+        }
+        if (action === 'clearDatabase') {
+          const collections = ['parties','products','transactions','expenses','quotations','purchaseOrders','deliveryChallans','notifications','activityLog'];
+          for (const col of collections) {
+            const snap = await db.collection(col).get();
+            const batch = db.batch();
+            snap.forEach(d => batch.delete(d.ref));
+            await batch.commit();
+          }
+          // Reset bank accounts
+          await db.collection('bankAccounts').doc('BA001').set({ id:'BA001', accountName:'Main Cash', bankName:'Cash', accountNo:'--', openingBalance:0, balance:0 });
+          await db.collection('bankAccounts').doc('BA002').set({ id:'BA002', accountName:'SBI Account', bankName:'SBI', accountNo:'9988776655', openingBalance:0, balance:0 });
+          success({ success: true, message: 'Database cleared successfully' });
+          return;
+        }
+
+        // ---- SAVE: saveFollowup ----
+        if (action === 'saveFollowup') {
+          const id = payload.id || ('FLW_' + _fbId());
+          await db.collection('crmFollowups').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
+          success({ success: true });
+          return;
+        }
+
+        // ---- DELETE: deleteFollowup ----
+        if (action === 'deleteFollowup') {
+          await db.collection('crmFollowups').doc(payload.id).delete();
+          success({ success: true });
+          return;
+        }
+
+        // ---- REPORT: getReport ----
+        if (action === 'getReport') {
+          const fromD = new Date(payload.dateFrom + 'T00:00:00');
+          const toD = new Date(payload.dateTo + 'T23:59:59');
+          let txns = App.data.transactions.filter(t => {
+            const d = new Date(t.date);
+            return d >= fromD && d <= toD;
+          });
+          if (payload.partyId) txns = txns.filter(t => t.partyId === payload.partyId);
+          success({ success: true, transactions: txns });
+          return;
+        }
+
+        // ---- EMAIL: sendPremiumEmail ----
+        if (action === 'sendPremiumEmail') {
+          showToast('Email sending not supported in Firebase mode. Please use WhatsApp share.', 'warning');
+          success({ success: true });
+          return;
+        }
+
+        // Fallback for unknown actions
+        console.warn('[Firebase] Unknown action:', action, payload);
+        success({ success: true });
+
+      } catch(err) {
+        fail(err);
       }
     }
-      
+
+    // ===================================================================
+    // REAL-TIME LISTENERS — auto-refresh App.data when Firestore changes
+    // ===================================================================
+    function startRealtimeListeners() {
+      // Stop any existing listeners
+      Object.values(_fbListeners).forEach(unsub => unsub());
+
+      const liveCollections = [
+        { col: 'parties',       key: 'parties' },
+        { col: 'products',      key: 'products' },
+        { col: 'transactions',  key: 'transactions' },
+        { col: 'bankAccounts',  key: 'bankAccounts' },
+        { col: 'expenses',      key: 'expenses' },
+        { col: 'notifications', key: 'notifications' }
+      ];
+
+      liveCollections.forEach(({ col, key }) => {
+        _fbListeners[col] = db.collection(col).onSnapshot(snap => {
+          App.data[key] = _snapToArr(snap);
+          // Refresh current page UI silently
+          if (App.currentUser) {
+            const p = App.currentPage;
+            if (p === 'dashboard') loadDashboard();
+            else if (p === 'parties') renderParties();
+            else if (p === 'products') renderProducts();
+            else if (p === 'sales') renderSales();
+            else if (p === 'purchases') renderPurchases();
+            else if (p === 'receipts') renderReceipts();
+            else if (p === 'expenses') renderExpenses();
+            else if (p === 'banking') renderBanking();
+          }
+        }, err => console.warn('[Firebase listener]', col, err));
+      });
+
+      // Company Profile listener
+      _fbListeners['companyProfile'] = db.collection('companyProfile').doc('main').onSnapshot(doc => {
+        if (doc.exists) {
+          App.data.companyProfile = doc.data();
+          _processCompanyProfile({ companyProfile: doc.data() });
+        }
+      }, err => console.warn('[Firebase listener] companyProfile', err));
+    }
+
 
 
     // Helper functions for local balance / stock adjustments
@@ -4636,6 +5126,8 @@
       document.getElementById('loginPage').style.display = 'none';
       document.getElementById('app').style.display = 'flex';
       
+      // Start real-time Firestore listeners so UI auto-updates across devices
+      startRealtimeListeners();
       initializeApp();
     }
 
@@ -4763,7 +5255,22 @@
       const icon = document.getElementById('themeIcon');
       if (icon) icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
 
-      // PHASE 1: Load critical sheets silently — no loading overlay (UI appears instantly)
+      // Auto-setup: If Firestore has no users, create default admin on first run
+      db.collection('users').limit(1).get().then(snap => {
+        if (snap.empty) {
+          db.collection('users').doc('U_ADMIN_1').set({
+            id: 'U_ADMIN_1', name: 'System Admin',
+            email: 'admin@mrrahul.com',
+            passwordHash: simpleHash('admin123'),
+            role: 'Admin', status: 'Active'
+          });
+          db.collection('bankAccounts').doc('BA001').set({ id:'BA001', accountName:'Main Cash', bankName:'Cash', accountNo:'--', openingBalance:0, balance:0 });
+          db.collection('bankAccounts').doc('BA002').set({ id:'BA002', accountName:'SBI Account', bankName:'SBI', accountNo:'9988776655', openingBalance:0, balance:0 });
+          showToast('Firebase connected! Admin: admin@mrrahul.com | Pass: admin123', 'success');
+        }
+      }).catch(() => {});
+
+      // PHASE 1: Load critical sheets silently
       const criticalSheets = ['Parties', 'Products', 'BankAccounts', 'Users', 'CompanyProfile'];
       callServer('getAllData', { sheets: criticalSheets.join(',') }, function(res) {
         if (res.success) {
@@ -4793,6 +5300,7 @@
       }, null, true);
     }
 
+
     function _processCompanyProfile(res) {
       if (res.companyProfile && Array.isArray(App.data.companyProfile)) {
         const cpObj = {};
@@ -4820,13 +5328,15 @@
           if (sheetsList) {
             Object.keys(res).forEach(key => { if (key !== 'success') App.data[key] = res[key]; });
             if (res.companyProfile) _processCompanyProfile(res);
+            if (callback) callback();
+            loadDashboard();
           } else {
             App.data = res;
             _processCompanyProfile(res);
             loadDashboard();
             populateGlobalDropdowns();
+            if (callback) callback();
           }
-          if (callback) callback();
         }
       }, null, true); // silentMode - no spinner for background refreshes
     }
@@ -5258,21 +5768,19 @@
     function downloadPartyTemplate() {
       document.getElementById('importDropdownMenu').style.display = 'none';
 
-      // Template columns matching the importPartyCSV expected fields
       const headers = [
         'name', 'type', 'mobile', 'email', 'address',
         'gstin', 'pan', 'openingBalance', 'creditLimit',
-        'paymentTerms', 'bankName', 'bankAccount', 'ifsc'
+        'paymentTerms', 'bankName', 'bankAccount', 'ifsc', 'gpsLocation'
       ];
 
-      // Sample rows so user understands the format
       const sampleRows = [
         ['Ramesh Traders', 'Customer', '9876543210', 'ramesh@example.com', 'Gandhi Nagar, Delhi',
-         '07AAACR5055K1Z5', 'AAACR5055K', '5000', '50000', '30', 'SBI', '12345678901', 'SBIN0001234'],
+         '07AAACR5055K1Z5', 'AAACR5055K', '5000', '50000', '30', 'SBI', '12345678901', 'SBIN0001234', '28.6139,77.2090'],
         ['Shyam Suppliers', 'Supplier', '8765432109', 'shyam@example.com', 'Civil Lines, Agra',
-         '', '', '0', '100000', '15', '', '', ''],
+         '', '', '0', '100000', '15', '', '', '', ''],
         ['Sunita Devi', 'Customer', '7654321098', '', 'Lal Bagh, Lucknow',
-         '', '', '2500', '20000', '30', '', '', '']
+         '', '', '2500', '20000', '30', '', '', '', '']
       ];
 
       let csv = headers.join(',') + '\r\n';
@@ -5290,7 +5798,7 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      showToast('Template downloaded! Excel me open karo, apna data bharo, CSV format me save karo, phir upload karo.', 'success');
+      showToast('Template downloaded. Excel me data daalo aur CSV save karke upload karo.', 'success');
     }
 
     function importPartyCSV(e) {
@@ -5298,36 +5806,50 @@
       const file = e.target.files[0];
       if (!file) return;
 
-      
+      const isExcel = /\.xlsx?$/.test(file.name.toLowerCase());
+      if (isExcel) {
+        showToast('Excel file upload ke liye CSV me save karke try karo. Is version me CSV import support hai.', 'warning');
+        e.target.value = '';
+        return;
+      }
+
       const reader = new FileReader();
       reader.onload = function(evt) {
         const text = evt.target.result;
         const rows = parseCSVText(text);
         if (rows.length <= 1) {
-          showToast('No data rows found in CSV file', 'error');
+          showToast('CSV me koi data row nahi mili.', 'error');
           return;
         }
-        
+
         const headers = rows[0].map(h => h.trim().toLowerCase());
-        const dataRows = rows.slice(1).filter(r => r.length > 0 && r[0]);
-        
-        const nameIdx = headers.findIndex(h => h.includes('name'));
-        const typeIdx = headers.findIndex(h => h.includes('type'));
-        const mobileIdx = headers.findIndex(h => h.includes('mobile') || h.includes('phone') || h.includes('mobile number'));
-        const emailIdx = headers.findIndex(h => h.includes('email'));
-        const addressIdx = headers.findIndex(h => h.includes('address'));
-        const gstinIdx = headers.findIndex(h => h.includes('gstin') || h.includes('gst'));
-        const panIdx = headers.findIndex(h => h.includes('pan'));
-        const opBalIdx = headers.findIndex(h => h.includes('opening') || h.includes('balance') || h.includes('op bal'));
-        const limitIdx = headers.findIndex(h => h.includes('limit') || h.includes('credit limit'));
-        const termsIdx = headers.findIndex(h => h.includes('terms') || h.includes('payment terms'));
-        const bankIdx = headers.findIndex(h => h.includes('bank name') || h.includes('bank'));
-        const accountIdx = headers.findIndex(h => h.includes('account') || h.includes('account number') || h.includes('ac'));
-        const ifscIdx = headers.findIndex(h => h.includes('ifsc'));
-        const gpsIdx = headers.findIndex(h => h.includes('gps') || h.includes('location') || h.includes('coordinates'));
+        const dataRows = rows.slice(1).filter(r => r.length > 0 && String(r[0]).trim());
+
+        const findColumn = function(candidates) {
+          for (let i = 0; i < candidates.length; i++) {
+            const idx = headers.findIndex(h => h === candidates[i] || h.includes(candidates[i]));
+            if (idx !== -1) return idx;
+          }
+          return -1;
+        };
+
+        const nameIdx = findColumn(['name']);
+        const typeIdx = findColumn(['type']);
+        const mobileIdx = findColumn(['mobile', 'phone', 'mobile number']);
+        const emailIdx = findColumn(['email']);
+        const addressIdx = findColumn(['address']);
+        const gstinIdx = findColumn(['gstin', 'gst']);
+        const panIdx = findColumn(['pan']);
+        const opBalIdx = findColumn(['opening balance', 'openingbal', 'opening', 'op bal', 'balance']);
+        const limitIdx = findColumn(['credit limit', 'limit']);
+        const termsIdx = findColumn(['payment terms', 'terms']);
+        const bankIdx = findColumn(['bank name', 'bank']);
+        const accountIdx = findColumn(['account', 'account number', 'ac']);
+        const ifscIdx = findColumn(['ifsc']);
+        const gpsIdx = findColumn(['gps', 'location', 'coordinates']);
 
         if (nameIdx === -1) {
-          showToast('Required column "Name" not found in CSV file', 'error');
+          showToast('CSV me "name" column missing hai. Template ko use karo.', 'error');
           return;
         }
 
@@ -5339,27 +5861,33 @@
         function uploadNext() {
           if (currentIndex >= dataRows.length) {
             showLoading(false);
-            showToast(`Successfully imported ${successCount} parties!`, 'success');
+            showToast(`Successfully imported ${successCount} parties.`, 'success');
             syncAllData(renderParties, ["Parties", "ActivityLog"]);
             e.target.value = '';
             return;
           }
 
           const row = dataRows[currentIndex];
-          const name = row[nameIdx];
-          const type = typeIdx !== -1 && row[typeIdx] ? row[typeIdx].trim() : 'Customer';
-          const mobile = mobileIdx !== -1 ? row[mobileIdx] : '';
-          const email = emailIdx !== -1 ? row[emailIdx] : '';
-          const address = addressIdx !== -1 ? row[addressIdx] : '';
-          const gstin = gstinIdx !== -1 ? row[gstinIdx] : '';
-          const pan = panIdx !== -1 ? row[panIdx] : '';
+          const name = String(row[nameIdx] || '').trim();
+          if (!name) {
+            currentIndex++;
+            uploadNext();
+            return;
+          }
+
+          const type = typeIdx !== -1 && row[typeIdx] ? String(row[typeIdx]).trim() : 'Customer';
+          const mobile = mobileIdx !== -1 ? String(row[mobileIdx] || '') : '';
+          const email = emailIdx !== -1 ? String(row[emailIdx] || '') : '';
+          const address = addressIdx !== -1 ? String(row[addressIdx] || '') : '';
+          const gstin = gstinIdx !== -1 ? String(row[gstinIdx] || '') : '';
+          const pan = panIdx !== -1 ? String(row[panIdx] || '') : '';
           const openingBalance = opBalIdx !== -1 ? parseFloat(row[opBalIdx] || 0) : 0;
           const creditLimit = limitIdx !== -1 ? parseFloat(row[limitIdx] || 50000) : 50000;
           const paymentTerms = termsIdx !== -1 ? parseInt(row[termsIdx] || 30) : 30;
-          const bankName = bankIdx !== -1 ? row[bankIdx] : '';
-          const bankAccount = accountIdx !== -1 ? row[accountIdx] : '';
-          const ifsc = ifscIdx !== -1 ? row[ifscIdx] : '';
-          const gpsLocation = gpsIdx !== -1 ? row[gpsIdx] : '';
+          const bankName = bankIdx !== -1 ? String(row[bankIdx] || '') : '';
+          const bankAccount = accountIdx !== -1 ? String(row[accountIdx] || '') : '';
+          const ifsc = ifscIdx !== -1 ? String(row[ifscIdx] || '') : '';
+          const gpsLocation = gpsIdx !== -1 ? String(row[gpsIdx] || '') : '';
 
           const payload = {
             id: 'PT' + (Date.now() + currentIndex),
@@ -5381,8 +5909,8 @@
           };
 
           showLoading(true, `Importing ${currentIndex + 1} of ${dataRows.length} parties...`);
-          
-          callServer('saveParty', payload, function(res) {
+
+          callServer('saveParty', payload, function() {
             successCount++;
             currentIndex++;
             uploadNext();
@@ -5393,6 +5921,145 @@
         }
 
         uploadNext();
+      };
+      reader.readAsText(file);
+    }
+
+    function downloadTransactionTemplate() {
+      document.getElementById('importDropdownMenu').style.display = 'none';
+      const headers = ['partyName', 'date', 'type', 'amount', 'description', 'voucherNo', 'paymentMode', 'bankRef', 'linkedInvoice', 'bankAccountId'];
+      const sampleRows = [
+        ['Ramesh Traders', '2026-07-08', 'Sale', '5000', 'Goods sold', 'INV-1001', 'Cash', '', '', ''],
+        ['Ramesh Traders', '2026-07-09', 'Receipt', '2000', 'Part payment', 'REC-2026-001', 'Cash', '', '', ''],
+        ['Shyam Suppliers', '2026-07-10', 'Payment', '1500', 'Advance payment', 'PAY-2026-001', 'Bank', 'TXN-123', '', 'BA002']
+      ];
+
+      let csv = headers.join(',') + '\r\n';
+      sampleRows.forEach(row => {
+        csv += row.map(val => `"${val}"`).join(',') + '\r\n';
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'Transaction_Import_Template.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      showToast('Transaction template downloaded. Fill it and upload as CSV.', 'success');
+    }
+
+    function importTransactionCSV(e) {
+      document.getElementById('importDropdownMenu').style.display = 'none';
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        const text = evt.target.result;
+        const rows = parseCSVText(text);
+        if (rows.length <= 1) {
+          showToast('CSV me koi data row nahi mili.', 'error');
+          return;
+        }
+
+        const headers = rows[0].map(h => h.trim().toLowerCase());
+        const dataRows = rows.slice(1).filter(r => r.length > 0 && String(r[0]).trim());
+
+        const findColumn = function(candidates) {
+          for (let i = 0; i < candidates.length; i++) {
+            const idx = headers.findIndex(h => h === candidates[i] || h.includes(candidates[i]));
+            if (idx !== -1) return idx;
+          }
+          return -1;
+        };
+
+        const partyNameIdx = findColumn(['partyname', 'party name']);
+        const dateIdx = findColumn(['date', 'txn date']);
+        const typeIdx = findColumn(['type', 'txn type']);
+        const amountIdx = findColumn(['amount', 'amt', 'total']);
+        const descriptionIdx = findColumn(['description', 'narration']);
+        const voucherIdx = findColumn(['voucher', 'voucher no', 'voucherno']);
+        const paymentModeIdx = findColumn(['paymentmode', 'mode']);
+        const bankRefIdx = findColumn(['bankref', 'bank ref', 'reference']);
+        const linkedInvoiceIdx = findColumn(['linkedinvoice', 'linked invoice']);
+        const bankAccountIdx = findColumn(['bankaccountid', 'bank account id']);
+
+        if (partyNameIdx === -1 || dateIdx === -1 || typeIdx === -1 || amountIdx === -1) {
+          showToast('CSV me partyName, date, type aur amount columns zaroori hain.', 'error');
+          return;
+        }
+
+        const rowsToImport = [];
+        dataRows.forEach((row, idx) => {
+          const partyName = String(row[partyNameIdx] || '').trim();
+          if (!partyName) return;
+
+          const party = App.data.parties.find(p => String(p.name || '').toLowerCase() === partyName.toLowerCase());
+          if (!party) return;
+
+          const rawType = String(row[typeIdx] || '').trim().toLowerCase();
+          let txnType = 'Receipt';
+          if (rawType === 'sale' || rawType === 'invoice' || rawType === 'sales') txnType = 'Sale';
+          else if (rawType === 'purchase' || rawType === 'bill') txnType = 'Purchase';
+          else if (rawType === 'payment' || rawType === 'pay') txnType = 'Payment';
+          else if (rawType === 'receipt' || rawType === 'receive') txnType = 'Receipt';
+
+          const amount = parseFloat(row[amountIdx] || 0);
+          const dateValue = String(row[dateIdx] || '').trim() || new Date().toISOString().split('T')[0];
+          const description = descriptionIdx !== -1 ? String(row[descriptionIdx] || '') : `${txnType} Entry`;
+          const voucherNo = voucherIdx !== -1 ? String(row[voucherIdx] || '') : `IMP-${Date.now()}-${idx + 1}`;
+          const paymentMode = paymentModeIdx !== -1 ? String(row[paymentModeIdx] || 'Cash') : 'Cash';
+          const bankRef = bankRefIdx !== -1 ? String(row[bankRefIdx] || '') : '';
+          const linkedInvoice = linkedInvoiceIdx !== -1 ? String(row[linkedInvoiceIdx] || '') : '';
+          const bankAccountId = bankAccountIdx !== -1 ? String(row[bankAccountIdx] || '') : (paymentMode === 'Cash' ? 'BA001' : 'BA002');
+
+          rowsToImport.push({
+            id: 'TXN' + (Date.now() + idx),
+            date: dateValue,
+            voucherNo: voucherNo,
+            partyId: party.id,
+            partyName: party.name,
+            description: description,
+            txnType: txnType,
+            amount: amount,
+            paymentMode: paymentMode,
+            bankAccountId: bankAccountId,
+            bankRef: bankRef,
+            linkedInvoice: linkedInvoice,
+            enteredBy: App.currentUser.id,
+            enteredOn: new Date().toISOString()
+          });
+        });
+
+        if (rowsToImport.length === 0) {
+          showToast('No valid transaction rows found for import.', 'warning');
+          return;
+        }
+
+        showLoading(true, `Importing ${rowsToImport.length} transactions...`);
+        callServer('importTransactions', { rows: rowsToImport, enteredBy: App.currentUser.id }, function() {
+          showLoading(false);
+          showToast(`Imported ${rowsToImport.length} transactions successfully.`, 'success');
+          syncAllData(function() {
+            renderSales();
+            renderPurchases();
+            renderReceipts();
+            if (typeof reopenLedgerPartyId !== 'undefined' && reopenLedgerPartyId) {
+              const tempPartyId = reopenLedgerPartyId;
+              reopenLedgerPartyId = null;
+              viewPartyLedger(tempPartyId);
+            }
+          }, ["Transactions", "BankAccounts", "Products", "ActivityLog"]);
+          e.target.value = '';
+        }, function() {
+          showLoading(false);
+          showToast('Transaction import failed.', 'error');
+          e.target.value = '';
+        });
       };
       reader.readAsText(file);
     }
@@ -8419,7 +9086,7 @@
                   window.print();
                 }, 500);
               };
-            <\/script>
+            ${'</scr' + 'ipt>'}
           </body>
         </html>
       `);
@@ -8667,7 +9334,7 @@
                   window.print();
                 }, 500);
               };
-            <\/script>
+            ${'</scr' + 'ipt>'}
           </body>
         </html>
       `);
@@ -8675,29 +9342,24 @@
     }
 
     function printPartyList() {
-      if (!App.data.parties || App.data.parties.length === 0) {
-        showToast('No parties available to print.', 'warning');
-        return;
-      }
-
-      // Calculate dues per party dynamically
+      const search = document.getElementById('partySearch').value.toLowerCase();
+      const filter = document.getElementById('partyFilterType').value;
       const partyBalance = {};
+
       App.data.parties.forEach(p => {
         partyBalance[p.id] = parseFloat(p.openingBalance || 0);
       });
+
       App.data.transactions.forEach(t => {
         if (partyBalance[t.partyId] !== undefined) {
           partyBalance[t.partyId] += parseFloat(t.debit || 0) - parseFloat(t.credit || 0);
         }
       });
 
-      // Filter/Search list from active filters in the UI
-      const search = document.getElementById('partySearch').value.toLowerCase();
-      const filter = document.getElementById('partyFilterType').value;
-
       const filteredParties = App.data.parties.filter(p => {
         const matchesSearch = String(p.name || '').toLowerCase().includes(search) || String(p.mobile || '').includes(search) || String(p.gstin || '').toLowerCase().includes(search);
         let matchesType = false;
+
         if (filter === 'All') {
           matchesType = true;
         } else if (filter === 'Customer' || filter === 'Supplier') {
@@ -8705,10 +9367,10 @@
         } else {
           matchesType = p.type === filter;
         }
+
         return matchesSearch && matchesType;
       });
 
-      // Sort by Name ascending
       filteredParties.sort((a, b) => a.name.localeCompare(b.name));
 
       let tableRows = '';
@@ -8855,7 +9517,6 @@
             </style>
           </head>
           <body>
-            <!-- Header -->
             <div class="header">
               <div class="company-details">
                 <h1>${App.data.companyProfile.companyName || 'Mr.Rahul ERP'}</h1>
@@ -8879,7 +9540,6 @@
               </div>
             </div>
 
-            <!-- Table -->
             <table>
               <thead>
                 <tr>
@@ -8896,7 +9556,6 @@
               </tbody>
             </table>
 
-            <!-- Footer Signatures -->
             <div class="footer-signature">
               <div class="signature-line">Prepared By</div>
               <div class="signature-line">Authorized Signatory</div>
@@ -8908,7 +9567,7 @@
                   window.print();
                 }, 500);
               };
-            <\/script>
+            ${'</scr' + 'ipt>'}
           </body>
         </html>
       `);
@@ -9510,7 +10169,7 @@
                   window.print();
                 }, 500);
               };
-            <\/script>
+            ${'</scr' + 'ipt>'}
           </body>
         </html>
       `);
