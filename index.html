@@ -5123,7 +5123,7 @@
       });
 
       const list = App.data.parties.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(search) || p.mobile.includes(search) || (p.gstin || '').toLowerCase().includes(search);
+        const matchesSearch = p.name.toLowerCase().includes(search) || (p.mobile || '').includes(search) || (p.gstin || '').toLowerCase().includes(search);
         let matchesType = false;
         if (filter === 'All') {
           matchesType = true;
@@ -8696,7 +8696,7 @@
       const filter = document.getElementById('partyFilterType').value;
 
       const filteredParties = App.data.parties.filter(p => {
-        const matchesSearch = p.name.toLowerCase().includes(search) || p.mobile.includes(search) || (p.gstin || '').toLowerCase().includes(search);
+        const matchesSearch = p.name.toLowerCase().includes(search) || (p.mobile || '').includes(search) || (p.gstin || '').toLowerCase().includes(search);
         let matchesType = false;
         if (filter === 'All') {
           matchesType = true;
