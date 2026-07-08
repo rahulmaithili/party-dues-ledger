@@ -556,6 +556,7 @@ function doPost(e) {
             break;
           }
         }
+        clearSpecificCaches(["BankAccounts"]);
       }
       if (txn.linkedInvoice) adjustLinkedInvoiceSheet(sheet, txn.linkedInvoice, parseFloat(txn.credit), txn.paymentMode, false);
       return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
@@ -578,8 +579,98 @@ function doPost(e) {
             bankSheet.getRange(k+1, 8).setValue(currBal - debit);
           }
         }
+        clearSpecificCaches(["BankAccounts"]);
       }
       return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ---- BULK TRANSACTION IMPORT ----
+    if (action === "importTransactions") {
+      var rows = payload.rows || [];
+      var imported = 0;
+      for (var i = 0; i < rows.length; i++) {
+        var row = rows[i] || {};
+        var txnType = String(row.txnType || row.type || "Receipt").trim();
+        var txn = {
+          id: row.id || ("TXN" + Date.now() + i),
+          date: row.date || new Date().toISOString().split("T")[0],
+          voucherNo: row.voucherNo || ("IMP-" + (i + 1)),
+          partyId: row.partyId || "",
+          partyName: row.partyName || "",
+          description: row.description || (txnType + " Entry"),
+          txnType: txnType,
+          debit: txnType === "Payment" ? parseFloat(row.amount || 0) : 0,
+          credit: txnType === "Receipt" ? parseFloat(row.amount || 0) : 0,
+          paymentMode: row.paymentMode || "Cash",
+          bankAccountId: row.bankAccountId || "",
+          bankRef: row.bankRef || "",
+          linkedInvoice: row.linkedInvoice || "",
+          items: [],
+          totals: null,
+          enteredBy: row.enteredBy || payload.enteredBy || "System",
+          enteredOn: new Date().toISOString()
+        };
+
+        if (txnType === "Sale" || txnType === "Purchase") {
+          txn.debit = txnType === "Sale" ? parseFloat(row.amount || 0) : 0;
+          txn.credit = txnType === "Purchase" ? parseFloat(row.amount || 0) : 0;
+          txn.totals = {
+            subTotal: parseFloat(row.amount || 0),
+            discount: 0,
+            cgst: 0,
+            sgst: 0,
+            igst: 0,
+            roundOff: 0,
+            grandTotal: parseFloat(row.amount || 0),
+            paidCash: 0,
+            paidBank: 0,
+            balanceDue: parseFloat(row.amount || 0)
+          };
+          rollbackSheetBalances(sheet, txn.id);
+          upsertRowInSheet(sheet, "Transactions", txn, "id");
+          adjustStock(sheet, txn.items || [], txnType === "Sale" ? "sale" : "purchase");
+          adjustBankForInvoice(sheet, txn, txnType === "Sale" ? "saveInvoice" : "savePurchase");
+        } else if (txnType === "Receipt") {
+          txn.proofUrl = handleProofUpload(txn);
+          rollbackSheetBalances(sheet, txn.id);
+          upsertRowInSheet(sheet, "Transactions", txn, "id");
+          var bankSheet = sheet.getSheetByName("BankAccounts");
+          if (bankSheet) {
+            var bankData = bankSheet.getDataRange().getValues();
+            var credit = parseFloat(txn.credit || 0);
+            var targetAccId = txn.bankAccountId || (txn.paymentMode === "Cash" ? "BA001" : "BA002");
+            for (var k = 1; k < bankData.length; k++) {
+              if (bankData[k][0] === targetAccId) {
+                var currBal = parseFloat(bankSheet.getRange(k+1, 8).getValue() || 0);
+                bankSheet.getRange(k+1, 8).setValue(currBal + credit);
+                break;
+              }
+            }
+            clearSpecificCaches(["BankAccounts"]);
+          }
+          if (txn.linkedInvoice) adjustLinkedInvoiceSheet(sheet, txn.linkedInvoice, parseFloat(txn.credit), txn.paymentMode, false);
+        } else if (txnType === "Payment") {
+          txn.proofUrl = handleProofUpload(txn);
+          rollbackSheetBalances(sheet, txn.id);
+          upsertRowInSheet(sheet, "Transactions", txn, "id");
+          var bankSheet2 = sheet.getSheetByName("BankAccounts");
+          if (bankSheet2) {
+            var bankData2 = bankSheet2.getDataRange().getValues();
+            var debit = parseFloat(txn.debit || 0);
+            for (var k2 = 1; k2 < bankData2.length; k2++) {
+              if ((txn.paymentMode === "Cash" && bankData2[k2][0] === "BA001") ||
+                  (txn.paymentMode !== "Cash" && bankData2[k2][0] === "BA002")) {
+                var currBal2 = parseFloat(bankSheet2.getRange(k2+1, 8).getValue() || 0);
+                bankSheet2.getRange(k2+1, 8).setValue(currBal2 - debit);
+              }
+            }
+            clearSpecificCaches(["BankAccounts"]);
+          }
+        }
+        imported++;
+      }
+      logActivityInternal(sheet, payload.enteredBy || "System", "", "Bulk Import Transactions", "Transactions", imported + " transactions imported");
+      return ContentService.createTextOutput(JSON.stringify({ success: true, imported: imported })).setMimeType(ContentService.MimeType.JSON);
     }
 
     // ---- RETURN ----
@@ -700,6 +791,7 @@ function doPost(e) {
             break;
           }
         }
+        clearSpecificCaches(["BankAccounts"]);
       }
       return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
     }
@@ -740,6 +832,7 @@ function doPost(e) {
             break;
           }
         }
+        clearSpecificCaches(["BankAccounts"]);
       }
       return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
     }
@@ -1147,6 +1240,7 @@ function adjustStock(sheet, items, type) {
       }
     }
   }
+  clearSpecificCaches(["Products"]);
 }
 
 function adjustBankForInvoice(sheet, txn, actionType) {
@@ -1170,6 +1264,7 @@ function adjustBankForInvoice(sheet, txn, actionType) {
     var currBal = parseFloat(bankSheet.getRange(bankIdx, 8).getValue() || 0);
     bankSheet.getRange(bankIdx, 8).setValue(currBal + (paidBank * multiplier));
   }
+  clearSpecificCaches(["BankAccounts"]);
 }
 
 function adjustLinkedInvoiceSheet(sheet, linkedInvoiceNo, amount, mode, isRollback) {
@@ -1195,6 +1290,7 @@ function adjustLinkedInvoiceSheet(sheet, linkedInvoiceNo, amount, mode, isRollba
       totals.paidBank = paidBank;
       totals.balanceDue = Math.max(0, grandTotal - (paidCash + paidBank));
       txnsSheet.getRange(i+1, totalsColIdx+1).setValue(JSON.stringify(totals));
+      clearSpecificCaches(["Transactions"]);
       break;
     }
   }
@@ -1263,6 +1359,7 @@ function rollbackSheetBalances(sheet, txnId) {
     var currBal = parseFloat(bankSheet.getRange(idx, 8).getValue() || 0);
     bankSheet.getRange(idx, 8).setValue(currBal + delta);
   };
+  clearSpecificCaches(["BankAccounts"]);
 
   var getAccountRowIdx = function(accountId) {
     for (var k = 1; k < bankData.length; k++) {

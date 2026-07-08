@@ -4262,8 +4262,17 @@
         
         const blob = new Blob([bytes], { type: mimeType });
         const ref = storage.ref().child(`${folder}/${payload.id}/${filename}`);
-        await ref.put(blob);
-        const url = await ref.getDownloadURL();
+        
+        const uploadAndGetUrl = async () => {
+          await ref.put(blob);
+          return await ref.getDownloadURL();
+        };
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error("Firebase Storage upload timed out")), 5000)
+        );
+        
+        const url = await Promise.race([uploadAndGetUrl(), timeoutPromise]);
         
         cleanPayload();
         return url;
@@ -6540,7 +6549,7 @@
           ifsc: document.getElementById('partyIfsc').value,
           gpsLocation: document.getElementById('partyGpsLocation').value,
           documents: document.getElementById('partyDocUrl').value || '',
-          enteredBy: App.currentUser.id
+          enteredBy: App.currentUser ? App.currentUser.id : 'system'
         };
         if (base64) {
           payload.proofBase64 = base64;
@@ -6551,6 +6560,8 @@
           closeModal('partyModal');
           showToast('Party details saved successfully', 'success');
           syncAllData(renderParties, ['Parties', 'ActivityLog']);
+        }, function(err) {
+          showToast('Failed to save party: ' + (err && err.message || err), 'error');
         });
       };
 
