@@ -3685,10 +3685,16 @@
           </div>
         </div>
       </div>
-      <div class="modal-footer">
-        <button class="btn btn-primary" onclick="printPartyLedger()"><i class="fa-solid fa-print"></i> Print Statement</button>
-        <button class="btn btn-accent hide-for-party" onclick="emailPartyLedger()"><i class="fa-solid fa-envelope"></i> Email Statement</button>
-        <button class="btn btn-secondary" onclick="closeModal('ledgerModal')">Close</button>
+      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary hide-for-party" id="ledgerAddSaleBtn"><i class="fa-solid fa-plus"></i> Add Sale</button>
+          <button class="btn btn-success hide-for-party" id="ledgerAddPaymentBtn"><i class="fa-solid fa-wallet"></i> Add Receipt</button>
+        </div>
+        <div style="display: flex; gap: 8px; margin-left: auto;">
+          <button class="btn btn-primary" onclick="printPartyLedger()"><i class="fa-solid fa-print"></i> Print Statement</button>
+          <button class="btn btn-accent hide-for-party" onclick="emailPartyLedger()"><i class="fa-solid fa-envelope"></i> Email Statement</button>
+          <button class="btn btn-secondary" onclick="closeModal('ledgerModal')">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -6067,7 +6073,7 @@
 
     }
 
-    function openInvoiceModal(type) {
+    function openInvoiceModal(type, preselectedPartyId) {
       document.getElementById('invoiceForm').reset();
       document.getElementById('invoiceId').value = '';
       document.getElementById('invoiceTxnType').value = type;
@@ -6088,6 +6094,9 @@
       App.data.parties.filter(x => isSale ? getPartyBaseType(x) === 'Customer' : getPartyBaseType(x) === 'Supplier').forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
+      if (preselectedPartyId) {
+        pSelect.value = preselectedPartyId;
+      }
       initSearchableDropdown('invoicePartyId');
 
       activeInvoiceItems = [];
@@ -6415,7 +6424,7 @@
 
     }
 
-    function openReceiptModal(type) {
+    function openReceiptModal(type, preselectedPartyId) {
       document.getElementById('receiptForm').reset();
       document.getElementById('receiptId').value = '';
       document.getElementById('receiptTxnType').value = type;
@@ -6434,11 +6443,18 @@
       App.data.parties.filter(x => isReceipt ? getPartyBaseType(x) === 'Customer' : getPartyBaseType(x) === 'Supplier').forEach(p => {
         pSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
       });
+      if (preselectedPartyId) {
+        pSelect.value = preselectedPartyId;
+      }
       initSearchableDropdown('receiptPartyId');
 
       // Populate Linked Invoice with fallback placeholder
-      const invSelect = document.getElementById('receiptLinkedInvoice');
-      invSelect.innerHTML = '<option value="">-- Select Party First --</option>';
+      if (preselectedPartyId) {
+        populateLinkedInvoicesForSelectedParty();
+      } else {
+        const invSelect = document.getElementById('receiptLinkedInvoice');
+        invSelect.innerHTML = '<option value="">-- Select Party First --</option>';
+      }
       openModal('receiptModal');
     }
 
@@ -8281,6 +8297,37 @@
       document.getElementById('ledgerOpeningBalance').textContent = formatCurrency(openingBal);
       document.getElementById('ledgerClosingBalance').innerHTML = `${formatCurrency(runningBal)}${wsapBtn}`;
       
+      // Update the add sale / add payment buttons dynamically
+      const isCustomer = getPartyBaseType(p) === 'Customer';
+      const addSaleBtn = document.getElementById('ledgerAddSaleBtn');
+      const addPaymentBtn = document.getElementById('ledgerAddPaymentBtn');
+      
+      if (isCustomer) {
+        addSaleBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Sale';
+        addSaleBtn.onclick = () => {
+          closeModal('ledgerModal');
+          openInvoiceModal('Sale', p.id);
+        };
+        addPaymentBtn.innerHTML = '<i class="fa-solid fa-arrow-down-long"></i> Add Receipt';
+        addPaymentBtn.className = 'btn btn-success hide-for-party';
+        addPaymentBtn.onclick = () => {
+          closeModal('ledgerModal');
+          openReceiptModal('Receipt', p.id);
+        };
+      } else {
+        addSaleBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Purchase';
+        addSaleBtn.onclick = () => {
+          closeModal('ledgerModal');
+          openInvoiceModal('Purchase', p.id);
+        };
+        addPaymentBtn.innerHTML = '<i class="fa-solid fa-arrow-up-long"></i> Add Payment';
+        addPaymentBtn.className = 'btn btn-danger hide-for-party';
+        addPaymentBtn.onclick = () => {
+          closeModal('ledgerModal');
+          openReceiptModal('Payment', p.id);
+        };
+      }
+
       switchLedgerTab('ledger');
       openModal('ledgerModal');
     }
