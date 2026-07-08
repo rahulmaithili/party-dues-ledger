@@ -681,6 +681,19 @@
     .kpi-icon.orange { background: rgba(245, 158, 11, 0.1); color: var(--war); }
     .kpi-icon.red { background: rgba(239, 68, 68, 0.1); color: var(--dan); }
 
+    .kpi-hero-card {
+      background: linear-gradient(135deg, #1E293B, #0F172A);
+      border: 1px solid var(--brd);
+      padding: 24px;
+      border-radius: 16px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+    }
+
     /* Dashboard Layout */
     .dashboard-grid {
       display: grid;
@@ -1050,6 +1063,22 @@
     }
     .report-menu-item.active p {
       color: var(--sbt);
+    }
+
+    @media (max-width: 1200px) {
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    @media (max-width: 768px) {
+      .kpi-hero-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+      }
+      .kpi-hero-card div:last-child {
+        align-self: flex-end;
+      }
     }
 
     /* Mobile Responsive styling */
@@ -1610,7 +1639,7 @@
           <!-- ADMIN/MANAGER DASHBOARD VIEW -->
           <div class="hide-for-party">
             <!-- HERO CARD -->
-            <div class="kpi-hero-card" style="background: linear-gradient(135deg, #1E293B, #0F172A); border: 1px solid var(--brd); padding: 24px; border-radius: 16px; color: white; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);">
+            <div class="kpi-hero-card">
               <div>
                 <span style="font-size: 13px; font-weight: 600; text-transform: uppercase; color: #94A3B8; letter-spacing: 1px;">Total Net Outstanding Dues</span>
                 <h2 id="kpiNetDues" style="font-size: 36px; font-weight: 800; margin-top: 8px; color: var(--acc);">₹0.00</h2>
