@@ -4861,10 +4861,35 @@
         // ---- IMPORT: importTransactions ----
         if (action === 'importTransactions') {
           const batch = db.batch();
+          const updates = {};
+          
           (payload.rows || []).forEach(row => {
             const id = row.id || ('TXN_' + _fbId());
             batch.set(db.collection('transactions').doc(id), Object.assign({}, row, { id }));
+            
+            // Adjust Stock & Bank balances for each row
+            if (row.txnType === 'Sale' || row.txnType === 'Purchase') {
+              const revMode = row.txnType === 'Sale' ? 'sale' : 'purchase';
+              if (row.items && row.items.length > 0) {
+                adjustLocalStock(row.items, revMode, updates);
+              }
+              const paidCash = parseFloat(row.totals && row.totals.paidCash || 0);
+              const paidBank = parseFloat(row.totals && row.totals.paidBank || 0);
+              if (paidCash > 0) {
+                adjustLocalBankForVoucher('Cash', paidCash, row.txnType === 'Sale' ? 'Receipt' : 'Payment', updates);
+              }
+              if (paidBank > 0) {
+                adjustLocalBankForVoucher('Bank', paidBank, row.txnType === 'Sale' ? 'Receipt' : 'Payment', updates);
+              }
+            } else if (row.txnType === 'Receipt' || row.txnType === 'Payment') {
+              const amt = parseFloat(row.credit || row.debit || 0);
+              if (amt > 0) {
+                adjustLocalBankForVoucher(row.paymentMode, amt, row.txnType === 'Receipt' ? 'Receipt' : 'Payment', updates);
+              }
+            }
           });
+          
+          _applyCalculatedUpdates(updates, batch);
           await batch.commit();
           _logActivity('IMPORT', 'Transactions', `Imported ${(payload.rows || []).length} transactions`);
           success({ success: true });
@@ -6369,11 +6394,11 @@
 
     function downloadTransactionTemplate() {
       document.getElementById('importDropdownMenu').style.display = 'none';
-      const headers = ['partyName', 'date', 'type', 'amount', 'description', 'voucherNo', 'paymentMode', 'bankRef', 'linkedInvoice', 'bankAccountId'];
+      const headers = ['partyName', 'date', 'type', 'amount', 'description', 'voucherNo', 'paymentMode', 'bankRef', 'linkedInvoice', 'bankAccountId', 'productName', 'quantity'];
       const sampleRows = [
-        ['Ramesh Traders', '2026-07-08', 'Sale', '5000', 'Goods sold', 'INV-1001', 'Cash', '', '', ''],
-        ['Ramesh Traders', '2026-07-09', 'Receipt', '2000', 'Part payment', 'REC-2026-001', 'Cash', '', '', ''],
-        ['Shyam Suppliers', '2026-07-10', 'Payment', '1500', 'Advance payment', 'PAY-2026-001', 'Bank', 'TXN-123', '', 'BA002']
+        ['Ramesh Traders', '2026-07-08', 'Sale', '5000', 'Goods sold', 'INV-1001', 'Cash', '', '', '', 'Commercial 19KG', '5'],
+        ['Ramesh Traders', '2026-07-09', 'Receipt', '2000', 'Part payment', 'REC-2026-001', 'Cash', '', '', '', '', ''],
+        ['Shyam Suppliers', '2026-07-10', 'Payment', '1500', 'Advance payment', 'PAY-2026-001', 'Bank', 'TXN-123', '', 'BA002', '', '']
       ];
 
       let csv = headers.join(',') + '\r\n';
@@ -6429,6 +6454,8 @@
         const bankRefIdx = findColumn(['bankref', 'bank ref', 'reference']);
         const linkedInvoiceIdx = findColumn(['linkedinvoice', 'linked invoice']);
         const bankAccountIdx = findColumn(['bankaccountid', 'bank account id']);
+        const productNameIdx = findColumn(['productname', 'product name', 'product']);
+        const quantityIdx = findColumn(['quantity', 'qty']);
 
         if (partyNameIdx === -1 || dateIdx === -1 || typeIdx === -1 || amountIdx === -1) {
           showToast('CSV me partyName, date, type aur amount columns zaroori hain.', 'error');
@@ -6458,6 +6485,51 @@
           const bankRef = bankRefIdx !== -1 ? String(row[bankRefIdx] || '') : '';
           const linkedInvoice = linkedInvoiceIdx !== -1 ? String(row[linkedInvoiceIdx] || '') : '';
           const bankAccountId = bankAccountIdx !== -1 ? String(row[bankAccountIdx] || '') : (paymentMode === 'Cash' ? 'BA001' : 'BA002');
+          
+          const productName = productNameIdx !== -1 ? String(row[productNameIdx] || '').trim() : '';
+          const qty = quantityIdx !== -1 ? parseInt(row[quantityIdx] || 0) : 0;
+
+          let items = [];
+          let totals = null;
+
+          if ((txnType === 'Sale' || txnType === 'Purchase') && productName && qty > 0) {
+            const product = App.data.products.find(p => String(p.name || '').toLowerCase() === productName.toLowerCase());
+            if (product) {
+              const unitPrice = amount / qty;
+              items.push({
+                productId: product.id,
+                productName: product.name,
+                price: unitPrice,
+                quantity: qty,
+                total: amount,
+                cylinderReturn: 0
+              });
+              
+              let paidCash = 0;
+              let paidBank = 0;
+              let balanceDue = amount;
+              if (paymentMode.toLowerCase() === 'cash') {
+                paidCash = amount;
+                balanceDue = 0;
+              } else if (paymentMode.toLowerCase() === 'bank') {
+                paidBank = amount;
+                balanceDue = 0;
+              }
+              
+              totals = {
+                subTotal: amount,
+                discount: 0,
+                cgst: 0,
+                sgst: 0,
+                igst: 0,
+                roundOff: 0,
+                grandTotal: amount,
+                paidCash: paidCash,
+                paidBank: paidBank,
+                balanceDue: balanceDue
+              };
+            }
+          }
 
           rowsToImport.push({
             id: 'TXN' + (Date.now() + idx),
@@ -6472,6 +6544,8 @@
             bankAccountId: bankAccountId,
             bankRef: bankRef,
             linkedInvoice: linkedInvoice,
+            items: items,
+            totals: totals,
             enteredBy: App.currentUser.id,
             enteredOn: new Date().toISOString()
           });
