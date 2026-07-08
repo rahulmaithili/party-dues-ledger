@@ -28,7 +28,12 @@
     };
     firebase.initializeApp(FIREBASE_CONFIG);
     const db = firebase.firestore();
-    const storage = firebase.storage();
+    let storage;
+    try {
+      storage = firebase.storage();
+    } catch (e) {
+      console.warn("Firebase Storage initialization failed:", e);
+    }
     // Firestore offline persistence for better performance
     db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
     // Active real-time unsubscribe handles
@@ -4208,6 +4213,36 @@
     async function _uploadBase64File(payload, folder) {
       const base64Str = payload ? (payload.proofBase64 || payload.avatarBase64) : null;
       if (!payload || !base64Str) return null;
+      
+      const cleanPayload = () => {
+        delete payload.proofBase64;
+        delete payload.proofFilename;
+        delete payload.proofMimeType;
+        delete payload.avatarBase64;
+        delete payload.avatarFilename;
+        delete payload.avatarMimeType;
+      };
+
+      const fallbackToDataUrl = () => {
+        const mimeType = payload.proofMimeType || payload.avatarMimeType;
+        if (base64Str.length < 266666) {
+          const dataUrl = base64Str.startsWith('data:') ? base64Str : `data:${mimeType};base64,${base64Str}`;
+          cleanPayload();
+          return dataUrl;
+        } else {
+          cleanPayload();
+          setTimeout(() => {
+            showToast('Document is too large (>200KB) and Firebase Storage is offline/unconfigured. Saved details without document.', 'warning');
+          }, 50);
+          return null;
+        }
+      };
+
+      if (!storage) {
+        console.warn("Storage not initialized, falling back to Data URL if small.");
+        return fallbackToDataUrl();
+      }
+
       try {
         let base64Data = base64Str;
         if (base64Data.indexOf("base64,") !== -1) {
@@ -4229,18 +4264,11 @@
         await ref.put(blob);
         const url = await ref.getDownloadURL();
         
-        // Clean up base64 payload properties so they are not written to Firestore
-        delete payload.proofBase64;
-        delete payload.proofFilename;
-        delete payload.proofMimeType;
-        delete payload.avatarBase64;
-        delete payload.avatarFilename;
-        delete payload.avatarMimeType;
-        
+        cleanPayload();
         return url;
       } catch (e) {
-        console.error("Storage upload failed", e);
-        return null;
+        console.error("Storage upload failed, falling back to Data URL if small.", e);
+        return fallbackToDataUrl();
       }
     }
 
