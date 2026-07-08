@@ -2458,6 +2458,10 @@
                   </div>
                 </div>
                 <div class="form-group">
+                  <label style="color:var(--txt)">Google Apps Script Web App URL (For Sending Emails)</label>
+                  <input type="url" id="setCompanyScriptUrl" class="light-form-control" placeholder="https://script.google.com/macros/s/.../exec">
+                </div>
+                <div class="form-group">
                   <label style="color:var(--txt); margin-bottom: 8px; display: block;">Company Logo</label>
                   <div style="display: flex; align-items: center; gap: 16px;">
                     <div id="logoPreviewContainer" style="width: 80px; height: 80px; border: 1px dashed var(--brd); border-radius: var(--r); display: flex; align-items: center; justify-content: center; background: #F8FAFC; overflow: hidden; position: relative;">
@@ -6813,6 +6817,187 @@
           });
         }
       });
+    }
+
+    function sendEmailViaScript(to, subject, htmlBody, callback) {
+      const scriptUrl = App.data.companyProfile && App.data.companyProfile.googleScriptUrl;
+      if (!scriptUrl) {
+        console.warn("Google Apps Script URL is not configured. Email not sent.");
+        if (callback) callback({ success: false, message: "Apps Script URL not configured" });
+        return;
+      }
+      
+      const payload = {
+        action: 'sendEmail',
+        payload: {
+          to: to,
+          subject: subject,
+          htmlBody: htmlBody
+        }
+      };
+      
+      fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(() => {
+        if (callback) callback({ success: true });
+      })
+      .catch(err => {
+        console.error("Email send failed:", err);
+        if (callback) callback({ success: false, message: err.message });
+      });
+    }
+
+    function getWelcomeEmailTemplate(userName, userId, password, companyName, companyLogo, appLink) {
+      const logoHtml = companyLogo ? `<img src="${companyLogo}" alt="${companyName}" style="max-height: 50px; display: block; margin: 0 auto;">` : `<div style="color: #E5C158; font-size: 24px; font-weight: 800; letter-spacing: 1px; text-align: center;">${companyName}</div>`;
+      return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to ${companyName}</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #F8FAFC;
+      color: #1E293B;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrapper {
+      width: 100%;
+      background-color: #F8FAFC;
+      padding: 40px 20px;
+      box-sizing: border-box;
+    }
+    .card {
+      max-width: 580px;
+      margin: 0 auto;
+      background-color: #FFFFFF;
+      border: 1px solid #E2E8F0;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    }
+    .header {
+      background: linear-gradient(135deg, #1E293B, #0F172A);
+      padding: 32px 40px;
+      text-align: center;
+    }
+    .body {
+      padding: 40px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-top: 0;
+      margin-bottom: 16px;
+      color: #0F172A;
+    }
+    p {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #475569;
+      margin-top: 0;
+      margin-bottom: 24px;
+    }
+    .credentials-box {
+      background-color: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 30px;
+    }
+    .cred-row {
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+    .cred-row:last-child {
+      margin-bottom: 0;
+    }
+    .cred-label {
+      color: #64748B;
+      font-weight: 600;
+      display: inline-block;
+      width: 130px;
+    }
+    .cred-value {
+      color: #0F172A;
+      font-weight: 700;
+      font-family: monospace;
+      font-size: 15px;
+    }
+    .btn-container {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .btn {
+      display: inline-block;
+      background-color: #F59E0B;
+      color: #0F172A !important;
+      font-weight: 700;
+      font-size: 15px;
+      text-decoration: none;
+      padding: 14px 32px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.2);
+    }
+    .footer {
+      background-color: #F8FAFC;
+      border-top: 1px solid #E2E8F0;
+      padding: 24px 40px;
+      text-align: center;
+      font-size: 12px;
+      color: #64748B;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+      <div class="header">
+        ${logoHtml}
+      </div>
+      <div class="body">
+        <h1>Welcome to ${companyName}!</h1>
+        <p>Dear ${userName},</p>
+        <p>Your online portal account has been created. You can now log in to view your outstanding dues, invoices, and ledger details in real-time.</p>
+        
+        <div class="credentials-box">
+          <div class="cred-row">
+            <span class="cred-label">Login URL:</span>
+            <span class="cred-value">${appLink}</span>
+          </div>
+          <div class="cred-row">
+            <span class="cred-label">User ID (Email):</span>
+            <span class="cred-value">${userId}</span>
+          </div>
+          <div class="cred-row">
+            <span class="cred-label">Password:</span>
+            <span class="cred-value">${password}</span>
+          </div>
+        </div>
+        
+        <div class="btn-container">
+          <a href="${appLink}" class="btn">Log In to Portal</a>
+        </div>
+        
+        <p style="margin-bottom: 0;">If you have any questions or require support, please feel free to reach out to us.</p>
+      </div>
+      <div class="footer">
+        <strong>${companyName}</strong><br>
+        This is an automated system email. Please do not reply directly to this message.
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+      `;
     }
 
     let currentViewingDocUrl = '';
@@ -11232,7 +11417,7 @@
         id: userId,
         name: party.name,
         email: email,
-        password: password,
+        passwordHash: simpleHash(password),
         role: 'Party',
         status: status,
         partyId: partyId,
@@ -11256,6 +11441,17 @@
         showLoading(false);
         if (res.success) {
           showToast(`Login credentials created successfully for ${party.name}!`, 'success');
+          
+          // Send welcome email if Google Apps Script URL is configured
+          const scriptUrl = App.data.companyProfile && App.data.companyProfile.googleScriptUrl;
+          if (scriptUrl) {
+            const companyName = App.data.companyProfile.companyName || 'Gas Agency';
+            const companyLogo = App.data.companyProfile.companyLogo || '';
+            const appLink = window.location.href.split('#')[0];
+            const htmlBody = getWelcomeEmailTemplate(party.name, email, password, companyName, companyLogo, appLink);
+            sendEmailViaScript(email, `Welcome to ${companyName} - Login Credentials`, htmlBody);
+          }
+          
           closeModal('quickPartyLoginModal');
           syncAllData(null, ['Users']); // Silent refresh users sheet
         } else {
@@ -11355,6 +11551,19 @@
           showLoading(false);
           closeModal('userModal');
           showToast('User credentials saved successfully', 'success');
+          
+          // Send welcome email if new Party user and password provided
+          if (payload.role === 'Party' && pass) {
+            const scriptUrl = App.data.companyProfile && App.data.companyProfile.googleScriptUrl;
+            if (scriptUrl) {
+              const companyName = App.data.companyProfile.companyName || 'Gas Agency';
+              const companyLogo = App.data.companyProfile.companyLogo || '';
+              const appLink = window.location.href.split('#')[0];
+              const htmlBody = getWelcomeEmailTemplate(payload.name, payload.email, pass, companyName, companyLogo, appLink);
+              sendEmailViaScript(payload.email, `Welcome to ${companyName} - Login Credentials`, htmlBody);
+            }
+          }
+          
           syncAllData(renderUsers, ["Users"]);
         });
       };
@@ -11447,6 +11656,7 @@
       document.getElementById('setInvoicePrefix').value = cp.invoicePrefix || 'INV';
       document.getElementById('setCompanyLogo').value = cp.companyLogo || '';
       document.getElementById('setCompanyTerms').value = cp.termsAndConditions || '';
+      document.getElementById('setCompanyScriptUrl').value = cp.googleScriptUrl || '';
 
       // Update Logo Preview UI
       if (cp.companyLogo) {
@@ -11556,7 +11766,8 @@
         companyEmail: document.getElementById('setCompanyEmail').value,
         invoicePrefix: document.getElementById('setInvoicePrefix').value,
         companyLogo: document.getElementById('setCompanyLogo').value,
-        termsAndConditions: document.getElementById('setCompanyTerms').value
+        termsAndConditions: document.getElementById('setCompanyTerms').value,
+        googleScriptUrl: document.getElementById('setCompanyScriptUrl').value || ''
       };
 
       callServer('saveSettings', payload, function() {
