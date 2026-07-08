@@ -4142,10 +4142,12 @@
         await db.collection('activityLog').add({
           logId: _fbId(),
           actionType: action,
+          action: action,
           moduleName: module,
           details: details || '',
           status: status,
           userId: user ? user.id : 'SYSTEM',
+          userName: user ? user.name : 'System',
           userRole: user ? user.role : 'System',
           ipAddress: '',
           timestamp: new Date().toISOString()
@@ -4272,39 +4274,68 @@
 
         // ---- SAVE: saveInvoice / savePurchase ----
         if (action === 'saveInvoice' || action === 'savePurchase') {
+          const isEdit = !!(payload.id && App.data.transactions.find(t => t.id === payload.id));
           const batch = db.batch();
           const id = payload.id || ('TXN_' + _fbId());
           const txnRef = db.collection('transactions').doc(id);
+
+          // On EDIT: rollback old stock and bank before applying new values
+          if (isEdit) {
+            const oldTxn = App.data.transactions.find(t => t.id === payload.id);
+            if (oldTxn && oldTxn.items) {
+              oldTxn.items.forEach(item => {
+                if (item.productId) {
+                  const prod = App.data.products.find(p => p.id === item.productId);
+                  if (prod) {
+                    const reverseStock = action === 'saveInvoice'
+                      ? (parseFloat(prod.stock || 0) + parseFloat(item.quantity || 0))
+                      : (parseFloat(prod.stock || 0) - parseFloat(item.quantity || 0));
+                    batch.update(db.collection('products').doc(item.productId), { stock: reverseStock });
+                  }
+                }
+              });
+            }
+            if (oldTxn && oldTxn.totals) {
+              const oldCash = parseFloat(oldTxn.totals.paidCash || 0);
+              const oldBank = parseFloat(oldTxn.totals.paidBank || 0);
+              const ba001 = App.data.bankAccounts.find(b => b.id === 'BA001');
+              const ba002 = App.data.bankAccounts.find(b => b.id === 'BA002');
+              if (ba001 && oldCash) batch.update(db.collection('bankAccounts').doc('BA001'), { balance: parseFloat(ba001.balance || 0) - (action === 'saveInvoice' ? oldCash : -oldCash) });
+              if (ba002 && oldBank) batch.update(db.collection('bankAccounts').doc('BA002'), { balance: parseFloat(ba002.balance || 0) - (action === 'saveInvoice' ? oldBank : -oldBank) });
+            }
+          }
+
           batch.set(txnRef, Object.assign({}, payload, { id }), { merge: true });
-          // Update stock
+
+          // Update stock with new values
           if (payload.items) {
             payload.items.forEach(item => {
               if (item.productId) {
-                const pRef = db.collection('products').doc(item.productId);
                 const prod = App.data.products.find(p => p.id === item.productId);
                 if (prod) {
+                  // Get current stock from batch or App.data
+                  const currentStock = parseFloat(prod.stock || 0);
                   const newStock = action === 'saveInvoice'
-                    ? (parseFloat(prod.stock || 0) - parseFloat(item.quantity || 0))
-                    : (parseFloat(prod.stock || 0) + parseFloat(item.quantity || 0));
-                  batch.update(pRef, { stock: newStock });
+                    ? (currentStock - parseFloat(item.quantity || 0))
+                    : (currentStock + parseFloat(item.quantity || 0));
+                  batch.update(db.collection('products').doc(item.productId), { stock: newStock });
                 }
               }
             });
           }
-          // Update bank accounts
+
+          // Update bank accounts with new values
           const paidCash = parseFloat(payload.totals && payload.totals.paidCash || 0);
           const paidBank = parseFloat(payload.totals && payload.totals.paidBank || 0);
           if (paidCash || paidBank) {
             App.data.bankAccounts.forEach(ba => {
               if (ba.id === 'BA001' && paidCash) {
-                const baRef = db.collection('bankAccounts').doc('BA001');
                 const newBal = parseFloat(ba.balance || 0) + (action === 'saveInvoice' ? paidCash : -paidCash);
-                batch.update(baRef, { balance: newBal });
+                batch.update(db.collection('bankAccounts').doc('BA001'), { balance: newBal });
               }
               if (ba.id === 'BA002' && paidBank) {
-                const baRef = db.collection('bankAccounts').doc('BA002');
                 const newBal = parseFloat(ba.balance || 0) + (action === 'saveInvoice' ? paidBank : -paidBank);
-                batch.update(baRef, { balance: newBal });
+                batch.update(db.collection('bankAccounts').doc('BA002'), { balance: newBal });
               }
             });
           }
@@ -4316,13 +4347,31 @@
 
         // ---- SAVE: saveReceipt / savePayment ----
         if (action === 'saveReceipt' || action === 'savePayment') {
+          const isEdit = !!(payload.id && App.data.transactions.find(t => t.id === payload.id));
           const id = payload.id || ('TXN_' + _fbId());
           const batch = db.batch();
           const txnRef = db.collection('transactions').doc(id);
           batch.set(txnRef, Object.assign({}, payload, { id }), { merge: true });
-          // Update bank
+
+          // On EDIT: rollback old bank entry first
+          if (isEdit) {
+            const oldTxn = App.data.transactions.find(t => t.id === payload.id);
+            if (oldTxn && oldTxn.paymentMode) {
+              const oldAmt = parseFloat(oldTxn.credit || oldTxn.debit || 0);
+              const oldBaId = oldTxn.paymentMode === 'Cash' ? 'BA001' : 'BA002';
+              const oldBa = App.data.bankAccounts.find(b => b.id === oldBaId);
+              if (oldBa && oldAmt) {
+                const rollbackBal = action === 'saveReceipt'
+                  ? (parseFloat(oldBa.balance || 0) - oldAmt)
+                  : (parseFloat(oldBa.balance || 0) + oldAmt);
+                batch.update(db.collection('bankAccounts').doc(oldBaId), { balance: rollbackBal });
+              }
+            }
+          }
+
+          // Apply new bank entry
           const amt = parseFloat(payload.credit || payload.debit || 0);
-          if (payload.paymentMode) {
+          if (payload.paymentMode && amt) {
             const baId = payload.paymentMode === 'Cash' ? 'BA001' : 'BA002';
             const ba = App.data.bankAccounts.find(b => b.id === baId);
             if (ba) {
@@ -4362,14 +4411,27 @@
 
         // ---- SAVE: saveExpense ----
         if (action === 'saveExpense') {
+          const isEdit = !!(payload.id && App.data.expenses.find(e => e.id === payload.id));
           const id = payload.id || ('EXP_' + _fbId());
           const batch = db.batch();
           batch.set(db.collection('expenses').doc(id), Object.assign({}, payload, { id }), { merge: true });
-          // Deduct from bank
+
           const amt = parseFloat(payload.amount || 0);
           const baId = payload.paymentMode === 'Cash' ? 'BA001' : 'BA002';
           const ba = App.data.bankAccounts.find(b => b.id === baId);
-          if (ba && !payload.id) { // only adjust on new expense
+
+          if (isEdit) {
+            // Rollback old expense bank deduction, then apply new
+            const oldExp = App.data.expenses.find(e => e.id === payload.id);
+            if (oldExp && ba) {
+              const oldAmt = parseFloat(oldExp.amount || 0);
+              const oldBaId = oldExp.paymentMode === 'Cash' ? 'BA001' : 'BA002';
+              const oldBa = App.data.bankAccounts.find(b => b.id === oldBaId);
+              if (oldBa) batch.update(db.collection('bankAccounts').doc(oldBaId), { balance: parseFloat(oldBa.balance || 0) + oldAmt });
+            }
+          }
+
+          if (ba) {
             batch.update(db.collection('bankAccounts').doc(baId), { balance: parseFloat(ba.balance || 0) - amt });
           }
           await batch.commit();
@@ -4660,9 +4722,17 @@
     // ===================================================================
     // REAL-TIME LISTENERS — auto-refresh App.data when Firestore changes
     // ===================================================================
+    // Debounce helper for realtime listener UI refresh
+    const _renderDebounce = {};
+    function _debouncedRender(key, fn, delay = 300) {
+      clearTimeout(_renderDebounce[key]);
+      _renderDebounce[key] = setTimeout(fn, delay);
+    }
+
     function startRealtimeListeners() {
-      // Stop any existing listeners
-      Object.values(_fbListeners).forEach(unsub => unsub());
+      // Stop any existing listeners first
+      Object.values(_fbListeners).forEach(unsub => { try { unsub(); } catch(e) {} });
+      Object.keys(_fbListeners).forEach(k => delete _fbListeners[k]);
 
       const liveCollections = [
         { col: 'parties',       key: 'parties' },
@@ -4676,8 +4746,9 @@
       liveCollections.forEach(({ col, key }) => {
         _fbListeners[col] = db.collection(col).onSnapshot(snap => {
           App.data[key] = _snapToArr(snap);
-          // Refresh current page UI silently
-          if (App.currentUser) {
+          if (!App.currentUser) return;
+          // Debounced UI refresh to prevent rapid re-renders
+          _debouncedRender(key, () => {
             const p = App.currentPage;
             if (p === 'dashboard') loadDashboard();
             else if (p === 'parties') renderParties();
@@ -4687,7 +4758,7 @@
             else if (p === 'receipts') renderReceipts();
             else if (p === 'expenses') renderExpenses();
             else if (p === 'banking') renderBanking();
-          }
+          });
         }, err => console.warn('[Firebase listener]', col, err));
       });
 
@@ -5132,11 +5203,16 @@
     }
 
     function logout() {
+      // Stop all real-time Firestore listeners to prevent memory leaks
+      Object.values(_fbListeners).forEach(unsub => { try { unsub(); } catch(e) {} });
+      Object.keys(_fbListeners).forEach(k => delete _fbListeners[k]);
+
       // Clear persistent session storage and hash route
       SafeStorage.removeItem('currentUserSession');
       window.location.hash = '';
       
       App.currentUser = null;
+      App.data = { parties:[], products:[], transactions:[], bankAccounts:[], users:[], notifications:[], companyProfile:{}, expenses:[], quotations:[], purchaseOrders:[], deliveryChallans:[], activityLog:[], crmFollowups:[] };
       document.body.classList.remove('not-admin');
       document.body.classList.remove('role-party');
       document.getElementById('loginForm').reset();
@@ -5322,16 +5398,16 @@
 
     function syncAllData(callback, sheetsList) {
       // After a write action, silently refresh only the affected sheets
-      const sheetsParam = sheetsList ? sheetsList.join(',') : '';
+      const sheetsParam = (sheetsList && sheetsList.length) ? sheetsList.join(',') : 'Parties,Products,BankAccounts,Transactions,Expenses,Quotations,PurchaseOrders,DeliveryChallans,ActivityLog,Notifications,CylinderSecurity,CompanyProfile';
       callServer('getAllData', { sheets: sheetsParam }, function(res) {
         if (res.success) {
-          if (sheetsList) {
+          if (sheetsList && sheetsList.length) {
             Object.keys(res).forEach(key => { if (key !== 'success') App.data[key] = res[key]; });
             if (res.companyProfile) _processCompanyProfile(res);
-            if (callback) callback();
             loadDashboard();
+            if (callback) callback();
           } else {
-            App.data = res;
+            Object.keys(res).forEach(key => { if (key !== 'success') App.data[key] = res[key]; });
             _processCompanyProfile(res);
             loadDashboard();
             populateGlobalDropdowns();
@@ -10508,9 +10584,13 @@
         container.innerHTML = '<p class="text-secondary text-center" style="font-size:13px; padding:10px;">No system log events recorded.</p>';
       } else {
         App.data.activityLog.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(l => {
+          const who = l.userName || l.userId || 'System';
+          const what = l.actionType || l.action || 'Action';
+          const where = l.moduleName || '';
+          const info = l.details || '';
           container.innerHTML += `
             <div style="font-size:12.5px; padding:8px; border-bottom:1px solid var(--brd); display:flex; justify-content:space-between;">
-              <div><strong>${l.userName || 'System'}</strong>: ${l.action} (${l.details})</div>
+              <div><strong>${who}</strong>: ${what} in ${where} ${info ? '(' + info + ')' : ''}</div>
               <div class="text-secondary">${formatDate(l.timestamp)}</div>
             </div>
           `;
