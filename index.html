@@ -2470,6 +2470,18 @@
                 <button class="btn btn-danger" onclick="triggerDbAction('clearDatabase')"><i class="fa-solid fa-circle-minus"></i> Reset Database</button>
               </div>
               <hr style="border:none; border-top: 1px solid var(--brd); margin-bottom: 20px;">
+              <h3 style="font-size: 15px; margin-bottom: 12px; font-weight:600;">Data Backup & Restore</h3>
+              <p style="font-size: 13.5px; color: var(--txt2); margin-bottom: 20px; line-height: 1.5;">
+                Export all system data (Parties, Transactions, Products, Settings) to a JSON file, or restore from a previous backup.
+              </p>
+              <div class="grid-2" style="margin-bottom: 20px;">
+                <button class="btn btn-secondary" onclick="exportDatabaseBackup()"><i class="fa-solid fa-cloud-arrow-down"></i> Export Backup (JSON)</button>
+                <label class="btn btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 0;">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Restore Backup (JSON)
+                  <input type="file" id="restoreBackupInput" accept=".json" style="display: none;" onchange="importDatabaseBackup(event)">
+                </label>
+              </div>
+              <hr style="border:none; border-top: 1px solid var(--brd); margin-bottom: 20px;">
               <h3 style="font-size: 15px; margin-bottom: 12px; font-weight:600;">Activity History</h3>
               <div style="max-height: 300px; overflow-y:auto;" id="activityLogList">
                 <!-- Activity list -->
@@ -11537,6 +11549,127 @@
           });
         }
       });
+    }
+
+    function exportDatabaseBackup() {
+      showLoading(true, 'Generating backup file...');
+      try {
+        const backup = {
+          version: "1.0",
+          timestamp: new Date().toISOString(),
+          data: App.data
+        };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        const dateStr = new Date().toISOString().split('T')[0];
+        a.download = `mr_rahul_ledger_backup_${dateStr}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showLoading(false);
+        showToast('Database backup exported successfully!', 'success');
+      } catch (e) {
+        showLoading(false);
+        console.error("Backup failed:", e);
+        showToast('Failed to export backup: ' + e.message, 'error');
+      }
+    }
+
+    function importDatabaseBackup(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        try {
+          const backup = JSON.parse(e.target.result);
+          if (!backup || !backup.data) {
+            showToast('Invalid backup file structure.', 'error');
+            event.target.value = '';
+            return;
+          }
+          
+          showConfirmModal({
+            title: 'Restore Database Backup',
+            message: 'WARNING: Restoring this backup will overwrite all existing data in the database. Are you sure you want to proceed?',
+            confirmText: 'Restore All Data',
+            isDanger: true,
+            onConfirm: async function() {
+              showLoading(true, 'Clearing existing database...');
+              try {
+                // Collections to clear
+                const collections = ['parties', 'products', 'transactions', 'expenses', 'quotations', 'purchaseOrders', 'deliveryChallans', 'notifications', 'activityLog', 'crmFollowups', 'cylinderSecurity', 'partyTypes', 'bankAccounts', 'companyProfile'];
+                for (const col of collections) {
+                  const snap = await db.collection(col).get();
+                  const batch = db.batch();
+                  snap.forEach(d => batch.delete(d.ref));
+                  await batch.commit();
+                }
+                
+                showLoading(true, 'Restoring data collections...');
+                const data = backup.data;
+                const mapping = {
+                  parties: 'parties',
+                  products: 'products',
+                  transactions: 'transactions',
+                  expenses: 'expenses',
+                  quotations: 'quotations',
+                  purchaseOrders: 'purchaseOrders',
+                  deliveryChallans: 'deliveryChallans',
+                  notifications: 'notifications',
+                  crmFollowups: 'crmFollowups',
+                  cylinderSecurity: 'cylinderSecurity',
+                  partyTypes: 'partyTypes',
+                  bankAccounts: 'bankAccounts',
+                  users: 'users'
+                };
+                
+                for (const [key, col] of Object.entries(mapping)) {
+                  const items = data[key];
+                  if (items && Array.isArray(items) && items.length > 0) {
+                    let batch = db.batch();
+                    let count = 0;
+                    for (const item of items) {
+                      if (!item || !item.id) continue;
+                      batch.set(db.collection(col).doc(item.id), item);
+                      count++;
+                      if (count === 400) {
+                        await batch.commit();
+                        batch = db.batch();
+                        count = 0;
+                      }
+                    }
+                    if (count > 0) {
+                      await batch.commit();
+                    }
+                  }
+                }
+                
+                // Restore company profile
+                if (data.companyProfile) {
+                  await db.collection('companyProfile').doc('main').set(data.companyProfile);
+                }
+                
+                showLoading(false);
+                showToast('Database restored successfully!', 'success');
+                setTimeout(() => location.reload(), 1000);
+              } catch (err) {
+                showLoading(false);
+                console.error("Restore failed:", err);
+                showToast('Restore failed: ' + err.message, 'error');
+              }
+            }
+          });
+        } catch (err) {
+          console.error("Failed to parse backup JSON file:", err);
+          showToast('Failed to parse backup JSON file.', 'error');
+        }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
     }
 
     // ==================== NOTIFICATIONS ====================
