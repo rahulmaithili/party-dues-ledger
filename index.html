@@ -53,6 +53,9 @@
   </script>
   
   <style>
+    body.gst-disabled .gst-only {
+      display: none !important;
+    }
     :root {
       --sb: #0B111E;
       --sbt: #94A3B8;
@@ -1886,7 +1889,7 @@
                   <th>Name</th>
                   <th>Type</th>
                   <th>Mobile</th>
-                  <th>GSTIN</th>
+                  <th class="gst-only">GSTIN</th>
                   <th class="text-right">Balance Due</th>
                   <th class="text-center">Actions</th>
                 </tr>
@@ -1933,7 +1936,7 @@
                   <th>Unit</th>
                   <th class="text-right">Purchase Rate</th>
                   <th class="text-right">Sale Rate</th>
-                  <th class="text-right">GST %</th>
+                  <th class="text-right gst-only">GST %</th>
                   <th class="text-right">Min Stock</th>
                   <th class="text-right">Current Stock</th>
                   <th class="text-center">Actions</th>
@@ -1970,7 +1973,7 @@
                   <th>Date</th>
                   <th>Customer Name</th>
                   <th class="text-right">Subtotal</th>
-                  <th class="text-right">GST Total</th>
+                  <th class="text-right gst-only">GST Total</th>
                   <th class="text-right">Grand Total</th>
                   <th class="text-right">Balance Due</th>
                   <th class="text-center">Actions</th>
@@ -2003,7 +2006,7 @@
                   <th>Date</th>
                   <th>Supplier Name</th>
                   <th class="text-right">Subtotal</th>
-                  <th class="text-right">GST Total</th>
+                  <th class="text-right gst-only">GST Total</th>
                   <th class="text-right">Grand Total</th>
                   <th class="text-right">Balance Due</th>
                   <th class="text-center">Actions</th>
@@ -2491,6 +2494,10 @@
                     <input type="text" id="setInvoicePrefix" class="light-form-control">
                   </div>
                 </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+                  <input type="checkbox" id="setEnableGst" style="width: 18px; height: 18px; cursor: pointer; border-radius: 4px; border: 1px solid var(--brd);">
+                  <label for="setEnableGst" style="color:var(--txt); font-weight: 600; cursor: pointer; margin-bottom: 0; user-select: none;">Enable GST Billing & Features (GST बिलिंग और फीचर्स चालू करें)</label>
+                </div>
                 <div class="form-group">
                   <label style="color:var(--txt); margin-bottom: 8px; display: block;">Company Logo</label>
                   <div style="display: flex; align-items: center; gap: 16px;">
@@ -2534,6 +2541,11 @@
                     </div>
                   </div>
                   <input type="hidden" id="setCompanyQrCode">
+                </div>
+                <div class="form-group">
+                  <label style="color:var(--txt);">UPI ID <span style="font-size:11px; color:var(--txt2); font-weight:400;">(for dynamic UPI deep link — e.g. name@upi)</span></label>
+                  <input type="text" id="setCompanyUpiId" class="light-form-control" placeholder="e.g. shopname@okaxis or 9876543210@ybl">
+                  <p style="font-size:11px; color:var(--txt2); margin-top:4px;"><i class="fa-solid fa-circle-info"></i> Party ke invoice par "Pay" button se direct UPI app mein payment hogi is ID par.</p>
                 </div>
                 <div class="form-group">
                   <label style="color:var(--txt)">Terms & Conditions</label>
@@ -2681,31 +2693,43 @@
 
   <!-- UPI PAYMENT QR MODAL (party view) -->
   <div class="modal-backdrop" id="paymentQrModal" style="z-index: 100200;">
-    <div class="modal-card" style="max-width: 420px; text-align: center;">
+    <div class="modal-card" style="max-width: 440px; text-align: center;">
       <div class="modal-header">
         <h3><i class="fa-solid fa-qrcode" style="color: var(--acc);"></i> Pay via UPI / QR Code</h3>
         <i class="fa-solid fa-xmark pointer" onclick="closeModal('paymentQrModal')"></i>
       </div>
-      <div class="modal-body" style="padding: 28px 24px;">
+      <div class="modal-body" style="padding: 20px 24px 0;">
+        <!-- Invoice context banner (shown when paying for a specific invoice) -->
+        <div id="paymentQrInvoiceBanner" style="display:none; background:linear-gradient(135deg,#EFF6FF,#DBEAFE); border:1px solid #BFDBFE; border-radius:10px; padding:10px 14px; margin-bottom:14px; text-align:left;">
+          <p style="font-size:11px; font-weight:700; color:#1D4ED8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;"><i class="fa-solid fa-file-invoice"></i> Invoice Payment</p>
+          <p id="paymentQrInvoiceLabel" style="font-size:14px; font-weight:700; color:#1E3A8A; margin:0;"></p>
+          <p id="paymentQrInvoiceDue" style="font-size:13px; color:#3B82F6; margin:0; margin-top:2px;"></p>
+        </div>
+
         <div id="paymentQrNotSetMsg" style="display:none; color:var(--txt2); font-size:14px; padding:24px 0;">
           <i class="fa-solid fa-circle-xmark" style="font-size:40px; color:#CBD5E1; display:block; margin-bottom:12px;"></i>
           Admin ne abhi QR code set nahi kiya hai.<br>Payment ke liye admin se contact karein.
         </div>
-        <img id="paymentQrImage" src="" alt="UPI QR Code" style="max-width: 240px; width: 100%; border: 4px solid #E2E8F0; border-radius: 12px; display:none;">
-        <div id="paymentQrInfo" style="display:none; margin-top: 20px;">
-          <p style="font-size: 13px; color: var(--txt2); margin-bottom: 4px;">Is QR ko scan karo aur payment karo</p>
-          <p style="font-size: 12px; color: #94A3B8;">Google Pay, PhonePe, Paytm, ya kisi bhi UPI app se</p>
-          <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:10px 14px; margin-top:16px; font-size:13px; color:#166534;">
+
+        <img id="paymentQrImage" src="" alt="UPI QR Code" style="max-width: 220px; width: 100%; border: 4px solid #E2E8F0; border-radius: 12px; display:none;">
+        <div id="paymentQrInfo" style="display:none; margin-top: 14px;">
+          <p style="font-size: 13px; color: var(--txt2); margin-bottom: 2px;">Is QR ko scan karo aur payment karo</p>
+          <p style="font-size: 12px; color: #94A3B8; margin-bottom:12px;">Google Pay, PhonePe, Paytm, ya kisi bhi UPI app se</p>
+          <!-- UPI Deep Link Button -->
+          <a id="paymentUpiDeepLink" href="#" style="display:none; background:linear-gradient(135deg,#8B5CF6,#6D28D9); color:#fff; font-weight:700; padding:10px 20px; font-size:13px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; margin-bottom:12px; justify-content:center;" target="_blank">
+            <i class="fa-solid fa-mobile-screen-button"></i> UPI App Se Pay Karein
+          </a>
+          <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:10px 14px; font-size:13px; color:#166534;">
             <i class="fa-solid fa-circle-check"></i> Payment karne ke baad neeche "Payment Done" button dabao
           </div>
         </div>
       </div>
-      <div class="modal-footer" style="flex-direction: column; gap: 10px; padding: 0 24px 24px;">
+      <div class="modal-footer" style="flex-direction: column; gap: 10px; padding: 16px 24px 24px;">
         <div id="paymentQrAmountRow" style="display:none; width:100%; text-align:left; margin-bottom:4px;">
           <label style="font-size:13px; font-weight:600; color:var(--txt);">Payment Amount (₹)</label>
-          <input type="number" id="paymentQrAmount" class="form-control" placeholder="e.g. 500" min="1" style="margin-top:6px;">
+          <input type="number" id="paymentQrAmount" class="form-control" placeholder="e.g. 500" min="1" style="margin-top:6px;" oninput="updateUpiDeepLink()">
           <label style="font-size:13px; font-weight:600; color:var(--txt); margin-top:10px; display:block;">Narration / Note</label>
-          <input type="text" id="paymentQrNarration" class="form-control" placeholder="e.g. Invoice #INV-2026-001" style="margin-top:6px;">
+          <input type="text" id="paymentQrNarration" class="form-control" placeholder="e.g. Invoice #INV-2026-001" style="margin-top:6px;" oninput="updateUpiDeepLink()">
         </div>
         <button id="paymentDoneBtn" class="btn btn-primary w-full" style="display:none;" onclick="recordQrPayment()">
           <i class="fa-solid fa-check-circle"></i> Payment Done — Save Transaction
@@ -2714,6 +2738,7 @@
       </div>
     </div>
   </div>
+
 
   <!-- CONFIRMATION MODAL -->
   <div class="modal-backdrop" id="confirmModal" style="z-index: 100200;">
@@ -2961,7 +2986,7 @@
               <label>HSN Code</label>
               <input type="text" id="productHsn" class="light-form-control">
             </div>
-            <div class="form-group">
+            <div class="form-group gst-only">
               <label>GST Rate % *</label>
               <input type="number" id="productGst" class="light-form-control" value="18" required>
             </div>
@@ -3039,7 +3064,7 @@
                   <th style="width: 12%;">Quantity</th>
                   <th style="width: 12%;">Empty Return</th>
                   <th style="width: 12%;">Rate (₹)</th>
-                  <th style="width: 12%;">GST %</th>
+                  <th style="width: 12%;" class="gst-only">GST %</th>
                   <th style="width: 17%;" class="text-right">Total (₹)</th>
                   <th style="width: 5%;"></th>
                 </tr>
@@ -3076,7 +3101,7 @@
                   <td>Subtotal:</td>
                   <td class="text-right" id="invSubtotal">₹0.00</td>
                 </tr>
-                <tr>
+                <tr class="gst-only">
                   <td>GST Tax Amount:</td>
                   <td class="text-right" id="invTax">₹0.00</td>
                 </tr>
@@ -3858,7 +3883,7 @@
           <div>
             <p><strong>Party Name:</strong> <span id="ledgerPartyName">Loading...</span></p>
             <p><strong>Mobile:</strong> <span id="ledgerPartyMobile">Loading...</span></p>
-            <p><strong>GSTIN:</strong> <span id="ledgerPartyGstin">--</span></p>
+            <p class="gst-only"><strong>GSTIN:</strong> <span id="ledgerPartyGstin">--</span></p>
           </div>
           <div class="text-right">
             <p><strong>Opening Balance:</strong> <span id="ledgerOpeningBalance">₹0.00</span></p>
@@ -5992,6 +6017,13 @@
           if (logo) { sidebarLogo.src = logo; sidebarLogo.style.display = 'block'; }
           else { sidebarLogo.src = ''; sidebarLogo.style.display = 'none'; }
         }
+
+        const showGst = (App.data.companyProfile.enableGst !== false && App.data.companyProfile.enableGst !== 'false');
+        if (showGst) {
+          document.body.classList.remove('gst-disabled');
+        } else {
+          document.body.classList.add('gst-disabled');
+        }
       }
     }
 
@@ -6088,10 +6120,45 @@
         if (recentTxns.length === 0) {
           recentBody.innerHTML = '<tr><td colspan="8" class="text-center" style="padding: 16px;">No transactions recorded.</td></tr>';
         } else {
+          // Pre-calculate total credits (receipts) already applied to this party
+          const pid = App.currentUser.partyId;
+          let totalCreditPaid = 0;
+          myTxns.forEach(tx => {
+            if (tx.txnType === 'Receipt' || tx.txnType === 'Payment') {
+              totalCreditPaid += parseFloat(tx.credit || 0);
+            }
+          });
+
           recentTxns.forEach(t => {
             const debit = parseFloat(t.debit || 0);
             const credit = parseFloat(t.credit || 0);
             const proofLink = t.proofUrl ? `<a href="javascript:void(0)" onclick="openDocumentViewer('${t.proofUrl}', 'Payment Proof - ${t.voucherNo || t.id}')" style="color:var(--acc);" title="View Proof"><i class="fa-solid fa-file-image"></i></a>` : '--';
+
+            // Robust balance due calculation:
+            // 1. Use totals.balanceDue if explicitly set and > 0
+            // 2. Else for Sale: use the debit amount (invoice total) as the payable amount
+            let balanceDue = 0;
+            if (t.txnType === 'Sale' || t.txnType === 'Purchase') {
+              const storedDue = t.totals && t.totals.balanceDue !== undefined ? parseFloat(t.totals.balanceDue) : -1;
+              if (storedDue > 0) {
+                balanceDue = storedDue;
+              } else if (storedDue === -1 && debit > 0) {
+                // balanceDue not stored at all — use debit as payable amount
+                balanceDue = debit;
+              } else if (storedDue === 0) {
+                // Stored as 0 but party still has outstanding — check running balance
+                const grandTotal = t.totals && t.totals.grandTotal ? parseFloat(t.totals.grandTotal) : debit;
+                const paidSoFar = (t.totals && t.totals.paidCash ? parseFloat(t.totals.paidCash) : 0)
+                                + (t.totals && t.totals.paidBank ? parseFloat(t.totals.paidBank) : 0);
+                const calculatedDue = Math.max(0, grandTotal - paidSoFar);
+                balanceDue = calculatedDue;
+              }
+            }
+
+            const payBtn = (t.txnType === 'Sale' || t.txnType === 'Purchase') && balanceDue > 0
+              ? `<button class="btn btn-sm" style="background: linear-gradient(135deg,#065F46,#047857); color:#fff; font-size:11px; padding:4px 10px; border-radius:6px; gap:4px; display:inline-flex; align-items:center; white-space:nowrap;" onclick="openPaymentQrModal('${t.id}', ${balanceDue}, '${t.voucherNo || t.id}')" title="Pay ₹${balanceDue.toFixed(2)} for this invoice"><i class="fa-solid fa-qrcode"></i> Pay ₹${Math.ceil(balanceDue)}</button>`
+              : '';
+
             recentBody.innerHTML += `
               <tr>
                 <td>${formatDate(t.date)}</td>
@@ -6101,9 +6168,10 @@
                 <td class="text-right">${credit > 0 ? formatCurrency(credit) : '--'}</td>
                 <td>${t.paymentMode || 'Cash'}</td>
                 <td class="text-center">${proofLink}</td>
-                <td class="text-center">
+                <td class="text-center" style="white-space:nowrap;">
                   <button class="btn btn-icon" onclick="viewVoucher('${t.id}')" title="View Details"><i class="fa-solid fa-eye"></i></button>
                   <button class="btn btn-icon" onclick="printVoucher('${t.id}')" title="Print Invoice"><i class="fa-solid fa-print"></i></button>
+                  ${payBtn}
                 </td>
               </tr>
             `;
@@ -6345,7 +6413,7 @@
               <td><strong>${p.name}</strong></td>
               <td><span class="badge ${getPartyBaseType(p) === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span></td>
               <td>${p.mobile}</td>
-              <td>${p.gstin || '--'}</td>
+              <td class="gst-only">${p.gstin || '--'}</td>
               <td class="text-right" style="font-weight: 700; color: ${color};">${displayBal}${wsapBtn}</td>
               <td class="text-center">
                 <div class="flex-gap" style="justify-content: center;">
@@ -7282,7 +7350,7 @@
               <td>${p.unit}</td>
               <td class="text-right">${formatCurrency(p.purchaseRate)}</td>
               <td class="text-right">${formatCurrency(p.saleRate)}</td>
-              <td class="text-right">${p.gst}%</td>
+              <td class="text-right gst-only">${p.gst}%</td>
               <td class="text-right text-secondary">${p.minStock}</td>
               <td class="text-right" style="font-weight: 700; color: ${stockColor};">${p.stock}</td>
               <td class="text-center">
@@ -7671,7 +7739,7 @@
             <td>${formatDate(t.date)}</td>
             <td><strong>${t.partyName}</strong></td>
             <td class="text-right">${formatCurrency(sub)}</td>
-            <td class="text-right">${formatCurrency(tax)}</td>
+            <td class="text-right gst-only">${formatCurrency(tax)}</td>
             <td class="text-right" style="font-weight:700;">${formatCurrency(grand)}</td>
             <td class="text-right" style="font-weight:700; color:${due > 0 ? 'var(--dan)' : 'var(--suc)'}">${formatCurrency(due)}</td>
             <td class="text-center">
@@ -7713,7 +7781,7 @@
             <td>${formatDate(t.date)}</td>
             <td><strong>${t.partyName}</strong></td>
             <td class="text-right">${formatCurrency(sub)}</td>
-            <td class="text-right">${formatCurrency(tax)}</td>
+            <td class="text-right gst-only">${formatCurrency(tax)}</td>
             <td class="text-right" style="font-weight:700;">${formatCurrency(grand)}</td>
             <td class="text-right" style="font-weight:700; color:${due > 0 ? 'var(--dan)' : 'var(--suc)'}">${formatCurrency(due)}</td>
             <td class="text-center">
@@ -7795,7 +7863,7 @@
         <td>
           <input type="number" class="light-form-control text-right" step="0.01" value="0" oninput="handleInvoiceItemRateChange(${idx}, this.value)" required>
         </td>
-        <td>
+        <td class="gst-only">
           <input type="number" class="light-form-control text-right" value="18" readonly>
         </td>
         <td class="text-right" style="font-weight:600; padding-top:20px;" id="invItemTotal_${idx}">₹0.00</td>
@@ -7852,8 +7920,9 @@
 
       activeInvoiceItems.forEach((item, idx) => {
         if (!item || !item.productId) return;
+        const showGst = (App.data.companyProfile.enableGst !== false && App.data.companyProfile.enableGst !== 'false');
         const lineVal = item.quantity * item.rate;
-        const lineTax = lineVal * (item.gst / 100);
+        const lineTax = showGst ? (lineVal * (item.gst / 100)) : 0;
         const lineTotal = lineVal + lineTax;
         
         item.amount = lineTotal;
@@ -8062,7 +8131,7 @@
           <td>
             <input type="number" class="light-form-control text-right" step="0.01" value="${item.rate}" oninput="handleInvoiceItemRateChange(${idx}, this.value)" required>
           </td>
-          <td>
+          <td class="gst-only">
             <input type="number" class="light-form-control text-right" value="${(item.gst !== undefined && item.gst !== null) ? item.gst : 18}" readonly>
           </td>
           <td class="text-right" style="font-weight:600; padding-top:20px;" id="invItemTotal_${idx}">${formatCurrency(item.amount)}</td>
@@ -10119,6 +10188,7 @@
             <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
             <style>
               body { font-family: 'Inter', sans-serif; color: #1E293B; padding: 40px; }
+              body.gst-disabled .gst-only { display: none !important; }
               table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
               th, td { padding: 10px; border: 1px solid #CBD5E1; text-align: left; }
               th { background: #F8FAFC; }
@@ -10128,12 +10198,12 @@
               p { color: #64748B; font-size: 13px; margin: 4px 0; }
             </style>
           </head>
-          <body>
+          <body class="${(App.data.companyProfile.enableGst !== false && App.data.companyProfile.enableGst !== 'false') ? '' : 'gst-disabled'}">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
               <div>
                 <h1>${App.data.companyProfile.companyName || 'Mr.Rahul ERP'}</h1>
                 <p>${App.data.companyProfile.companyAddress || ''}</p>
-                <p><strong>GSTIN:</strong> ${App.data.companyProfile.companyGstin || ''}</p>
+                <p class="gst-only"><strong>GSTIN:</strong> ${App.data.companyProfile.companyGstin || ''}</p>
                 <p><strong>Mobile:</strong> ${App.data.companyProfile.companyPhone || ''}</p>
               </div>
               ${App.data.companyProfile.companyLogo ? `<img src="${App.data.companyProfile.companyLogo}" style="max-height: 80px; max-width: 150px; object-fit: contain;">` : ''}
@@ -10571,15 +10641,18 @@
                   print-color-adjust: exact;
                 }
               }
+              body.gst-disabled .gst-only {
+                display: none !important;
+              }
             </style>
           </head>
-          <body>
+          <body class="${(App.data.companyProfile.enableGst !== false && App.data.companyProfile.enableGst !== 'false') ? '' : 'gst-disabled'}">
             <!-- Header -->
             <div class="header">
               <div class="company-details">
                 <h1>${App.data.companyProfile.companyName || 'Mr.Rahul ERP'}</h1>
                 <p>${App.data.companyProfile.companyAddress || ''}</p>
-                <p><strong>GSTIN:</strong> ${App.data.companyProfile.companyGstin || ''}</p>
+                <p class="gst-only"><strong>GSTIN:</strong> ${App.data.companyProfile.companyGstin || ''}</p>
                 <p><strong>Mobile:</strong> ${App.data.companyProfile.companyPhone || ''}</p>
               </div>
               ${App.data.companyProfile.companyLogo ? `<img src="${App.data.companyProfile.companyLogo}" class="logo">` : ''}
@@ -10592,7 +10665,7 @@
               <div>
                 <p><strong>Account Name:</strong> ${p.name}</p>
                 <p><strong>Mobile No:</strong> ${p.mobile}</p>
-                <p><strong>GSTIN:</strong> ${p.gstin || '--'}</p>
+                <p class="gst-only"><strong>GSTIN:</strong> ${p.gstin || '--'}</p>
               </div>
               <div style="text-align: right;">
                 <p><strong>Opening Balance:</strong> ${finalOpenBal}</p>
@@ -10944,7 +11017,7 @@
               <td class="text-right">${x.quantity} ${x.unit || 'Nos'}</td>
               <td class="text-right">${x.emptyReturn || 0} ${x.unit || 'Nos'}</td>
               <td class="text-right">${formatCurrency(x.rate)}</td>
-              <td class="text-right">${x.gst}%</td>
+              <td class="text-right gst-only">${x.gst}%</td>
               <td class="text-right" style="font-weight: 600;">${formatCurrency(x.amount)}</td>
             </tr>
           `;
@@ -10958,7 +11031,7 @@
                 <div>
                   <h1 class="company-name">${company.companyName || 'Mr.Rahul ERP'}</h1>
                   <p class="company-meta">${company.companyAddress || ''}</p>
-                  <p class="company-meta"><strong>GSTIN:</strong> ${company.companyGstin || ''} | <strong>Mobile:</strong> ${company.companyPhone || ''}</p>
+                  <p class="company-meta"><span class="gst-only"><strong>GSTIN:</strong> ${company.companyGstin || ''} | </span><strong>Mobile:</strong> ${company.companyPhone || ''}</p>
                 </div>
               </div>
               <div class="title-section text-right">
@@ -10975,7 +11048,7 @@
                 <span class="col-title">${t.txnType === 'Sale' ? 'Billed To:' : 'Billed From:'}</span>
                 <h3 class="party-name">${t.partyName}</h3>
                 <p class="party-meta">${p.address || ''}</p>
-                <p class="party-meta"><strong>GSTIN:</strong> ${p.gstin || '--'}</p>
+                <p class="party-meta gst-only"><strong>GSTIN:</strong> ${p.gstin || '--'}</p>
                 <p class="party-meta"><strong>Mobile:</strong> ${p.mobile || '--'}</p>
               </div>
               <div class="billing-col text-right">
@@ -10998,7 +11071,7 @@
                   <th class="text-right" style="width: 12%;">Qty</th>
                   <th class="text-right" style="width: 12%;">Empty Ret</th>
                   <th class="text-right" style="width: 12%;">Rate</th>
-                  <th class="text-right" style="width: 10%;">GST</th>
+                  <th class="text-right gst-only" style="width: 10%;">GST</th>
                   <th class="text-right" style="width: 15%;">Amount</th>
                 </tr>
               </thead>
@@ -11018,11 +11091,11 @@
                     <td>Subtotal:</td>
                     <td class="text-right">${formatCurrency(sub)}</td>
                   </tr>
-                  <tr>
+                  <tr class="gst-only">
                     <td>CGST:</td>
                     <td class="text-right">${formatCurrency(cgst)}</td>
                   </tr>
-                  <tr>
+                  <tr class="gst-only">
                     <td>SGST:</td>
                     <td class="text-right">${formatCurrency(sgst)}</td>
                   </tr>
@@ -11197,6 +11270,9 @@
                 padding: 30px; 
                 -webkit-print-color-adjust: exact; 
                 print-color-adjust: exact;
+              }
+              body.gst-disabled .gst-only {
+                display: none !important;
               }
               .invoice-container {
                 max-width: 800px;
@@ -11463,7 +11539,7 @@
               }
             </style>
           </head>
-          <body>
+          <body class="${(company.enableGst !== false && company.enableGst !== 'false') ? '' : 'gst-disabled'}">
             ${content}
             <script>
               window.onload = function() {
@@ -11540,7 +11616,10 @@
     }
 
     // ---- UPI / QR ONLINE PAYMENT HELPERS FOR PARTY CLIENT ----
-    function openPaymentQrModal() {
+    // Store the current linked invoice for payment
+    window._paymentLinkedTxnId = null;
+
+    function openPaymentQrModal(txnId, invoiceAmount, voucherNo) {
       if (!App.currentUser || !App.currentUser.partyId) {
         showToast("Error: No linked party found for this user account.", "error");
         return;
@@ -11552,6 +11631,22 @@
       const qrNotSet = document.getElementById('paymentQrNotSetMsg');
       const qrAmountRow = document.getElementById('paymentQrAmountRow');
       const paymentDoneBtn = document.getElementById('paymentDoneBtn');
+      const invoiceBanner = document.getElementById('paymentQrInvoiceBanner');
+      const invoiceLabel = document.getElementById('paymentQrInvoiceLabel');
+      const invoiceDue = document.getElementById('paymentQrInvoiceDue');
+
+      // Store linked invoice ID
+      window._paymentLinkedTxnId = txnId || null;
+      window._paymentLinkedVoucher = voucherNo || null;
+
+      // Show or hide invoice-specific banner
+      if (txnId && voucherNo && invoiceAmount > 0) {
+        invoiceBanner.style.display = 'block';
+        invoiceLabel.textContent = `Voucher: ${voucherNo}`;
+        invoiceDue.textContent = `Balance Due: ₹${parseFloat(invoiceAmount).toFixed(2)}`;
+      } else {
+        invoiceBanner.style.display = 'none';
+      }
 
       if (cp.companyQrCode) {
         qrImage.src = cp.companyQrCode;
@@ -11561,20 +11656,30 @@
         qrAmountRow.style.display = 'block';
         paymentDoneBtn.style.display = 'block';
 
-        // Pre-fill amount with outstanding dues (if positive)
-        let balance = 0;
-        const pid = App.currentUser.partyId;
-        const party = App.data.parties.find(p => p.id === pid);
-        if (party) {
-          balance = parseFloat(party.openingBalance || 0);
-          App.data.transactions.forEach(t => {
-            if (t.partyId === pid) {
-              balance += parseFloat(t.debit || 0) - parseFloat(t.credit || 0);
-            }
-          });
+        // Pre-fill amount:
+        // If called from a specific invoice → use that invoice's balance due
+        // Otherwise → use total outstanding balance of this party
+        if (invoiceAmount && invoiceAmount > 0) {
+          document.getElementById('paymentQrAmount').value = parseFloat(invoiceAmount).toFixed(2);
+          document.getElementById('paymentQrNarration').value = `UPI Payment for ${voucherNo || 'Invoice'}`;
+        } else {
+          let balance = 0;
+          const pid = App.currentUser.partyId;
+          const party = App.data.parties.find(p => p.id === pid);
+          if (party) {
+            balance = parseFloat(party.openingBalance || 0);
+            App.data.transactions.forEach(t => {
+              if (t.partyId === pid) {
+                balance += parseFloat(t.debit || 0) - parseFloat(t.credit || 0);
+              }
+            });
+          }
+          document.getElementById('paymentQrAmount').value = balance > 0 ? balance.toFixed(2) : '';
+          document.getElementById('paymentQrNarration').value = `UPI Payment from ${App.currentUser.name}`;
         }
-        document.getElementById('paymentQrAmount').value = balance > 0 ? balance.toFixed(2) : '';
-        document.getElementById('paymentQrNarration').value = `UPI Payment from ${App.currentUser.name}`;
+
+        // Generate UPI deep link
+        updateUpiDeepLink();
       } else {
         qrImage.style.display = 'none';
         qrInfo.style.display = 'none';
@@ -11584,6 +11689,23 @@
       }
 
       openModal('paymentQrModal');
+    }
+
+    function updateUpiDeepLink() {
+      const cp = App.data.companyProfile || {};
+      const upiId = cp.companyUpiId || '';
+      const amt = parseFloat(document.getElementById('paymentQrAmount').value || 0);
+      const narration = encodeURIComponent(document.getElementById('paymentQrNarration').value || 'Payment');
+      const name = encodeURIComponent(cp.companyName || 'Payment');
+      const deepLinkEl = document.getElementById('paymentUpiDeepLink');
+
+      if (upiId && amt > 0 && deepLinkEl) {
+        const upiLink = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${name}&am=${amt.toFixed(2)}&cu=INR&tn=${narration}`;
+        deepLinkEl.href = upiLink;
+        deepLinkEl.style.display = 'inline-flex';
+      } else if (deepLinkEl) {
+        deepLinkEl.style.display = 'none';
+      }
     }
 
     function recordQrPayment() {
@@ -11602,6 +11724,9 @@
         return;
       }
 
+      const linkedTxnId = window._paymentLinkedTxnId || null;
+      const linkedVoucher = window._paymentLinkedVoucher || null;
+
       const type = 'Receipt';
       const prefix = App.data.companyProfile.receiptPrefix || 'REC';
       const count = App.data.transactions.filter(t => t.txnType === type).length + 1;
@@ -11619,9 +11744,9 @@
         debit: 0,
         credit: amt,
         paymentMode: 'Bank',
-        bankAccountId: 'BA002', // Default to Bank Account
+        bankAccountId: 'BA002',
         bankRef: 'UPI Online Payment',
-        linkedInvoice: '',
+        linkedInvoice: linkedTxnId || '',
         enteredBy: App.currentUser.id,
         enteredOn: new Date().toISOString(),
         receivedBy: App.currentUser.name,
@@ -11635,18 +11760,45 @@
         if (res.success) {
           showToast(`Payment of ₹${amt.toFixed(2)} recorded successfully!`, "success");
           closeModal('paymentQrModal');
-          
-          // Send automatic notification to Admin
+
+          // ---- Auto-update linked invoice's balanceDue in Firebase ----
+          if (linkedTxnId && db) {
+            const linkedTxn = App.data.transactions.find(t => t.id === linkedTxnId);
+            if (linkedTxn && linkedTxn.totals) {
+              const prevDue = parseFloat(linkedTxn.totals.balanceDue || 0);
+              const newDue = Math.max(0, prevDue - amt);
+              const newPaid = (parseFloat(linkedTxn.totals.paidCash || 0) + parseFloat(linkedTxn.totals.paidBank || 0)) + amt;
+              db.collection('transactions').doc(linkedTxnId).update({
+                'totals.balanceDue': newDue,
+                'totals.paidBank': newPaid,
+                '_lastUpdated': new Date().toISOString()
+              }).then(() => {
+                // Update local data so dashboard reflects immediately
+                if (linkedTxn.totals) {
+                  linkedTxn.totals.balanceDue = newDue;
+                  linkedTxn.totals.paidBank = newPaid;
+                }
+                loadDashboard(); // re-render the party dashboard
+              }).catch(e => console.warn('Invoice update failed:', e));
+            }
+          }
+
+          // ---- Send automatic notification to Admin ----
           const notifId = 'NOTIF_' + _fbId();
+          const invoiceRef = linkedVoucher ? ` for Invoice ${linkedVoucher}` : '';
           const notif = {
             id: notifId,
             title: 'Online UPI Payment Received',
-            message: `Party "${party.name}" has paid ₹${amt.toFixed(2)} via UPI. Voucher: ${vNo}`,
+            message: `Party "${party.name}" has paid ₹${amt.toFixed(2)} via UPI${invoiceRef}. Receipt: ${vNo}`,
             type: 'System',
             read: false,
             timestamp: new Date().toISOString()
           };
           db.collection('notifications').doc(notifId).set(notif).catch(e => console.warn(e));
+
+          // Clear linked invoice context
+          window._paymentLinkedTxnId = null;
+          window._paymentLinkedVoucher = null;
         } else {
           showToast(res.message || "Failed to record payment", "error");
         }
@@ -11951,6 +12103,8 @@
       document.getElementById('setCompanyLogo').value = cp.companyLogo || '';
       document.getElementById('setCompanyTerms').value = cp.termsAndConditions || '';
       document.getElementById('setCompanyQrCode').value = cp.companyQrCode || '';
+      document.getElementById('setCompanyUpiId').value = cp.companyUpiId || '';
+      document.getElementById('setEnableGst').checked = (cp.enableGst !== false && cp.enableGst !== 'false');
 
       // Update Logo Preview UI
       if (cp.companyLogo) {
@@ -12112,7 +12266,9 @@
         invoicePrefix: document.getElementById('setInvoicePrefix').value,
         companyLogo: document.getElementById('setCompanyLogo').value,
         companyQrCode: document.getElementById('setCompanyQrCode').value || '',
-        termsAndConditions: document.getElementById('setCompanyTerms').value
+        companyUpiId: document.getElementById('setCompanyUpiId').value.trim() || '',
+        termsAndConditions: document.getElementById('setCompanyTerms').value,
+        enableGst: document.getElementById('setEnableGst').checked
       };
 
       callServer('saveSettings', payload, function() {
