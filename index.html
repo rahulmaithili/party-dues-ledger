@@ -9165,6 +9165,7 @@
       });
       accSelect.value = 'BA001'; // Default to Cash
 
+      initSearchableDropdown('secDepPartyId');
       openModal('securityDepositModal');
     }
 
@@ -9233,10 +9234,12 @@
       });
       accSelect.value = 'BA001'; // Default to Cash
 
+      initSearchableDropdown('secRefRecordId');
       openModal('securityRefundModal');
 
       if (prefilledId) {
         recSelect.value = prefilledId;
+        refreshSearchableDropdown('secRefRecordId');
         handleSecurityRecordChange(prefilledId);
       }
     }
@@ -9421,6 +9424,7 @@
       document.querySelector('#securityDepositModal h3').textContent = 'Edit Security Deposit';
       document.querySelector('#securityDepositForm button[type="submit"]').textContent = 'Update Deposit';
 
+      initSearchableDropdown('secDepPartyId');
       closeModal('securityHistoryModal');
       openModal('securityDepositModal');
     }
@@ -9459,6 +9463,7 @@
       document.querySelector('#securityRefundModal h3').textContent = 'Edit Refund & Return';
       document.querySelector('#securityRefundForm button[type="submit"]').textContent = 'Update Return';
 
+      initSearchableDropdown('secRefRecordId');
       closeModal('securityHistoryModal');
       openModal('securityRefundModal');
     }
