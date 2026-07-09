@@ -605,8 +605,8 @@ function doPost(e) {
           bankAccountId: row.bankAccountId || "",
           bankRef: row.bankRef || "",
           linkedInvoice: row.linkedInvoice || "",
-          items: [],
-          totals: null,
+          items: row.items || [],
+          totals: row.totals || null,
           enteredBy: row.enteredBy || payload.enteredBy || "System",
           enteredOn: new Date().toISOString()
         };
@@ -614,7 +614,7 @@ function doPost(e) {
         if (txnType === "Sale" || txnType === "Purchase") {
           txn.debit = txnType === "Sale" ? parseFloat(row.amount || 0) : 0;
           txn.credit = txnType === "Purchase" ? parseFloat(row.amount || 0) : 0;
-          txn.totals = {
+          txn.totals = row.totals || {
             subTotal: parseFloat(row.amount || 0),
             discount: 0,
             cgst: 0,
