@@ -4393,6 +4393,18 @@
       return Date.now().toString(36) + Math.random().toString(36).substr(2, 6);
     }
 
+    function generateUniquePartyId(extraIdsSet) {
+      let newId;
+      const existingIds = new Set((App.data.parties || []).map(p => p.id));
+      if (extraIdsSet) {
+        extraIdsSet.forEach(id => existingIds.add(id));
+      }
+      do {
+        newId = 'PT' + Math.random().toString(36).substr(2, 6).toUpperCase();
+      } while (existingIds.has(newId));
+      return newId;
+    }
+
     // Convert Firestore snapshot to plain array with id field
     function _snapToArr(snap) {
       const arr = [];
@@ -4594,7 +4606,7 @@
 
         // ---- SAVE: saveParty ----
         if (action === 'saveParty') {
-          const id = payload.id || ('PT_' + _fbId());
+          const id = payload.id || generateUniquePartyId();
           payload.id = id;
           const docUrl = await _uploadBase64File(payload, 'parties');
           if (docUrl) {
@@ -6622,6 +6634,7 @@
 
         let successCount = 0;
         let currentIndex = 0;
+        const importedPartyIds = new Set();
 
         showLoading(true, `Importing 0 of ${dataRows.length} parties...`);
 
@@ -6656,8 +6669,11 @@
           const ifsc = ifscIdx !== -1 ? String(row[ifscIdx] || '') : '';
           const gpsLocation = gpsIdx !== -1 ? String(row[gpsIdx] || '') : '';
 
+          const partyId = generateUniquePartyId(importedPartyIds);
+          importedPartyIds.add(partyId);
+
           const payload = {
-            id: 'PT' + (Date.now() + currentIndex),
+            id: partyId,
             name: name,
             type: type,
             mobile: mobile,
@@ -6963,7 +6979,7 @@
       const fileInput = document.getElementById('partyDocFile');
 
       const proceedSave = function(base64, filename, mimeType) {
-        const id = document.getElementById('partyId').value || 'PT' + Date.now();
+        const id = document.getElementById('partyId').value || generateUniquePartyId();
         const payload = {
           id: id,
           name: document.getElementById('partyName').value,
