@@ -2601,6 +2601,9 @@
               <button class="btn btn-secondary" onclick="disconnectBackend()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;" disabled>
                 <i class="fa-solid fa-lock"></i> Firebase Always Connected
               </button>
+              <button class="btn" onclick="fixAndShortenPartyIdsInFirebase()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg,#6366F1,#4F46E5); color:#fff; font-weight:600; padding:10px; border-radius:var(--r); border:none; cursor:pointer; margin-top: 10px;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Shorten Existing Party IDs
+              </button>
             </div>
 
             <div class="dashboard-card" id="sheetsMigrationCard" style="display:none; margin-top:20px; border-color:#FCD34D; background:#FFFBEB;">
@@ -12413,6 +12416,109 @@
           showToast("Failed to communicate with Google Sheets: " + err, "error");
         })
         .getSheetDataForMigration();
+    }
+
+    async function fixAndShortenPartyIdsInFirebase() {
+      const confirm = window.confirm("Are you sure you want to shorten all existing long Party IDs (like PT1783519394246) in Firebase? This will update all transactions, users, and other records associated with those parties.");
+      if (!confirm) return;
+
+      showLoading(true, "Scanning database for long Party IDs...");
+      try {
+        // Fetch all parties from Firestore
+        const partiesSnap = await db.collection('parties').get();
+        const parties = [];
+        partiesSnap.forEach(doc => parties.push(Object.assign({ docId: doc.id }, doc.data())));
+
+        // Find parties with long IDs (length > 10)
+        const longParties = parties.filter(p => p.docId.startsWith('PT') && p.docId.length > 10);
+
+        if (longParties.length === 0) {
+          showLoading(false);
+          showToast("No long Party IDs found. Everything is already shortened!", "info");
+          return;
+        }
+
+        showLoading(true, `Found ${longParties.length} long Party IDs. Shortening them...`);
+
+        // Keep a list of all existing IDs to avoid collisions
+        const existingIds = new Set(parties.map(p => p.id || p.docId));
+
+        // Helper to generate short ID
+        function makeShortId() {
+          let newId;
+          do {
+            newId = 'PT' + Math.random().toString(36).substr(2, 6).toUpperCase();
+          } while (existingIds.has(newId));
+          existingIds.add(newId);
+          return newId;
+        }
+
+        // We will process each long party
+        for (let idx = 0; idx < longParties.length; idx++) {
+          const party = longParties[idx];
+          const oldId = party.docId;
+          const newId = makeShortId();
+
+          showLoading(true, `Updating Party ${idx + 1}/${longParties.length}: ${party.name} (${oldId} -> ${newId})`);
+
+          // Start a Firestore batch
+          let batch = db.batch();
+          let opCount = 0;
+
+          // 1. Create new party document with new ID and delete old document
+          const oldPartyRef = db.collection('parties').doc(oldId);
+          const newPartyRef = db.collection('parties').doc(newId);
+          
+          const newPartyData = Object.assign({}, party, { id: newId });
+          delete newPartyData.docId; // remove temp property
+          
+          batch.set(newPartyRef, newPartyData);
+          batch.delete(oldPartyRef);
+          opCount += 2;
+
+          // Collections to search and update partyId field
+          const collectionsToUpdate = [
+            'transactions',
+            'users',
+            'cylinderSecurity',
+            'quotations',
+            'purchaseOrders',
+            'deliveryChallans',
+            'crmFollowups'
+          ];
+
+          for (const col of collectionsToUpdate) {
+            const querySnap = await db.collection(col).where('partyId', '==', oldId).get();
+            
+            for (const doc of querySnap.docs) {
+              const docRef = db.collection(col).doc(doc.id);
+              batch.update(docRef, { partyId: newId });
+              opCount++;
+
+              // Commit batch if we approach the 500 operation limit
+              if (opCount >= 400) {
+                await batch.commit();
+                batch = db.batch();
+                opCount = 0;
+              }
+            }
+          }
+
+          // Commit remaining operations for this party
+          if (opCount > 0) {
+            await batch.commit();
+          }
+        }
+
+        showLoading(false);
+        showToast(`Successfully shortened ${longParties.length} Party IDs and updated all linked records!`, "success");
+        setTimeout(() => location.reload(), 1500);
+
+      } catch (e) {
+        showLoading(false);
+        console.error("ID Shortening failed:", e);
+        showToast("Error during shortening: " + e.message, "error");
+      }
     }
 
     function handleLogoUpload(event) {
