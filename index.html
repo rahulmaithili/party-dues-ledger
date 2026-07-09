@@ -2711,6 +2711,20 @@
           Admin ne abhi QR code set nahi kiya hai.<br>Payment ke liye admin se contact karein.
         </div>
 
+        <!-- QR Code Timer -->
+        <div id="paymentQrTimerContainer" style="display:none; align-items:center; justify-content:center; gap:6px; background:#FEF3C7; border:1px solid #FCD34D; border-radius:8px; padding:6px 12px; margin:0 auto 12px auto; font-size:13px; font-weight:600; color:#92400E; max-width:260px;">
+          <i class="fa-solid fa-clock" style="color:#D97706;"></i> 
+          <span>QR expires in: </span>
+          <span id="paymentQrTimerDisplay" style="font-family:monospace; font-size:14px; font-weight:700;">05:00</span>
+        </div>
+
+        <!-- Expiration Message -->
+        <div id="paymentQrExpiredMsg" style="display:none; background:#FEE2E2; border:1px solid #FCA5A5; border-radius:8px; padding:16px 20px; margin-bottom:12px; font-size:14px; font-weight:600; color:#991B1B;">
+          <i class="fa-solid fa-circle-exclamation" style="font-size:24px; color:#DC2626; display:block; margin-bottom:6px;"></i>
+          <span>QR Code has expired!</span>
+          <p style="font-size:12.5px; font-weight:400; color:#7F1D1D; margin:4px 0 0 0; line-height:1.4;">Please close this window and open it again to generate a new dynamic QR code.</p>
+        </div>
+
         <img id="paymentQrImage" src="" alt="UPI QR Code" style="max-width: 220px; width: 100%; border: 4px solid #E2E8F0; border-radius: 12px; display:none;">
         <div id="paymentQrInfo" style="display:none; margin-top: 14px;">
           <p style="font-size: 13px; color: var(--txt2); margin-bottom: 2px;">Is QR ko scan karo aur payment karo</p>
@@ -5569,6 +5583,12 @@
       if (id === 'confirmModal') {
         // Also remove backdrop class for active modal to prevent lingering backdrop styling issues
         document.getElementById(id).classList.remove('active');
+      }
+      if (id === 'paymentQrModal') {
+        if (window._paymentQrTimerInterval) {
+          clearInterval(window._paymentQrTimerInterval);
+          window._paymentQrTimerInterval = null;
+        }
       }
       
       // Reopen ledger modal if transaction was closed/canceled instead of saved
@@ -11681,18 +11701,32 @@
 
         // Generate UPI deep link and set dynamic/static QR code
         updateUpiDeepLink();
+        
+        // Start visual countdown timer
+        startPaymentQrTimer();
       } else {
         qrImage.style.display = 'none';
         qrInfo.style.display = 'none';
         qrNotSet.style.display = 'block';
         qrAmountRow.style.display = 'none';
         paymentDoneBtn.style.display = 'none';
+        
+        const timerContainer = document.getElementById('paymentQrTimerContainer');
+        const expiredMsg = document.getElementById('paymentQrExpiredMsg');
+        if (timerContainer) timerContainer.style.display = 'none';
+        if (expiredMsg) expiredMsg.style.display = 'none';
       }
 
       openModal('paymentQrModal');
     }
 
     function updateUpiDeepLink() {
+      // If timer is expired, don't update deep link or show QR
+      const expiredMsg = document.getElementById('paymentQrExpiredMsg');
+      if (expiredMsg && expiredMsg.style.display === 'block') {
+        return;
+      }
+
       const cp = App.data.companyProfile || {};
       const upiId = cp.companyUpiId || '';
       const amt = parseFloat(document.getElementById('paymentQrAmount').value || 0);
@@ -11743,6 +11777,80 @@
           }
         }
       }
+    }
+
+    window._paymentQrTimerInterval = null;
+
+    function startPaymentQrTimer() {
+      // Clear any running interval
+      if (window._paymentQrTimerInterval) {
+        clearInterval(window._paymentQrTimerInterval);
+      }
+      
+      const timerDisplay = document.getElementById('paymentQrTimerDisplay');
+      const timerContainer = document.getElementById('paymentQrTimerContainer');
+      const expiredMsg = document.getElementById('paymentQrExpiredMsg');
+      const qrImage = document.getElementById('paymentQrImage');
+      const qrInfo = document.getElementById('paymentQrInfo');
+      const deepLinkEl = document.getElementById('paymentUpiDeepLink');
+      const paymentDoneBtn = document.getElementById('paymentDoneBtn');
+      const amountRow = document.getElementById('paymentQrAmountRow');
+
+      if (!timerDisplay || !timerContainer) return;
+
+      // Reset UI to active state
+      timerContainer.style.display = 'flex';
+      expiredMsg.style.display = 'none';
+      if (qrImage) {
+        qrImage.style.opacity = '1';
+        qrImage.style.pointerEvents = 'auto';
+      }
+      if (paymentDoneBtn) {
+        paymentDoneBtn.disabled = false;
+        paymentDoneBtn.style.opacity = '1';
+      }
+
+      let timeLeft = 300; // 5 minutes in seconds
+
+      function updateTimerUI() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+      }
+
+      updateTimerUI();
+
+      window._paymentQrTimerInterval = setInterval(function() {
+        timeLeft--;
+        if (timeLeft >= 0) {
+          updateTimerUI();
+        } else {
+          clearInterval(window._paymentQrTimerInterval);
+          window._paymentQrTimerInterval = null;
+          
+          // Expire state
+          timerContainer.style.display = 'none';
+          expiredMsg.style.display = 'block';
+          
+          if (qrImage) {
+            qrImage.style.display = 'none';
+          }
+          if (qrInfo) {
+            qrInfo.style.display = 'none';
+          }
+          if (deepLinkEl) {
+            deepLinkEl.style.display = 'none';
+          }
+          if (paymentDoneBtn) {
+            paymentDoneBtn.disabled = true;
+            paymentDoneBtn.style.opacity = '0.5';
+          }
+          if (amountRow) {
+            amountRow.style.display = 'none';
+          }
+          showToast("Payment QR has expired. Please reopen the modal.", "warning");
+        }
+      }, 1000);
     }
 
     function recordQrPayment() {
