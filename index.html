@@ -1874,7 +1874,10 @@
                 <option value="Customer">Customers</option>
                 <option value="Supplier">Suppliers</option>
               </select>
-              <div style="display: flex; gap: 8px; justify-content: flex-end;">
+              <div style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
+                <button class="btn admin-only" id="btnBulkDeleteParties" onclick="bulkDeleteParties()" style="display: none; background: var(--dan); color: white; border: none; font-weight: 700; height: 38px; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; border-radius: var(--r); cursor: pointer;">
+                  <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selectedPartiesCount">0</span>)
+                </button>
                 <button class="btn btn-primary btn-icon" id="btnPartiesList" onclick="togglePartiesViewMode('list')" title="List View" style="padding:8px 12px; height:38px;"><i class="fa-solid fa-list"></i></button>
                 <button class="btn btn-secondary btn-icon" id="btnPartiesGrid" onclick="togglePartiesViewMode('grid')" title="Grid View" style="padding:8px 12px; height:38px;"><i class="fa-solid fa-grip"></i></button>
               </div>
@@ -1885,6 +1888,7 @@
             <table>
               <thead>
                 <tr id="partiesHeaderRow">
+                  <th class="admin-only" style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllParties" onchange="toggleSelectAllParties(this)" style="width: 16px; height: 16px; cursor: pointer;"></th>
                   <th>ID</th>
                   <th>Name</th>
                   <th>Type</th>
@@ -6396,6 +6400,10 @@
     // ==================== PARTIES CRUD ====================
 
     function renderParties(isLoadMore) {
+      const selectAll = document.getElementById('selectAllParties');
+      if (selectAll) selectAll.checked = false;
+      updateSelectedPartiesCount();
+
       if (!isLoadMore) {
         App.partiesRenderLimit = 50;
       }
@@ -6462,6 +6470,7 @@
         if (viewMode === 'list') {
           body.innerHTML += `
             <tr>
+              <td class="admin-only" style="text-align: center;"><input type="checkbox" class="party-select-checkbox" data-id="${p.id}" onchange="updateSelectedPartiesCount()" style="width: 16px; height: 16px; cursor: pointer;"></td>
               <td><strong>${p.id}</strong></td>
               <td><strong>${p.name}</strong></td>
               <td><span class="badge ${getPartyBaseType(p) === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span></td>
@@ -6481,8 +6490,9 @@
           `;
         } else {
           gridContainer.innerHTML += `
-            <div class="card" style="background: var(--card); border: 1px solid var(--brd); border-radius: var(--r); padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between;">
-              <div>
+            <div class="card" style="background: var(--card); border: 1px solid var(--brd); border-radius: var(--r); padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+              <input type="checkbox" class="party-select-checkbox admin-only" data-id="${p.id}" onchange="updateSelectedPartiesCount()" style="position: absolute; top: 15px; left: 15px; width: 18px; height: 18px; cursor: pointer; z-index: 10;">
+              <div style="margin-left: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
                   <span style="font-size: 11px; font-weight: 700; color: var(--txt2); background: var(--bg); padding: 4px 8px; border-radius: 4px;">${p.id}</span>
                   <span class="badge ${getPartyBaseType(p) === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span>
@@ -6491,7 +6501,7 @@
                 <p style="font-size: 13px; color: var(--txt2); margin-bottom: 4px;"><i class="fa-solid fa-phone" style="margin-right: 6px; width: 14px;"></i>${p.mobile}</p>
                 <p style="font-size: 13px; color: var(--txt2); margin-bottom: 12px;"><i class="fa-solid fa-receipt" style="margin-right: 6px; width: 14px;"></i>${p.gstin || '--'}</p>
               </div>
-              <div style="border-top: 1px solid var(--brd); padding-top: 12px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="border-top: 1px solid var(--brd); padding-top: 12px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; margin-left: 20px;">
                 <div>
                   <span style="font-size: 11px; font-weight: 600; color: var(--txt2); display: block; text-transform: uppercase;">Balance Due</span>
                   <span style="font-size: 15px; font-weight: 700; color: ${color};">${displayBal}${wsapBtn}</span>
@@ -7108,6 +7118,71 @@
             showToast('Party deleted successfully', 'success');
             syncAllData(renderParties, ["Parties", "ActivityLog"]);
           });
+        }
+      });
+    }
+
+    function toggleSelectAllParties(elem) {
+      const checkboxes = document.querySelectorAll('.party-select-checkbox');
+      checkboxes.forEach(cb => cb.checked = elem.checked);
+      updateSelectedPartiesCount();
+    }
+
+    function updateSelectedPartiesCount() {
+      const checkedBoxes = document.querySelectorAll('.party-select-checkbox:checked');
+      const count = checkedBoxes.length;
+      const btn = document.getElementById('btnBulkDeleteParties');
+      const text = document.getElementById('selectedPartiesCount');
+      if (btn && text) {
+        text.textContent = count;
+        btn.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
+    }
+
+    function bulkDeleteParties() {
+      const checkedBoxes = document.querySelectorAll('.party-select-checkbox:checked');
+      const ids = Array.from(checkedBoxes).map(cb => cb.dataset.id);
+      if (ids.length === 0) return;
+
+      showConfirmModal({
+        title: 'Bulk Delete Parties',
+        message: `Are you sure you want to permanently delete ${ids.length} selected parties? This action cannot be undone.`,
+        confirmText: 'Delete All',
+        isDanger: true,
+        onConfirm: async function() {
+          showLoading(true, `Deleting ${ids.length} parties...`);
+          try {
+            let batch = db.batch();
+            let count = 0;
+            for (const id of ids) {
+              batch.delete(db.collection('parties').doc(id));
+              count++;
+              if (count === 400) {
+                await batch.commit();
+                batch = db.batch();
+                count = 0;
+              }
+            }
+            if (count > 0) {
+              await batch.commit();
+            }
+
+            // Log action
+            _logActivity('DELETE_BULK', 'Parties', `Bulk deleted ${ids.length} parties`);
+
+            showLoading(false);
+            showToast(`Successfully deleted ${ids.length} parties.`, 'success');
+
+            // Reset select all checkbox
+            const selectAll = document.getElementById('selectAllParties');
+            if (selectAll) selectAll.checked = false;
+
+            updateSelectedPartiesCount();
+            syncAllData(renderParties, ["Parties", "ActivityLog"]);
+          } catch(e) {
+            showLoading(false);
+            showToast("Failed to bulk delete parties: " + e.message, 'error');
+          }
         }
       });
     }
