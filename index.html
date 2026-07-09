@@ -2608,6 +2608,9 @@
               <button class="btn" onclick="fixAndShortenPartyIdsInFirebase()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg,#6366F1,#4F46E5); color:#fff; font-weight:600; padding:10px; border-radius:var(--r); border:none; cursor:pointer; margin-top: 10px;">
                 <i class="fa-solid fa-wand-magic-sparkles"></i> Shorten Existing Party IDs
               </button>
+              <button class="btn" onclick="fixAndShortenProductIdsInFirebase()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg,#06B6D4,#0891B2); color:#fff; font-weight:600; padding:10px; border-radius:var(--r); border:none; cursor:pointer; margin-top: 10px;">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Shorten Existing Product IDs
+              </button>
             </div>
 
             <div class="dashboard-card" id="sheetsMigrationCard" style="display:none; margin-top:20px; border-color:#FCD34D; background:#FFFBEB;">
@@ -4427,6 +4430,18 @@
       return newId;
     }
 
+    function generateUniqueProductId(extraIdsSet) {
+      let newId;
+      const existingIds = new Set((App.data.products || []).map(p => p.id));
+      if (extraIdsSet) {
+        extraIdsSet.forEach(id => existingIds.add(id));
+      }
+      do {
+        newId = 'PR' + Math.random().toString(36).substr(2, 6).toUpperCase();
+      } while (existingIds.has(newId));
+      return newId;
+    }
+
     // Convert Firestore snapshot to plain array with id field
     function _snapToArr(snap) {
       const arr = [];
@@ -4650,7 +4665,7 @@
 
         // ---- SAVE: saveProduct ----
         if (action === 'saveProduct') {
-          const id = payload.id || ('P_' + _fbId());
+          const id = payload.id || generateUniqueProductId();
           await db.collection('products').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
           _logActivity('SAVE', 'Products', `Saved product: ${payload.name}`);
           success({ success: true });
@@ -6053,9 +6068,12 @@
             loadDashboard();
             populateGlobalDropdowns();
 
-            // Auto-run existing long Party ID shortening in background if Admin/Manager
+            // Auto-run existing long Party & Product ID shortening in background if Admin/Manager
             if (App.currentUser && (App.currentUser.role === 'Admin' || App.currentUser.role === 'Manager')) {
-              setTimeout(autoShortenLongPartyIds, 1500);
+              setTimeout(async () => {
+                await autoShortenLongPartyIds();
+                await autoShortenLongProductIds();
+              }, 1500);
             }
           }
         }, null, true);
@@ -7788,7 +7806,7 @@
 
     function saveProductForm(e) {
       e.preventDefault();
-      const id = document.getElementById('productId').value || 'P' + Date.now();
+      const id = document.getElementById('productId').value || generateUniqueProductId();
       const payload = {
         id: id,
         name: document.getElementById('productName').value,
@@ -12677,6 +12695,203 @@
         window.isAutoShorteningRunning = false;
         showLoading(false);
         console.error("Auto ID shortening failed:", e);
+      }
+    }
+
+    async function autoShortenLongProductIds() {
+      if (!App.currentUser || (App.currentUser.role !== 'Admin' && App.currentUser.role !== 'Manager')) {
+        return;
+      }
+      if (window.isAutoProductShorteningRunning) return;
+      try {
+        const productsSnap = await db.collection('products').get();
+        const products = [];
+        productsSnap.forEach(doc => products.push(Object.assign({ docId: doc.id }, doc.data())));
+        
+        const longProducts = products.filter(p => p.docId.startsWith('P') && p.docId.length > 10);
+        if (longProducts.length === 0) return;
+        
+        window.isAutoProductShorteningRunning = true;
+        showLoading(true, `Updating ${longProducts.length} product database IDs automatically...`);
+        
+        const existingIds = new Set(products.map(p => p.id || p.docId));
+        function makeShortId() {
+          let newId;
+          do {
+            newId = 'PR' + Math.random().toString(36).substr(2, 6).toUpperCase();
+          } while (existingIds.has(newId));
+          existingIds.add(newId);
+          return newId;
+        }
+
+        for (let idx = 0; idx < longProducts.length; idx++) {
+          const prod = longProducts[idx];
+          const oldId = prod.docId;
+          const newId = makeShortId();
+
+          let batch = db.batch();
+          let opCount = 0;
+
+          const oldProdRef = db.collection('products').doc(oldId);
+          const newProdRef = db.collection('products').doc(newId);
+          
+          const newProdData = Object.assign({}, prod, { id: newId });
+          delete newProdData.docId;
+          
+          batch.set(newProdRef, newProdData);
+          batch.delete(oldProdRef);
+          opCount += 2;
+
+          const collectionsToUpdate = [
+            'transactions', 'quotations', 'purchaseOrders', 'deliveryChallans'
+          ];
+
+          for (const col of collectionsToUpdate) {
+            const querySnap = await db.collection(col).get();
+            for (const doc of querySnap.docs) {
+              const docData = doc.data();
+              if (docData.items && Array.isArray(docData.items)) {
+                let itemsModified = false;
+                const updatedItems = docData.items.map(item => {
+                  if (item.productId === oldId) {
+                    itemsModified = true;
+                    return Object.assign({}, item, { productId: newId });
+                  }
+                  return item;
+                });
+                
+                if (itemsModified) {
+                  const docRef = db.collection(col).doc(doc.id);
+                  batch.update(docRef, { items: updatedItems });
+                  opCount++;
+                  if (opCount >= 400) {
+                    await batch.commit();
+                    batch = db.batch();
+                    opCount = 0;
+                  }
+                }
+              }
+            }
+          }
+
+          if (opCount > 0) {
+            await batch.commit();
+          }
+        }
+        
+        _logActivity('AUTO_SHORTEN_PROD', 'Products', `Automatically shortened ${longProducts.length} product IDs`);
+        showLoading(false);
+        showToast(`Successfully updated ${longProducts.length} product database IDs!`, "success");
+        setTimeout(() => location.reload(), 1000);
+      } catch (e) {
+        window.isAutoProductShorteningRunning = false;
+        showLoading(false);
+        console.error("Auto product ID shortening failed:", e);
+      }
+    }
+
+    async function fixAndShortenProductIdsInFirebase() {
+      const confirm = window.confirm("Are you sure you want to shorten all existing long Product IDs (like P1783520690953) in Firebase? This will update all transactions, quotations, and other records referencing these products.");
+      if (!confirm) return;
+
+      showLoading(true, "Scanning database for long Product IDs...");
+      try {
+        const productsSnap = await db.collection('products').get();
+        const products = [];
+        productsSnap.forEach(doc => products.push(Object.assign({ docId: doc.id }, doc.data())));
+
+        const longProducts = products.filter(p => p.docId.startsWith('P') && p.docId.length > 10);
+
+        if (longProducts.length === 0) {
+          showLoading(false);
+          showToast("No long Product IDs found. Everything is already shortened!", "info");
+          return;
+        }
+
+        showLoading(true, `Found ${longProducts.length} long Product IDs. Shortening them...`);
+
+        const existingIds = new Set(products.map(p => p.id || p.docId));
+
+        function makeShortId() {
+          let newId;
+          do {
+            newId = 'PR' + Math.random().toString(36).substr(2, 6).toUpperCase();
+          } while (existingIds.has(newId));
+          existingIds.add(newId);
+          return newId;
+        }
+
+        for (let idx = 0; idx < longProducts.length; idx++) {
+          const prod = longProducts[idx];
+          const oldId = prod.docId;
+          const newId = makeShortId();
+
+          showLoading(true, `Updating Product ${idx + 1}/${longProducts.length}: ${prod.name} (${oldId} -> ${newId})`);
+
+          let batch = db.batch();
+          let opCount = 0;
+
+          // 1. Create new product document with new ID and delete old document
+          const oldProdRef = db.collection('products').doc(oldId);
+          const newProdRef = db.collection('products').doc(newId);
+          
+          const newProdData = Object.assign({}, prod, { id: newId });
+          delete newProdData.docId;
+          
+          batch.set(newProdRef, newProdData);
+          batch.delete(oldProdRef);
+          opCount += 2;
+
+          // Collections to search and update productId field inside their items array
+          const collectionsToUpdate = [
+            'transactions',
+            'quotations',
+            'purchaseOrders',
+            'deliveryChallans'
+          ];
+
+          for (const col of collectionsToUpdate) {
+            const querySnap = await db.collection(col).get();
+            for (const doc of querySnap.docs) {
+              const docData = doc.data();
+              if (docData.items && Array.isArray(docData.items)) {
+                let itemsModified = false;
+                const updatedItems = docData.items.map(item => {
+                  if (item.productId === oldId) {
+                    itemsModified = true;
+                    return Object.assign({}, item, { productId: newId });
+                  }
+                  return item;
+                });
+                
+                if (itemsModified) {
+                  const docRef = db.collection(col).doc(doc.id);
+                  batch.update(docRef, { items: updatedItems });
+                  opCount++;
+
+                  if (opCount >= 400) {
+                    await batch.commit();
+                    batch = db.batch();
+                    opCount = 0;
+                  }
+                }
+              }
+            }
+          }
+
+          if (opCount > 0) {
+            await batch.commit();
+          }
+        }
+
+        showLoading(false);
+        showToast(`Successfully shortened ${longProducts.length} Product IDs and updated all linked records!`, "success");
+        setTimeout(() => location.reload(), 1500);
+
+      } catch (e) {
+        showLoading(false);
+        console.error("Product ID Shortening failed:", e);
+        showToast("Error during shortening: " + e.message, "error");
       }
     }
 
