@@ -1671,13 +1671,6 @@
               </div>
               <div class="kpi-card">
                 <div class="kpi-details">
-                  <h3>Purchases (This Month)</h3>
-                  <p id="kpiPurchases">₹0.00</p>
-                </div>
-                <div class="kpi-icon orange"><i class="fa-solid fa-cart-shopping"></i></div>
-              </div>
-              <div class="kpi-card">
-                <div class="kpi-details">
                   <h3>Cash In Hand</h3>
                   <p id="kpiCash">₹0.00</p>
                 </div>
@@ -6140,7 +6133,8 @@
         document.getElementById('kpiHeroReceivable').textContent = formatCurrency(totalReceivables);
         document.getElementById('kpiHeroPayable').textContent = formatCurrency(totalPayables);
         document.getElementById('kpiSales').textContent = formatCurrency(totalSales);
-        document.getElementById('kpiPurchases').textContent = formatCurrency(totalPurchase);
+        const kpiPurch = document.getElementById('kpiPurchases');
+        if (kpiPurch) kpiPurch.textContent = formatCurrency(totalPurchase);
 
         // Account reserves
         let cashVal = 0, bankVal = 0;
