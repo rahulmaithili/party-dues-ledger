@@ -11648,9 +11648,7 @@
         invoiceBanner.style.display = 'none';
       }
 
-      if (cp.companyQrCode) {
-        qrImage.src = cp.companyQrCode;
-        qrImage.style.display = 'inline-block';
+      if (cp.companyUpiId || cp.companyQrCode) {
         qrInfo.style.display = 'block';
         qrNotSet.style.display = 'none';
         qrAmountRow.style.display = 'block';
@@ -11678,7 +11676,7 @@
           document.getElementById('paymentQrNarration').value = `UPI Payment from ${App.currentUser.name}`;
         }
 
-        // Generate UPI deep link
+        // Generate UPI deep link and set dynamic/static QR code
         updateUpiDeepLink();
       } else {
         qrImage.style.display = 'none';
@@ -11695,16 +11693,44 @@
       const cp = App.data.companyProfile || {};
       const upiId = cp.companyUpiId || '';
       const amt = parseFloat(document.getElementById('paymentQrAmount').value || 0);
-      const narration = encodeURIComponent(document.getElementById('paymentQrNarration').value || 'Payment');
-      const name = encodeURIComponent(cp.companyName || 'Payment');
+      const narrationVal = document.getElementById('paymentQrNarration').value || 'Payment';
+      const nameVal = cp.companyName || 'Payment';
+      
       const deepLinkEl = document.getElementById('paymentUpiDeepLink');
+      const qrImage = document.getElementById('paymentQrImage');
 
-      if (upiId && amt > 0 && deepLinkEl) {
-        const upiLink = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${name}&am=${amt.toFixed(2)}&cu=INR&tn=${narration}`;
-        deepLinkEl.href = upiLink;
-        deepLinkEl.style.display = 'inline-flex';
-      } else if (deepLinkEl) {
-        deepLinkEl.style.display = 'none';
+      if (upiId) {
+        // We have a UPI ID. We can construct a dynamic link!
+        // We will include the amount in the link if amt > 0, making it a dynamic payment QR code.
+        const upiLink = `upi://pay?pa=${encodeURIComponent(upiId)}&pn=${encodeURIComponent(nameVal)}` + 
+                         (amt > 0 ? `&am=${amt.toFixed(2)}` : '') + 
+                         `&cu=INR&tn=${encodeURIComponent(narrationVal)}`;
+        
+        if (deepLinkEl) {
+          deepLinkEl.href = upiLink;
+          deepLinkEl.style.display = 'inline-flex';
+        }
+        if (qrImage) {
+          qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiLink)}`;
+          qrImage.style.display = 'inline-block';
+        }
+      } else if (cp.companyQrCode) {
+        // No UPI ID but we have a static uploaded QR code
+        if (deepLinkEl) {
+          deepLinkEl.style.display = 'none';
+        }
+        if (qrImage) {
+          qrImage.src = cp.companyQrCode;
+          qrImage.style.display = 'inline-block';
+        }
+      } else {
+        // Neither UPI ID nor QR code is available
+        if (deepLinkEl) {
+          deepLinkEl.style.display = 'none';
+        }
+        if (qrImage) {
+          qrImage.style.display = 'none';
+        }
       }
     }
 
