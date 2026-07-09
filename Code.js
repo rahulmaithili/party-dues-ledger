@@ -2059,3 +2059,36 @@ function testDrivePermission() {
   var exists = folders.hasNext();
   Logger.log("Drive Permission Test: Success! Folder exists: " + exists);
 }
+
+function getSheetDataForMigration() {
+  var sheet = getSpreadsheet();
+  if (!sheet) {
+    return { success: false, message: "Spreadsheet not found or not accessible." };
+  }
+  
+  var sheetsToRead = [
+    "Parties", "Products", "Transactions", "BankAccounts", "Users", 
+    "Notifications", "CompanyProfile", "Expenses", "Quotations", 
+    "PurchaseOrders", "DeliveryChallans", "ActivityLog", "CRMFollowups", "CylinderSecurity",
+    "PartyTypes"
+  ];
+  
+  var result = { success: true, data: {} };
+  
+  for (var i = 0; i < sheetsToRead.length; i++) {
+    var sName = sheetsToRead[i];
+    var clientKey = sName.charAt(0).toLowerCase() + sName.slice(1);
+    if (sName === "BankAccounts") clientKey = "bankAccounts";
+    if (sName === "CompanyProfile") clientKey = "companyProfile";
+    if (sName === "PurchaseOrders") clientKey = "purchaseOrders";
+    if (sName === "DeliveryChallans") clientKey = "deliveryChallans";
+    if (sName === "ActivityLog") clientKey = "activityLog";
+    if (sName === "CRMFollowups") clientKey = "crmFollowups";
+    if (sName === "CylinderSecurity") clientKey = "cylinderSecurity";
+    
+    var sheetData = readSheetData(sheet, sName);
+    result.data[clientKey] = sheetData;
+  }
+  
+  return result;
+}

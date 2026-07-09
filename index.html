@@ -2602,6 +2602,21 @@
                 <i class="fa-solid fa-lock"></i> Firebase Always Connected
               </button>
             </div>
+
+            <div class="dashboard-card" id="sheetsMigrationCard" style="display:none; margin-top:20px; border-color:#FCD34D; background:#FFFBEB;">
+              <div class="card-header" style="border-bottom-color:#FCD34D; margin-bottom: 12px; padding-bottom: 8px;">
+                <h3 style="color:#B45309; font-weight:700; font-size:16px; margin:0;"><i class="fa-solid fa-file-import"></i> Sheets to Firebase Migration</h3>
+              </div>
+              <p style="font-size: 13px; color: #B45309; margin-bottom: 16px; line-height: 1.5; text-align: left;">
+                Apne purane Google Sheets database ke data ko current active Firebase database par transfer (migrate) karne ke liye neeche click karein.
+              </p>
+              <div style="margin-bottom: 16px; font-size:12px; border: 1px solid #F59E0B; background:#FEF3C7; color:#92400E; padding:10px; border-radius:var(--r); text-align: left; line-height: 1.4;">
+                <i class="fa-solid fa-triangle-exclamation"></i> <strong>Caution:</strong> Isse dynamic Firebase data replace ho jayega aur Sheets wala purana data copy ho jayega.
+              </div>
+              <button class="btn" onclick="runDatabaseMigrationFromGoogleSheets()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background:#D97706; color:#fff; font-weight:700; border:none; padding:12px; border-radius:var(--r); cursor:pointer;">
+                <i class="fa-solid fa-angles-right"></i> Start Migration to Firebase
+              </button>
+            </div>
           </div>
         </section>
 
@@ -12312,6 +12327,92 @@
           `;
         });
       }
+
+      // Show Google Sheets migration card if opened inside Apps Script Web App context
+      const migCard = document.getElementById('sheetsMigrationCard');
+      if (migCard) {
+        const isAppsScriptContext = typeof google !== 'undefined' && google.script && google.script.run;
+        migCard.style.display = isAppsScriptContext ? 'block' : 'none';
+      }
+    }
+
+    async function runDatabaseMigrationFromGoogleSheets() {
+      if (typeof google === 'undefined' || !google.script || !google.script.run) {
+        showToast("Error: Google Apps Script context not found. Please open the app via Google Apps Script Web App link to perform migration.", "error");
+        return;
+      }
+      
+      const confirm = window.confirm("Are you sure you want to migrate all data from Google Sheets to Firebase? This will overwrite existing Firebase data with Sheets data.");
+      if (!confirm) return;
+      
+      showLoading(true, "Fetching data from Google Sheets...");
+      
+      google.script.run
+        .withSuccessHandler(async function(res) {
+          if (!res.success) {
+            showLoading(false);
+            showToast("Failed to fetch Sheets data: " + res.message, "error");
+            return;
+          }
+          
+          showLoading(true, "Writing data to Firebase Firestore...");
+          try {
+            const data = res.data;
+            const sheetMap = {
+              parties: 'parties', products: 'products', bankAccounts: 'bankAccounts',
+              users: 'users', companyProfile: 'companyProfile', transactions: 'transactions',
+              expenses: 'expenses', quotations: 'quotations', purchaseOrders: 'purchaseOrders',
+              deliveryChallans: 'deliveryChallans', activityLog: 'activityLog',
+              notifications: 'notifications', cylinderSecurity: 'cylinderSecurity',
+              crmFollowups: 'crmFollowups', partyTypes: 'partyTypes'
+            };
+            
+            // Loop through each collection
+            for (const [clientKey, col] of Object.entries(sheetMap)) {
+              const rows = data[clientKey] || [];
+              if (col === 'companyProfile') {
+                const profileObj = rows[0] || {};
+                if (profileObj.id) delete profileObj.id;
+                await db.collection('companyProfile').doc('main').set(profileObj);
+              } else {
+                // Write each row in a batch
+                // Firestore batches are limited to 500 writes
+                let batch = db.batch();
+                let count = 0;
+                
+                for (let i = 0; i < rows.length; i++) {
+                  const row = rows[i];
+                  if (!row.id) continue;
+                  
+                  const docRef = db.collection(col).doc(row.id);
+                  batch.set(docRef, row, { merge: true });
+                  count++;
+                  
+                  if (count === 400) {
+                    await batch.commit();
+                    batch = db.batch();
+                    count = 0;
+                  }
+                }
+                if (count > 0) {
+                  await batch.commit();
+                }
+              }
+            }
+            
+            showLoading(false);
+            showToast("Migration completed successfully! Please reload the page.", "success");
+            setTimeout(() => location.reload(), 1500);
+          } catch(e) {
+            showLoading(false);
+            showToast("Migration failed during Firebase write: " + e.message, "error");
+          }
+        })
+        .withFailureHandler(function(err) {
+          showLoading(false);
+          showToast("Failed to communicate with Google Sheets: " + err, "error");
+        })
+        .getSheetDataForMigration();
     }
 
     function handleLogoUpload(event) {
