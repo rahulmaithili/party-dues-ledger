@@ -5811,8 +5811,8 @@
     function handleProfilePhotoChange(e) {
       const file = e.target.files[0];
       if (!file) return;
-      if (file.size > 2 * 1024 * 1024) {
-        showToast('Image size must be less than 2MB', 'error');
+      if (file.size < 200 * 1024 || file.size > 5 * 1024 * 1024) {
+        showToast('Profile photo size must be between 200 KB and 5 MB', 'error');
         e.target.value = '';
         return;
       }
@@ -5868,6 +5868,10 @@
 
       if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
+        if (file.size < 200 * 1024 || file.size > 5 * 1024 * 1024) {
+          showToast('Profile photo size must be between 200 KB and 5 MB', 'error');
+          return;
+        }
         const reader = new FileReader();
         reader.onload = function(evt) {
           proceedProfileSave(evt.target.result, file.name, file.type);
@@ -6876,6 +6880,10 @@
 
       if (fileInput.files.length > 0) {
         const file = fileInput.files[0];
+        if (file.size < 200 * 1024 || file.size > 5 * 1024 * 1024) {
+          showToast('Party document size must be between 200 KB and 5 MB', 'error');
+          return;
+        }
         const reader = new FileReader();
         reader.onload = function(evt) {
           proceedSave(evt.target.result, file.name, file.type);
@@ -8260,8 +8268,8 @@
 
       if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
-        if (file.size > 8 * 1024 * 1024) {
-          showToast('File size must be less than 8MB', 'error');
+        if (file.size < 200 * 1024 || file.size > 5 * 1024 * 1024) {
+          showToast('Payment proof size must be between 200 KB and 5 MB', 'error');
           return;
         }
         showLoading(true, 'Uploading payment proof...');
@@ -11735,8 +11743,8 @@
     function handleUserPhotoChange(e) {
       const file = e.target.files[0];
       if (!file) return;
-      if (file.size > 2 * 1024 * 1024) {
-        showToast('Image size must be less than 2MB', 'error');
+      if (file.size < 200 * 1024 || file.size > 5 * 1024 * 1024) {
+        showToast('User photo size must be between 200 KB and 5 MB', 'error');
         e.target.value = '';
         return;
       }
@@ -11827,6 +11835,10 @@
 
       if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
+        if (file.size < 200 * 1024 || file.size > 5 * 1024 * 1024) {
+          showToast('User photo size must be between 200 KB and 5 MB', 'error');
+          return;
+        }
         const reader = new FileReader();
         reader.onload = function(evt) {
           proceedUserSave(evt.target.result, file.name, file.type);
