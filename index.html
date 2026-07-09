@@ -1734,12 +1734,12 @@
                 <table>
                   <thead>
                     <tr>
-                      <th>Date</th>
-                      <th>Voucher No</th>
+                      <th class="text-center">Date</th>
+                      <th class="text-center">Voucher No</th>
                       <th>Party Name</th>
-                      <th>Type</th>
-                      <th>Amount</th>
-                      <th>Voucher Due</th>
+                      <th class="text-center">Type</th>
+                      <th class="text-center">Amount</th>
+                      <th class="text-center">Voucher Due</th>
                     </tr>
                   </thead>
                   <tbody id="recentTxnsBody">
@@ -6188,12 +6188,12 @@
 
             recentTxnsBody.innerHTML += `
               <tr>
-                <td>${formatDate(t.date)}</td>
-                <td><strong>${t.voucherNo || t.id}</strong></td>
+                <td class="text-center">${formatDate(t.date)}</td>
+                <td class="text-center"><strong>${t.voucherNo || t.id}</strong></td>
                 <td>${t.partyName || 'Internal / Cash'}</td>
-                <td><span class="badge badge-${badgeClass}">${t.txnType}</span></td>
-                <td class="text-right">${formatCurrency(grandTotal)}</td>
-                <td class="text-right" style="font-weight:600; color:${due > 0 ? 'var(--dan)' : 'var(--txt)'}">${due > 0 ? formatCurrency(due) : '--'}</td>
+                <td class="text-center"><span class="badge badge-${badgeClass}">${t.txnType}</span></td>
+                <td class="text-center">${formatCurrency(grandTotal)}</td>
+                <td class="text-center" style="font-weight:600; color:${due > 0 ? 'var(--dan)' : 'var(--txt)'}">${due > 0 ? formatCurrency(due) : '--'}</td>
               </tr>
             `;
           });
