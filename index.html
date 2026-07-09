@@ -2719,6 +2719,9 @@
           <a id="paymentUpiDeepLink" href="#" style="display:none; background:linear-gradient(135deg,#8B5CF6,#6D28D9); color:#fff; font-weight:700; padding:10px 20px; font-size:13px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; margin-bottom:12px; justify-content:center;" target="_blank">
             <i class="fa-solid fa-mobile-screen-button"></i> UPI App Se Pay Karein
           </a>
+          <p id="paymentUpiMobileNote" style="display:none; font-size: 11.5px; color: var(--txt2); margin-top:-6px; margin-bottom:12px; font-weight: 500;">
+            <i class="fa-solid fa-circle-info" style="color:var(--acc);"></i> Yeh button sirf Mobile phone par kaam karega. Computer/Laptop par upar diye gaye QR Code ko scan karein.
+          </p>
           <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:10px 14px; font-size:13px; color:#166534;">
             <i class="fa-solid fa-circle-check"></i> Payment karne ke baad neeche "Payment Done" button dabao
           </div>
@@ -11698,6 +11701,7 @@
       
       const deepLinkEl = document.getElementById('paymentUpiDeepLink');
       const qrImage = document.getElementById('paymentQrImage');
+      const noteEl = document.getElementById('paymentUpiMobileNote');
 
       if (upiId) {
         // We have a UPI ID. We can construct a dynamic link!
@@ -11714,22 +11718,29 @@
           qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiLink)}`;
           qrImage.style.display = 'inline-block';
         }
-      } else if (cp.companyQrCode) {
-        // No UPI ID but we have a static uploaded QR code
-        if (deepLinkEl) {
-          deepLinkEl.style.display = 'none';
-        }
-        if (qrImage) {
-          qrImage.src = cp.companyQrCode;
-          qrImage.style.display = 'inline-block';
+        if (noteEl) {
+          const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+          noteEl.style.display = isMobile ? 'none' : 'block';
         }
       } else {
-        // Neither UPI ID nor QR code is available
+        if (noteEl) {
+          noteEl.style.display = 'none';
+        }
         if (deepLinkEl) {
           deepLinkEl.style.display = 'none';
         }
-        if (qrImage) {
-          qrImage.style.display = 'none';
+        if (cp.companyQrCode) {
+          // No UPI ID but we have a static uploaded QR code
+          if (qrImage) {
+            qrImage.src = cp.companyQrCode;
+            qrImage.style.display = 'inline-block';
+          }
+        } else {
+          // Neither UPI ID nor QR code is available
+          if (qrImage) {
+            qrImage.src = '';
+            qrImage.style.display = 'none';
+          }
         }
       }
     }
