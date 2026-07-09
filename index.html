@@ -1966,13 +1966,19 @@
           </div>
 
           <div class="dashboard-card" style="margin-bottom: 20px;">
-            <input type="text" id="salesSearch" class="light-form-control" placeholder="Search by Invoice No, Customer, Amount..." oninput="renderSales()">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
+              <input type="text" id="salesSearch" class="light-form-control" placeholder="Search by Invoice No, Customer, Amount..." oninput="renderSales()" style="flex: 1; margin-bottom: 0;">
+              <button class="btn admin-only" id="btnBulkDeleteSales" onclick="bulkDeleteSales()" style="display: none; background: var(--dan); color: white; border: none; font-weight: 700; height: 38px; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; border-radius: var(--r); cursor: pointer; white-space: nowrap;">
+                <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selectedSalesCount">0</span>)
+              </button>
+            </div>
           </div>
 
           <div class="table-container">
             <table>
               <thead>
                 <tr>
+                  <th class="admin-only" style="width: 40px; text-align: center;"><input type="checkbox" id="selectAllSales" onchange="toggleSelectAllSales(this)" style="width: 16px; height: 16px; cursor: pointer;"></th>
                   <th>Voucher No</th>
                   <th>Date</th>
                   <th>Customer Name</th>
@@ -7871,6 +7877,10 @@
     let activeInvoiceItems = [];
 
     function renderSales() {
+      const selectAll = document.getElementById('selectAllSales');
+      if (selectAll) selectAll.checked = false;
+      updateSelectedSalesCount();
+
       const search = document.getElementById('salesSearch').value.toLowerCase();
       const body = document.getElementById('salesTableBody');
       body.innerHTML = '';
@@ -7878,7 +7888,7 @@
       const list = App.data.transactions.filter(t => t.txnType === 'Sale' && (String(t.voucherNo || '').toLowerCase().includes(search) || String(t.partyName || '').toLowerCase().includes(search)));
 
       if (list.length === 0) {
-        body.innerHTML = '<tr><td colspan="8" class="text-center">No sales invoices recorded.</td></tr>';
+        body.innerHTML = '<tr><td colspan="9" class="text-center">No sales invoices recorded.</td></tr>';
         return;
       }
 
@@ -7890,6 +7900,7 @@
 
         body.innerHTML += `
           <tr>
+            <td class="admin-only" style="text-align: center;"><input type="checkbox" class="sales-select-checkbox" data-id="${t.id}" onchange="updateSelectedSalesCount()" style="width: 16px; height: 16px; cursor: pointer;"></td>
             <td><strong>${t.voucherNo}</strong></td>
             <td>${formatDate(t.date)}</td>
             <td><strong>${t.partyName}</strong></td>
@@ -8315,6 +8326,80 @@
               renderPurchases();
             }, ["Transactions", "Products", "BankAccounts", "ActivityLog"]);
           });
+        }
+      });
+    }
+
+    function toggleSelectAllSales(elem) {
+      const checkboxes = document.querySelectorAll('.sales-select-checkbox');
+      checkboxes.forEach(cb => cb.checked = elem.checked);
+      updateSelectedSalesCount();
+    }
+
+    function updateSelectedSalesCount() {
+      const checkedBoxes = document.querySelectorAll('.sales-select-checkbox:checked');
+      const count = checkedBoxes.length;
+      const btn = document.getElementById('btnBulkDeleteSales');
+      const text = document.getElementById('selectedSalesCount');
+      if (btn && text) {
+        text.textContent = count;
+        btn.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
+    }
+
+    function bulkDeleteSales() {
+      const checkedBoxes = document.querySelectorAll('.sales-select-checkbox:checked');
+      const ids = Array.from(checkedBoxes).map(cb => cb.dataset.id);
+      if (ids.length === 0) return;
+
+      showConfirmModal({
+        title: 'Bulk Delete Sales Invoices',
+        message: `Are you sure you want to permanently delete ${ids.length} selected invoices? The ledger balance, stock count, and bank accounts will be rolled back. This action cannot be undone.`,
+        confirmText: 'Delete All',
+        isDanger: true,
+        onConfirm: async function() {
+          showLoading(true, `Deleting ${ids.length} invoices...`);
+          try {
+            let batch = db.batch();
+            let opCount = 0;
+            const updates = {};
+
+            for (const id of ids) {
+              rollbackLocalBalances(id, updates);
+              batch.delete(db.collection('transactions').doc(id));
+              opCount += 2;
+
+              if (opCount >= 400) {
+                _applyCalculatedUpdates(updates, batch);
+                await batch.commit();
+                batch = db.batch();
+                for (const key of Object.keys(updates)) delete updates[key];
+                opCount = 0;
+              }
+            }
+
+            if (opCount > 0 || Object.keys(updates).length > 0) {
+              _applyCalculatedUpdates(updates, batch);
+              await batch.commit();
+            }
+
+            _logActivity('DELETE_BULK', 'Transactions', `Bulk deleted ${ids.length} sales invoices`);
+
+            showLoading(false);
+            showToast(`Successfully deleted ${ids.length} invoices and restored balances.`, 'success');
+
+            const selectAll = document.getElementById('selectAllSales');
+            if (selectAll) selectAll.checked = false;
+
+            updateSelectedSalesCount();
+            syncAllData(() => {
+              renderSales();
+              renderPurchases();
+            }, ["Transactions", "Products", "BankAccounts", "ActivityLog"]);
+          } catch(e) {
+            showLoading(false);
+            showToast("Failed to bulk delete invoices: " + e.message, 'error');
+          }
         }
       });
     }
