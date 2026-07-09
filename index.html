@@ -1912,7 +1912,7 @@
 
           <div class="dashboard-card" style="margin-bottom: 20px;">
             <div class="grid-3" style="align-items: center;">
-              <input type="text" id="productSearch" class="light-form-control" placeholder="Search by name, category, HSN..." oninput="renderProducts()">
+              <input type="text" id="productSearch" class="light-form-control" placeholder="Search by name, category..." oninput="renderProducts()">
               <select id="productFilterCat" class="light-form-control" onchange="renderProducts()">
                 <option value="All">All Categories</option>
               </select>
@@ -1931,7 +1931,6 @@
                   <th>Name</th>
                   <th>Category</th>
                   <th>Unit</th>
-                  <th>HSN</th>
                   <th class="text-right">Purchase Rate</th>
                   <th class="text-right">Sale Rate</th>
                   <th class="text-right">GST %</th>
@@ -2958,7 +2957,7 @@
                 <option value="Litre">Litre</option>
               </select>
             </div>
-            <div class="form-group">
+            <div class="form-group" style="display:none;">
               <label>HSN Code</label>
               <input type="text" id="productHsn" class="light-form-control">
             </div>
@@ -7281,7 +7280,6 @@
               <td><strong>${p.name}</strong></td>
               <td>${p.category}</td>
               <td>${p.unit}</td>
-              <td>${p.hsn || '--'}</td>
               <td class="text-right">${formatCurrency(p.purchaseRate)}</td>
               <td class="text-right">${formatCurrency(p.saleRate)}</td>
               <td class="text-right">${p.gst}%</td>
@@ -10943,7 +10941,6 @@
             <tr>
               <td class="text-center">${idx + 1}</td>
               <td><strong>${x.productName}</strong></td>
-              <td class="text-center">${x.hsn || '--'}</td>
               <td class="text-right">${x.quantity} ${x.unit || 'Nos'}</td>
               <td class="text-right">${x.emptyReturn || 0} ${x.unit || 'Nos'}</td>
               <td class="text-right">${formatCurrency(x.rate)}</td>
@@ -10998,7 +10995,6 @@
                 <tr>
                   <th class="text-center" style="width: 5%;">#</th>
                   <th>Item Description</th>
-                  <th class="text-center" style="width: 12%;">HSN</th>
                   <th class="text-right" style="width: 12%;">Qty</th>
                   <th class="text-right" style="width: 12%;">Empty Ret</th>
                   <th class="text-right" style="width: 12%;">Rate</th>
