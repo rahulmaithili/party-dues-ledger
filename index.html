@@ -15,6 +15,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script>
     // ===== FIREBASE INITIALIZATION =====
     const FIREBASE_CONFIG = {
@@ -34,6 +35,16 @@
     } catch (e) {
       console.warn("Firebase Storage initialization failed:", e);
     }
+    
+    // Authenticate anonymously so Firebase Storage allows uploads
+    try {
+      firebase.auth().signInAnonymously().catch(err => {
+        console.warn("Firebase Anonymous Auth failed:", err);
+      });
+    } catch (e) {
+      console.warn("Firebase Auth not loaded or failed:", e);
+    }
+
     // Firestore offline persistence for better performance
     db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
     // Active real-time unsubscribe handles
@@ -4409,7 +4420,7 @@
         } else {
           cleanPayload();
           setTimeout(() => {
-            showToast('Document is too large (>200KB) and Firebase Storage is offline/unconfigured. Saved details without document.', 'warning');
+            showToast('Document/Photo size is too large (>200KB) and Firebase Storage is unconfigured or offline. Saved details without document.', 'warning');
           }, 50);
           return null;
         }
