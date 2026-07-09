@@ -1774,6 +1774,18 @@
               </div>
             </div>
 
+            <!-- Pay Now Banner for Party -->
+            <div style="background: linear-gradient(135deg, #065F46, #047857); border-radius: 14px; padding: 20px 24px; margin-top: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;">
+              <div>
+                <p style="font-size: 13px; font-weight: 700; color: #6EE7B7; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Quick Payment</p>
+                <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 2px;">Pay via UPI / QR Code</h3>
+                <p style="font-size: 12.5px; color: #A7F3D0;">Google Pay, PhonePe, Paytm se turant payment karein</p>
+              </div>
+              <button class="btn" style="background: #fff; color: #065F46; font-weight: 700; padding: 12px 24px; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;" onclick="openPaymentQrModal()">
+                <i class="fa-solid fa-qrcode"></i> Pay Now
+              </button>
+            </div>
+
             <div class="dashboard-card" style="margin-top: 24px;">
               <div class="card-header">
                 <h3>My Recent Transactions</h3>
@@ -2396,6 +2408,24 @@
             </div>
           </div>
 
+          <!-- Online/Total Users Summary Cards -->
+          <div class="kpi-grid" style="margin-bottom: 20px;">
+            <div class="kpi-card">
+              <div class="kpi-details">
+                <h3>Total Registered Users</h3>
+                <p id="totalUsersCount" style="color: var(--txt); font-size: 20px; font-weight: 700; margin-top: 4px;">0</p>
+              </div>
+              <div class="kpi-icon blue"><i class="fa-solid fa-users"></i></div>
+            </div>
+            <div class="kpi-card">
+              <div class="kpi-details">
+                <h3>Online Now (Live)</h3>
+                <p id="onlineUsersCount" style="color: #10B981; font-size: 20px; font-weight: 700; margin-top: 4px;">0</p>
+              </div>
+              <div class="kpi-icon green" style="background: rgba(16, 185, 129, 0.15); color: #10B981;"><i class="fa-solid fa-signal"></i></div>
+            </div>
+          </div>
+
           <div class="table-container">
             <table>
               <thead>
@@ -2458,10 +2488,6 @@
                   </div>
                 </div>
                 <div class="form-group">
-                  <label style="color:var(--txt)">Google Apps Script Web App URL (For Sending Emails)</label>
-                  <input type="url" id="setCompanyScriptUrl" class="light-form-control" placeholder="https://script.google.com/macros/s/.../exec">
-                </div>
-                <div class="form-group">
                   <label style="color:var(--txt); margin-bottom: 8px; display: block;">Company Logo</label>
                   <div style="display: flex; align-items: center; gap: 16px;">
                     <div id="logoPreviewContainer" style="width: 80px; height: 80px; border: 1px dashed var(--brd); border-radius: var(--r); display: flex; align-items: center; justify-content: center; background: #F8FAFC; overflow: hidden; position: relative;">
@@ -2482,6 +2508,28 @@
                     </div>
                   </div>
                   <input type="hidden" id="setCompanyLogo">
+                </div>
+                <div class="form-group">
+                  <label style="color:var(--txt); margin-bottom: 8px; display: block;">UPI / QR Code Payment Image <small style="color:var(--txt2);">(Party ko payment ke liye dikhega)</small></label>
+                  <div style="display: flex; align-items: center; gap: 16px;">
+                    <div id="qrPreviewContainer" style="width: 80px; height: 80px; border: 1px dashed var(--brd); border-radius: var(--r); display: flex; align-items: center; justify-content: center; background: #F8FAFC; overflow: hidden;">
+                      <span id="qrPlaceholder" style="font-size: 24px; color: var(--txt2);"><i class="fa-solid fa-qrcode"></i></span>
+                      <img id="qrPreviewImg" style="width: 100%; height: 100%; object-fit: contain; display: none;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px;">
+                      <div style="display: flex; gap: 8px;">
+                        <label class="btn btn-secondary btn-sm" style="cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-bottom: 0;">
+                          <i class="fa-solid fa-qrcode"></i> Upload QR Code
+                          <input type="file" id="qrUploadInput" accept="image/*" style="display: none;" onchange="handleQrUpload(event)">
+                        </label>
+                        <button type="button" id="btnRemoveQr" class="btn btn-danger btn-sm" style="display: none; align-items: center; gap: 6px;" onclick="removeUploadedQr()">
+                          <i class="fa-solid fa-trash-can"></i> Remove
+                        </button>
+                      </div>
+                      <p style="font-size: 11px; color: var(--txt2);">Supports JPEG, PNG (Google Pay, PhonePe, Paytm, UPI)</p>
+                    </div>
+                  </div>
+                  <input type="hidden" id="setCompanyQrCode">
                 </div>
                 <div class="form-group">
                   <label style="color:var(--txt)">Terms & Conditions</label>
@@ -2623,6 +2671,42 @@
       <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 12px;">
         <button class="btn btn-primary" onclick="printPartyDoc()"><i class="fa-solid fa-print"></i> Print Document</button>
         <button class="btn btn-secondary" onclick="closeModal('partyDocViewerModal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPI PAYMENT QR MODAL (party view) -->
+  <div class="modal-backdrop" id="paymentQrModal" style="z-index: 100200;">
+    <div class="modal-card" style="max-width: 420px; text-align: center;">
+      <div class="modal-header">
+        <h3><i class="fa-solid fa-qrcode" style="color: var(--acc);"></i> Pay via UPI / QR Code</h3>
+        <i class="fa-solid fa-xmark pointer" onclick="closeModal('paymentQrModal')"></i>
+      </div>
+      <div class="modal-body" style="padding: 28px 24px;">
+        <div id="paymentQrNotSetMsg" style="display:none; color:var(--txt2); font-size:14px; padding:24px 0;">
+          <i class="fa-solid fa-circle-xmark" style="font-size:40px; color:#CBD5E1; display:block; margin-bottom:12px;"></i>
+          Admin ne abhi QR code set nahi kiya hai.<br>Payment ke liye admin se contact karein.
+        </div>
+        <img id="paymentQrImage" src="" alt="UPI QR Code" style="max-width: 240px; width: 100%; border: 4px solid #E2E8F0; border-radius: 12px; display:none;">
+        <div id="paymentQrInfo" style="display:none; margin-top: 20px;">
+          <p style="font-size: 13px; color: var(--txt2); margin-bottom: 4px;">Is QR ko scan karo aur payment karo</p>
+          <p style="font-size: 12px; color: #94A3B8;">Google Pay, PhonePe, Paytm, ya kisi bhi UPI app se</p>
+          <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:10px 14px; margin-top:16px; font-size:13px; color:#166534;">
+            <i class="fa-solid fa-circle-check"></i> Payment karne ke baad neeche "Payment Done" button dabao
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="flex-direction: column; gap: 10px; padding: 0 24px 24px;">
+        <div id="paymentQrAmountRow" style="display:none; width:100%; text-align:left; margin-bottom:4px;">
+          <label style="font-size:13px; font-weight:600; color:var(--txt);">Payment Amount (₹)</label>
+          <input type="number" id="paymentQrAmount" class="form-control" placeholder="e.g. 500" min="1" style="margin-top:6px;">
+          <label style="font-size:13px; font-weight:600; color:var(--txt); margin-top:10px; display:block;">Narration / Note</label>
+          <input type="text" id="paymentQrNarration" class="form-control" placeholder="e.g. Invoice #INV-2026-001" style="margin-top:6px;">
+        </div>
+        <button id="paymentDoneBtn" class="btn btn-primary w-full" style="display:none;" onclick="recordQrPayment()">
+          <i class="fa-solid fa-check-circle"></i> Payment Done — Save Transaction
+        </button>
+        <button class="btn btn-secondary w-full" onclick="closeModal('paymentQrModal')">Close</button>
       </div>
     </div>
   </div>
@@ -4433,7 +4517,11 @@
           } else {
             const user = Object.assign({ id: snap.docs[0].id }, snap.docs[0].data());
             if (user.status && user.status !== 'Active') {
-              success({ success: false, message: 'Account is not active. Contact admin.' });
+              if (user.status === 'Blocked' || user.status === 'Inactive') {
+                success({ success: false, message: 'Account has been locked. Please contact your company manager or owner.' });
+              } else {
+                success({ success: false, message: 'Account is pending approval. Contact admin.' });
+              }
             } else {
               _logActivity('LOGIN', 'Auth', `User ${user.email} logged in`);
               success({ success: true, user });
@@ -5147,12 +5235,24 @@
         { col: 'notifications',    key: 'notifications' },
         { col: 'cylinderSecurity', key: 'cylinderSecurity' },
         { col: 'crmFollowups',     key: 'crmFollowups' },
-        { col: 'partyTypes',       key: 'partyTypes' }
+        { col: 'partyTypes',       key: 'partyTypes' },
+        { col: 'users',            key: 'users' }
       ];
 
       liveCollections.forEach(({ col, key }) => {
         _fbListeners[col] = db.collection(col).onSnapshot(snap => {
           App.data[key] = _snapToArr(snap);
+          
+          // Live check: Log out if current user becomes blocked or inactive
+          if (key === 'users' && App.currentUser) {
+            const myUser = App.data.users.find(u => u.id === App.currentUser.id);
+            if (myUser && myUser.status !== 'Active') {
+              showToast('Account has been locked. Please contact your company manager or owner.', 'error');
+              logout();
+              return;
+            }
+          }
+          
           if (!App.currentUser) return;
           // Debounced UI refresh to prevent rapid re-renders
           _debouncedRender(key, () => {
@@ -5166,6 +5266,7 @@
             else if (p === 'expenses') renderExpenses();
             else if (p === 'banking') renderBanking();
             else if (p === 'cylinderSecurity') renderSecurityDeposits();
+            else if (p === 'users') renderUsers();
             
             // Re-render followups if currently open for any party
             const followupPartyIdEl = document.getElementById('followupPartyId');
@@ -5601,6 +5702,32 @@
       });
     }
 
+    function updateOnlineStatus(isOnline) {
+      if (!App.currentUser) return;
+      db.collection('users').doc(App.currentUser.id).set({
+        isOnline: isOnline,
+        lastActive: new Date().toISOString()
+      }, { merge: true }).catch(() => {});
+    }
+
+    function startOnlineHeartbeat() {
+      updateOnlineStatus(true);
+      if (window.onlineHeartbeatInterval) clearInterval(window.onlineHeartbeatInterval);
+      window.onlineHeartbeatInterval = setInterval(() => {
+        updateOnlineStatus(true);
+      }, 30000); // 30 seconds
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (App.currentUser) {
+        updateOnlineStatus(document.visibilityState === 'visible');
+      }
+    });
+
+    window.addEventListener('beforeunload', () => {
+      updateOnlineStatus(false);
+    });
+
     // ---- RESTORE SESSION ON TAB OPEN / RELOAD ----
     function restoreUserSession(user) {
       App.currentUser = user;
@@ -5635,9 +5762,14 @@
       // Start real-time Firestore listeners so UI auto-updates across devices
       startRealtimeListeners();
       initializeApp();
+      startOnlineHeartbeat();
     }
 
     function logout() {
+      // Set online status to false
+      updateOnlineStatus(false);
+      if (window.onlineHeartbeatInterval) clearInterval(window.onlineHeartbeatInterval);
+
       // Stop all real-time Firestore listeners to prevent memory leaks
       Object.values(_fbListeners).forEach(unsub => { try { unsub(); } catch(e) {} });
       Object.keys(_fbListeners).forEach(k => delete _fbListeners[k]);
@@ -6820,33 +6952,20 @@
     }
 
     function sendEmailViaScript(to, subject, htmlBody, callback) {
-      const scriptUrl = App.data.companyProfile && App.data.companyProfile.googleScriptUrl;
-      if (!scriptUrl) {
-        console.warn("Google Apps Script URL is not configured. Email not sent.");
-        if (callback) callback({ success: false, message: "Apps Script URL not configured" });
-        return;
-      }
-      
-      const payload = {
-        action: 'sendEmail',
-        payload: {
-          to: to,
+      // Native Firebase Trigger Email: Writes to 'mail' collection in Firestore
+      db.collection('mail').add({
+        to: to,
+        message: {
           subject: subject,
-          htmlBody: htmlBody
+          html: htmlBody
         }
-      };
-      
-      fetch(scriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
       })
       .then(() => {
+        console.log("Email queued in Firebase 'mail' collection.");
         if (callback) callback({ success: true });
       })
       .catch(err => {
-        console.error("Email send failed:", err);
+        console.error("Firebase email queue failed:", err);
         if (callback) callback({ success: false, message: err.message });
       });
     }
@@ -11327,6 +11446,9 @@
       const body = document.getElementById('usersTableBody');
       body.innerHTML = '';
 
+      let onlineCount = 0;
+      const totalCount = App.data.users.length;
+
       App.data.users.forEach(u => {
         let linkedPartyText = '-';
         if (u.partyId) {
@@ -11338,11 +11460,27 @@
           }
         }
 
+        // Online check (within last 60 seconds)
+        const isOnline = u.isOnline && u.lastActive && ((new Date() - new Date(u.lastActive)) / 1000 < 60);
+        if (isOnline) onlineCount++;
+
+        const statusBadge = isOnline 
+          ? `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 11px; padding: 3px 6px; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;"><span style="width: 5px; height: 5px; background: #10B981; border-radius: 50%; display: inline-block;"></span> Live</span>`
+          : `<span class="badge" style="background: rgba(100, 116, 139, 0.08); color: #64748B; font-size: 11px; padding: 3px 6px;">Offline</span>`;
+
         body.innerHTML += `
           <tr>
             <td><strong>${u.id}</strong></td>
-            <td><strong>${u.name}</strong></td>
-            <td>${u.email}</td>
+            <td>
+              <strong>${u.name}</strong>
+              <div style="margin-top: 4px;">${statusBadge}</div>
+            </td>
+            <td>
+              ${u.email}
+              <div style="margin-top: 4px; font-size: 12px; color: var(--txt2);">
+                Pass: <strong style="color: var(--txt); font-family: monospace;">${u.passwordText || '••••••'}</strong>
+              </div>
+            </td>
             <td><span class="badge ${u.role === 'Admin' ? 'badge-primary' : 'badge-warning'}">${u.role}</span></td>
             <td>${linkedPartyText}</td>
             <td><span class="badge ${u.status === 'Active' ? 'badge-success' : (u.status === 'Pending' ? 'badge-warning' : 'badge-danger')}">${u.status}</span></td>
@@ -11354,6 +11492,126 @@
             </td>
           </tr>
         `;
+      });
+
+      // Update summary cards
+      const totalEl = document.getElementById('totalUsersCount');
+      const onlineEl = document.getElementById('onlineUsersCount');
+      if (totalEl) totalEl.textContent = totalCount;
+      if (onlineEl) onlineEl.textContent = onlineCount;
+    }
+
+    // ---- UPI / QR ONLINE PAYMENT HELPERS FOR PARTY CLIENT ----
+    function openPaymentQrModal() {
+      if (!App.currentUser || !App.currentUser.partyId) {
+        showToast("Error: No linked party found for this user account.", "error");
+        return;
+      }
+      
+      const cp = App.data.companyProfile || {};
+      const qrImage = document.getElementById('paymentQrImage');
+      const qrInfo = document.getElementById('paymentQrInfo');
+      const qrNotSet = document.getElementById('paymentQrNotSetMsg');
+      const qrAmountRow = document.getElementById('paymentQrAmountRow');
+      const paymentDoneBtn = document.getElementById('paymentDoneBtn');
+
+      if (cp.companyQrCode) {
+        qrImage.src = cp.companyQrCode;
+        qrImage.style.display = 'inline-block';
+        qrInfo.style.display = 'block';
+        qrNotSet.style.display = 'none';
+        qrAmountRow.style.display = 'block';
+        paymentDoneBtn.style.display = 'block';
+
+        // Pre-fill amount with outstanding dues (if positive)
+        let balance = 0;
+        const pid = App.currentUser.partyId;
+        const party = App.data.parties.find(p => p.id === pid);
+        if (party) {
+          balance = parseFloat(party.openingBalance || 0);
+          App.data.transactions.forEach(t => {
+            if (t.partyId === pid) {
+              balance += parseFloat(t.debit || 0) - parseFloat(t.credit || 0);
+            }
+          });
+        }
+        document.getElementById('paymentQrAmount').value = balance > 0 ? balance.toFixed(2) : '';
+        document.getElementById('paymentQrNarration').value = `UPI Payment from ${App.currentUser.name}`;
+      } else {
+        qrImage.style.display = 'none';
+        qrInfo.style.display = 'none';
+        qrNotSet.style.display = 'block';
+        qrAmountRow.style.display = 'none';
+        paymentDoneBtn.style.display = 'none';
+      }
+
+      openModal('paymentQrModal');
+    }
+
+    function recordQrPayment() {
+      const amtVal = document.getElementById('paymentQrAmount').value;
+      const amt = parseFloat(amtVal || 0);
+      if (!amtVal || isNaN(amt) || amt <= 0) {
+        showToast("Please enter a valid payment amount (> 0)", "warning");
+        return;
+      }
+
+      const narration = document.getElementById('paymentQrNarration').value || "UPI Payment";
+      const pid = App.currentUser.partyId;
+      const party = App.data.parties.find(p => p.id === pid);
+      if (!party) {
+        showToast("Error: Linked party not found.", "error");
+        return;
+      }
+
+      const type = 'Receipt';
+      const prefix = App.data.companyProfile.receiptPrefix || 'REC';
+      const count = App.data.transactions.filter(t => t.txnType === type).length + 1;
+      const vNo = `${prefix}-${new Date().getFullYear()}-${count.toString().padStart(3, '0')}`;
+      const finalId = 'TXN_' + _fbId();
+
+      const payload = {
+        id: finalId,
+        date: new Date().toISOString().split('T')[0],
+        voucherNo: vNo,
+        partyId: party.id,
+        partyName: party.name,
+        description: `Online UPI Payment - ${narration}`,
+        txnType: type,
+        debit: 0,
+        credit: amt,
+        paymentMode: 'Bank',
+        bankAccountId: 'BA002', // Default to Bank Account
+        bankRef: 'UPI Online Payment',
+        linkedInvoice: '',
+        enteredBy: App.currentUser.id,
+        enteredOn: new Date().toISOString(),
+        receivedBy: App.currentUser.name,
+        receivedByRole: App.currentUser.role,
+        proofUrl: ""
+      };
+
+      showLoading(true, "Recording your payment...");
+      callServer('saveReceipt', payload, function(res) {
+        showLoading(false);
+        if (res.success) {
+          showToast(`Payment of ₹${amt.toFixed(2)} recorded successfully!`, "success");
+          closeModal('paymentQrModal');
+          
+          // Send automatic notification to Admin
+          const notifId = 'NOTIF_' + _fbId();
+          const notif = {
+            id: notifId,
+            title: 'Online UPI Payment Received',
+            message: `Party "${party.name}" has paid ₹${amt.toFixed(2)} via UPI. Voucher: ${vNo}`,
+            type: 'System',
+            read: false,
+            timestamp: new Date().toISOString()
+          };
+          db.collection('notifications').doc(notifId).set(notif).catch(e => console.warn(e));
+        } else {
+          showToast(res.message || "Failed to record payment", "error");
+        }
       });
     }
 
@@ -11418,6 +11676,7 @@
         name: party.name,
         email: email,
         passwordHash: simpleHash(password),
+        passwordText: password,
         role: 'Party',
         status: status,
         partyId: partyId,
@@ -11442,15 +11701,12 @@
         if (res.success) {
           showToast(`Login credentials created successfully for ${party.name}!`, 'success');
           
-          // Send welcome email if Google Apps Script URL is configured
-          const scriptUrl = App.data.companyProfile && App.data.companyProfile.googleScriptUrl;
-          if (scriptUrl) {
-            const companyName = App.data.companyProfile.companyName || 'Gas Agency';
-            const companyLogo = App.data.companyProfile.companyLogo || '';
-            const appLink = window.location.href.split('#')[0];
-            const htmlBody = getWelcomeEmailTemplate(party.name, email, password, companyName, companyLogo, appLink);
-            sendEmailViaScript(email, `Welcome to ${companyName} - Login Credentials`, htmlBody);
-          }
+          // Send welcome email via FirebaseTrigger Email collection
+          const companyName = App.data.companyProfile.companyName || 'Gas Agency';
+          const companyLogo = App.data.companyProfile.companyLogo || '';
+          const appLink = window.location.href.split('#')[0];
+          const htmlBody = getWelcomeEmailTemplate(party.name, email, password, companyName, companyLogo, appLink);
+          sendEmailViaScript(email, `Welcome to ${companyName} - Login Credentials`, htmlBody);
           
           closeModal('quickPartyLoginModal');
           syncAllData(null, ['Users']); // Silent refresh users sheet
@@ -11541,9 +11797,13 @@
 
         if (pass) {
           payload.passwordHash = simpleHash(pass);
+          payload.passwordText = pass;
         } else {
           const oldUser = App.data.users.find(x => x.id === id);
-          if(oldUser) payload.passwordHash = oldUser.passwordHash;
+          if(oldUser) {
+            payload.passwordHash = oldUser.passwordHash;
+            payload.passwordText = oldUser.passwordText || '';
+          }
         }
 
         showLoading(true, 'Saving user details...');
@@ -11554,14 +11814,11 @@
           
           // Send welcome email if new Party user and password provided
           if (payload.role === 'Party' && pass) {
-            const scriptUrl = App.data.companyProfile && App.data.companyProfile.googleScriptUrl;
-            if (scriptUrl) {
-              const companyName = App.data.companyProfile.companyName || 'Gas Agency';
-              const companyLogo = App.data.companyProfile.companyLogo || '';
-              const appLink = window.location.href.split('#')[0];
-              const htmlBody = getWelcomeEmailTemplate(payload.name, payload.email, pass, companyName, companyLogo, appLink);
-              sendEmailViaScript(payload.email, `Welcome to ${companyName} - Login Credentials`, htmlBody);
-            }
+            const companyName = App.data.companyProfile.companyName || 'Gas Agency';
+            const companyLogo = App.data.companyProfile.companyLogo || '';
+            const appLink = window.location.href.split('#')[0];
+            const htmlBody = getWelcomeEmailTemplate(payload.name, payload.email, pass, companyName, companyLogo, appLink);
+            sendEmailViaScript(payload.email, `Welcome to ${companyName} - Login Credentials`, htmlBody);
           }
           
           syncAllData(renderUsers, ["Users"]);
@@ -11656,7 +11913,7 @@
       document.getElementById('setInvoicePrefix').value = cp.invoicePrefix || 'INV';
       document.getElementById('setCompanyLogo').value = cp.companyLogo || '';
       document.getElementById('setCompanyTerms').value = cp.termsAndConditions || '';
-      document.getElementById('setCompanyScriptUrl').value = cp.googleScriptUrl || '';
+      document.getElementById('setCompanyQrCode').value = cp.companyQrCode || '';
 
       // Update Logo Preview UI
       if (cp.companyLogo) {
@@ -11669,6 +11926,19 @@
         document.getElementById('logoPreviewImg').style.display = 'none';
         document.getElementById('logoPlaceholder').style.display = 'flex';
         document.getElementById('btnRemoveLogo').style.display = 'none';
+      }
+
+      // Update QR Preview UI
+      if (cp.companyQrCode) {
+        document.getElementById('qrPreviewImg').src = cp.companyQrCode;
+        document.getElementById('qrPreviewImg').style.display = 'block';
+        document.getElementById('qrPlaceholder').style.display = 'none';
+        document.getElementById('btnRemoveQr').style.display = 'inline-flex';
+      } else {
+        document.getElementById('qrPreviewImg').src = '';
+        document.getElementById('qrPreviewImg').style.display = 'none';
+        document.getElementById('qrPlaceholder').style.display = 'flex';
+        document.getElementById('btnRemoveQr').style.display = 'none';
       }
 
       // Load activity logs
@@ -11756,6 +12026,44 @@
       document.getElementById('logoUploadInput').value = '';
     }
 
+    function handleQrUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (!file.type.startsWith('image/')) { showToast('Please select a valid image file', 'error'); return; }
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const maxW = 400; const maxH = 400;
+          let w = img.width; let h = img.height;
+          if (w > maxW || h > maxH) { if (w > h) { h = Math.round((h * maxW) / w); w = maxW; } else { w = Math.round((w * maxH) / h); h = maxH; } }
+          canvas.width = w; canvas.height = h;
+          ctx.fillStyle = '#FFFFFF'; ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          const base64Data = canvas.toDataURL('image/png', 0.9);
+          document.getElementById('setCompanyQrCode').value = base64Data;
+          const previewImg = document.getElementById('qrPreviewImg');
+          previewImg.src = base64Data;
+          previewImg.style.display = 'block';
+          document.getElementById('qrPlaceholder').style.display = 'none';
+          document.getElementById('btnRemoveQr').style.display = 'inline-flex';
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function removeUploadedQr() {
+      document.getElementById('setCompanyQrCode').value = '';
+      document.getElementById('qrPreviewImg').src = '';
+      document.getElementById('qrPreviewImg').style.display = 'none';
+      document.getElementById('qrPlaceholder').style.display = 'flex';
+      document.getElementById('btnRemoveQr').style.display = 'none';
+      document.getElementById('qrUploadInput').value = '';
+    }
+
     function saveCompanySettings(e) {
       e.preventDefault();
       const payload = {
@@ -11766,8 +12074,8 @@
         companyEmail: document.getElementById('setCompanyEmail').value,
         invoicePrefix: document.getElementById('setInvoicePrefix').value,
         companyLogo: document.getElementById('setCompanyLogo').value,
-        termsAndConditions: document.getElementById('setCompanyTerms').value,
-        googleScriptUrl: document.getElementById('setCompanyScriptUrl').value || ''
+        companyQrCode: document.getElementById('setCompanyQrCode').value || '',
+        termsAndConditions: document.getElementById('setCompanyTerms').value
       };
 
       callServer('saveSettings', payload, function() {
