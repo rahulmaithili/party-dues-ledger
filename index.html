@@ -49,6 +49,7 @@
     db.enablePersistence({ synchronizeTabs: true }).catch(() => {});
     // Active real-time unsubscribe handles
     const _fbListeners = {};
+    window.tempAvatars = { profile: null, userForm: null };
   </script>
   
   <style>
@@ -5801,6 +5802,7 @@
       document.getElementById('profileAvatarUrl').value = App.currentUser.avatarUrl || '';
       document.getElementById('profileNewPassword').value = '';
       document.getElementById('profilePhotoInput').value = '';
+      window.tempAvatars.profile = null;
 
       const avatarDiv = document.getElementById('profileModalAvatar');
       if (App.currentUser.avatarUrl) {
@@ -5812,6 +5814,35 @@
       openModal('myProfileModal');
     }
 
+    function resizeImageToUrl(file, maxDim, callback) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          ctx.drawImage(img, 0, 0, w, h);
+          const base64Data = canvas.toDataURL('image/jpeg', 0.8);
+          callback(base64Data);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
     function handleProfilePhotoChange(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -5820,11 +5851,12 @@
         e.target.value = '';
         return;
       }
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        document.getElementById('profileModalAvatar').innerHTML = `<img src="${evt.target.result}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-      };
-      reader.readAsDataURL(file);
+      showLoading(true, 'Processing photo...');
+      resizeImageToUrl(file, 200, function(resizedBase64) {
+        showLoading(false);
+        window.tempAvatars.profile = resizedBase64;
+        document.getElementById('profileModalAvatar').innerHTML = `<img src="${resizedBase64}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+      });
     }
 
     function saveMyProfile(e) {
@@ -5870,17 +5902,9 @@
         });
       };
 
-      if (fileInput.files && fileInput.files[0]) {
-        const file = fileInput.files[0];
-        if (file.size < 200 * 1024 || file.size > 5 * 1024 * 1024) {
-          showToast('Profile photo size must be between 200 KB and 5 MB', 'error');
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          proceedProfileSave(evt.target.result, file.name, file.type);
-        };
-        reader.readAsDataURL(file);
+      if (window.tempAvatars.profile) {
+        proceedProfileSave(window.tempAvatars.profile, 'avatar.jpg', 'image/jpeg');
+        window.tempAvatars.profile = null; // Clear after use
       } else {
         proceedProfileSave(null, null, null);
       }
@@ -11753,11 +11777,12 @@
         e.target.value = '';
         return;
       }
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        document.getElementById('userFormAvatarPreview').innerHTML = `<img src="${evt.target.result}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
-      };
-      reader.readAsDataURL(file);
+      showLoading(true, 'Processing photo...');
+      resizeImageToUrl(file, 200, function(resizedBase64) {
+        showLoading(false);
+        window.tempAvatars.userForm = resizedBase64;
+        document.getElementById('userFormAvatarPreview').innerHTML = `<img src="${resizedBase64}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+      });
     }
 
     function openUserModal() {
@@ -11769,6 +11794,7 @@
       document.getElementById('userPassword').required = true;
       document.getElementById('userPasswordLabel').textContent = 'Password *';
       document.getElementById('userModalTitle').textContent = 'Add System User';
+      window.tempAvatars.userForm = null;
       handleUserRoleToggle();
       openModal('userModal');
     }
@@ -11838,17 +11864,9 @@
         });
       };
 
-      if (fileInput.files && fileInput.files[0]) {
-        const file = fileInput.files[0];
-        if (file.size < 200 * 1024 || file.size > 5 * 1024 * 1024) {
-          showToast('User photo size must be between 200 KB and 5 MB', 'error');
-          return;
-        }
-        const reader = new FileReader();
-        reader.onload = function(evt) {
-          proceedUserSave(evt.target.result, file.name, file.type);
-        };
-        reader.readAsDataURL(file);
+      if (window.tempAvatars.userForm) {
+        proceedUserSave(window.tempAvatars.userForm, 'avatar.jpg', 'image/jpeg');
+        window.tempAvatars.userForm = null; // Clear after use
       } else {
         proceedUserSave(null, null, null);
       }
@@ -11865,6 +11883,7 @@
       document.getElementById('userStatus').value = u.status;
       document.getElementById('userAvatarUrl').value = u.avatarUrl || '';
       document.getElementById('userPhotoInput').value = '';
+      window.tempAvatars.userForm = null;
       
       const avatarPreview = document.getElementById('userFormAvatarPreview');
       if (u.avatarUrl) {
