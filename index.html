@@ -1550,6 +1550,9 @@
           <a class="menu-item hide-for-party" data-page="products" data-label="Products & Stock" onclick="navigateTo('products')">
             <i class="fa-solid fa-box"></i> Products & Stock
           </a>
+          <a class="menu-item hide-for-party" data-page="priceHistory" data-label="Price History" onclick="navigateTo('priceHistory')">
+            <i class="fa-solid fa-clock-rotate-left"></i> Product Price History
+          </a>
           <a class="menu-item party-only" data-page="partyLedgerView" data-label="My Statement" onclick="openMyLedgerView()">
             <i class="fa-solid fa-file-invoice"></i> My Statement
           </a>
@@ -2006,6 +2009,67 @@
 
           <div class="kpi-grid" id="productsGridContainer" style="display: none; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 20px;">
             <!-- Grid cards will be populated here -->
+          </div>
+        </section>
+
+        <!-- ==================== PRODUCT PRICE HISTORY MANAGER MODULE ==================== -->
+        <section id="priceHistory" class="page">
+          <div class="page-header">
+            <div class="page-title">
+              <h2>Product Price History Manager</h2>
+              <p>Add historical price records, update prices, and view historical price logs for each cylinder/product</p>
+            </div>
+          </div>
+
+          <div class="dashboard-grid" style="display: grid; grid-template-columns: 1fr; gap: 20px;">
+            <div class="dashboard-card" style="padding: 24px;">
+              <h3 style="margin-top: 0; margin-bottom: 20px; font-weight: 700; color: var(--pri);">Add Historical Price Record</h3>
+              <form id="priceHistoryForm" onsubmit="savePriceHistoryRecord(event)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 120px; gap: 16px; align-items: flex-end;">
+                <div class="form-group" style="margin: 0;">
+                  <label for="historyProductId" style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--txt);">Select Product *</label>
+                  <select id="historyProductId" class="light-form-control" required onchange="loadProductPriceHistoryPageData()"></select>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label for="historyDate" style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--txt);">Record Date *</label>
+                  <input type="date" id="historyDate" class="light-form-control" required>
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label for="historyPurchaseRate" style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--txt);">Purchase Price (₹) *</label>
+                  <input type="number" step="0.01" id="historyPurchaseRate" class="light-form-control" required placeholder="0.00">
+                </div>
+                <div class="form-group" style="margin: 0;">
+                  <label for="historySaleRate" style="display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--txt);">Sale Price (₹) *</label>
+                  <input type="number" step="0.01" id="historySaleRate" class="light-form-control" required placeholder="0.00">
+                </div>
+                <button type="submit" class="btn btn-accent" style="height: 42px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-weight: 600;">
+                  <i class="fa-solid fa-plus"></i> Add
+                </button>
+              </form>
+            </div>
+
+            <div class="dashboard-card" style="padding: 24px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <h3 style="margin: 0; font-weight: 700; color: var(--txt);" id="historyLogTitle">Price History Log</h3>
+              </div>
+              <div class="table-container">
+                <table>
+                  <thead>
+                    <tr>
+                      <th class="text-center" style="width: 25%;">Date</th>
+                      <th class="text-right" style="width: 25%;">Purchase Price (₹)</th>
+                      <th class="text-right" style="width: 25%;">Sale Price (₹)</th>
+                      <th style="width: 20%;">Updated By</th>
+                      <th class="text-center" style="width: 10%;">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="priceHistoryPageTableBody">
+                    <tr>
+                      <td colspan="5" class="text-center text-secondary" style="padding: 20px;">Please select a product above to view price history logs.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -5845,6 +5909,7 @@
       if (pageId === 'banking') renderBanking();
       if (pageId === 'returns') renderReturns();
       if (pageId === 'cylinderSecurity') renderSecurityDeposits();
+      if (pageId === 'priceHistory') loadProductPriceHistoryPageData();
       if (pageId === 'reports') {
         const today = new Date().toISOString().split('T')[0];
         const firstDay = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
@@ -6251,6 +6316,15 @@
         initSearchableDropdown(id);
       });
       populatePartyFilterTypeDropdown();
+
+      // Populate Product select in Price History Page
+      const historyProdSelect = document.getElementById('historyProductId');
+      if (historyProdSelect) {
+        historyProdSelect.innerHTML = '<option value="">-- Choose Cylinder / Product --</option>';
+        App.data.products.forEach(p => {
+          historyProdSelect.innerHTML += `<option value="${p.id}">${p.name} (${p.category})</option>`;
+        });
+      }
     }
 
     // ==================== DASHBOARD MODULE ====================
@@ -8049,7 +8123,6 @@
 
       const history = p.priceHistory || [];
       if (history.length === 0) {
-        // Fallback: If no history, add current price as the first entry
         const entryDate = formatDate(new Date().toISOString().split('T')[0]);
         body.innerHTML = `
           <tr>
@@ -8060,7 +8133,6 @@
           </tr>
         `;
       } else {
-        // Sort price history from newest to oldest
         const sortedHistory = [...history].reverse();
         let html = '';
         sortedHistory.forEach(h => {
@@ -8077,6 +8149,153 @@
       }
 
       openModal('productPriceHistoryModal');
+    }
+
+    function loadProductPriceHistoryPageData() {
+      const pid = document.getElementById('historyProductId').value;
+      const body = document.getElementById('priceHistoryPageTableBody');
+      const title = document.getElementById('historyLogTitle');
+      
+      if (!pid) {
+        title.textContent = 'Price History Log';
+        body.innerHTML = '<tr><td colspan="5" class="text-center text-secondary" style="padding: 20px;">Please select a product above to view price history logs.</td></tr>';
+        document.getElementById('historyDate').value = '';
+        document.getElementById('historyPurchaseRate').value = '';
+        document.getElementById('historySaleRate').value = '';
+        return;
+      }
+
+      const p = App.data.products.find(x => x.id === pid);
+      if (!p) return;
+
+      title.textContent = `Price History Log: ${p.name}`;
+      
+      // Prefill rates with current product rate for quick edits
+      document.getElementById('historyDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('historyPurchaseRate').value = p.purchaseRate || 0;
+      document.getElementById('historySaleRate').value = p.saleRate || 0;
+
+      body.innerHTML = '';
+      const history = p.priceHistory || [];
+      if (history.length === 0) {
+        const entryDate = formatDate(new Date().toISOString().split('T')[0]);
+        body.innerHTML = `
+          <tr>
+            <td class="text-center">${entryDate}</td>
+            <td class="text-right">${formatCurrency(p.purchaseRate || 0)}</td>
+            <td class="text-right">${formatCurrency(p.saleRate || 0)}</td>
+            <td>Initial Setup</td>
+            <td class="text-center">--</td>
+          </tr>
+        `;
+      } else {
+        const sortedHistory = [...history].reverse();
+        let html = '';
+        sortedHistory.forEach((h, reverseIdx) => {
+          // Find original index in chronological array to delete correctly
+          const originalIdx = history.indexOf(h);
+          html += `
+            <tr>
+              <td class="text-center">${h.date || '--'}</td>
+              <td class="text-right">${formatCurrency(h.purchaseRate || 0)}</td>
+              <td class="text-right">${formatCurrency(h.saleRate || 0)}</td>
+              <td>${h.updatedBy || 'Admin'}</td>
+              <td class="text-center">
+                <button class="btn btn-icon admin-only" onclick="deletePriceHistoryRecord('${p.id}', ${originalIdx})" style="color:var(--dan);" title="Delete Entry"><i class="fa-solid fa-trash"></i></button>
+              </td>
+            </tr>
+          `;
+        });
+        body.innerHTML = html;
+      }
+    }
+
+    function savePriceHistoryRecord(e) {
+      e.preventDefault();
+      const pid = document.getElementById('historyProductId').value;
+      if (!pid) {
+        showToast('Please select a product first', 'warning');
+        return;
+      }
+
+      const p = App.data.products.find(x => x.id === pid);
+      if (!p) return;
+
+      const dateVal = document.getElementById('historyDate').value;
+      const purchaseVal = parseFloat(document.getElementById('historyPurchaseRate').value || 0);
+      const saleVal = parseFloat(document.getElementById('historySaleRate').value || 0);
+
+      const formattedDate = formatDate(dateVal);
+      const updaterName = (App.currentUser && App.currentUser.name) ? App.currentUser.name : 'System';
+
+      const newEntry = {
+        date: formattedDate,
+        purchaseRate: purchaseVal,
+        saleRate: saleVal,
+        updatedBy: updaterName
+      };
+
+      const history = p.priceHistory ? [...p.priceHistory] : [];
+      
+      // Reconstruct initial entry if empty
+      if (history.length === 0) {
+        history.push({
+          date: formatDate(new Date().toISOString().split('T')[0]),
+          purchaseRate: p.purchaseRate || 0,
+          saleRate: p.saleRate || 0,
+          updatedBy: 'Initial Setup'
+        });
+      }
+
+      // Add new entry and sort chronologically by date
+      history.push(newEntry);
+      history.sort((a, b) => parseDate(a.date) - parseDate(b.date));
+
+      // Also update the current product rates to match the latest chronological rate!
+      const latestRate = history[history.length - 1];
+      p.purchaseRate = latestRate.purchaseRate;
+      p.saleRate = latestRate.saleRate;
+      p.priceHistory = history;
+
+      showLoading(true, 'Saving historical record...');
+      callServer('saveProduct', p, function() {
+        showLoading(false);
+        showToast('Price history record saved successfully', 'success');
+        syncAllData(() => {
+          loadProductPriceHistoryPageData();
+          renderProducts();
+        }, ["Products"]);
+      });
+    }
+
+    function deletePriceHistoryRecord(productId, originalIdx) {
+      const p = App.data.products.find(x => x.id === productId);
+      if (!p) return;
+
+      if (!confirm('Are you sure you want to delete this price history entry?')) return;
+
+      const history = p.priceHistory ? [...p.priceHistory] : [];
+      if (originalIdx >= 0 && originalIdx < history.length) {
+        history.splice(originalIdx, 1);
+      }
+
+      // Update current rates to match latest remaining entry if history isn't empty
+      if (history.length > 0) {
+        const latestRate = history[history.length - 1];
+        p.purchaseRate = latestRate.purchaseRate;
+        p.saleRate = latestRate.saleRate;
+      }
+      p.priceHistory = history;
+
+      showLoading(true, 'Deleting price record...');
+      callServer('saveProduct', p, function() {
+        showLoading(false);
+        showToast('Price history record deleted successfully', 'success');
+        syncAllData(() => {
+          loadProductPriceHistoryPageData();
+          renderProducts();
+        }, ["Products"]);
+      });
     }
 
     function editProduct(id) {
