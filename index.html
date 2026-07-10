@@ -11960,12 +11960,21 @@
           ? `<span class="badge" style="background: rgba(16, 185, 129, 0.12); color: #10B981; border: 1px solid rgba(16, 185, 129, 0.25); font-size: 11px; padding: 3px 6px; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;"><span style="width: 5px; height: 5px; background: #10B981; border-radius: 50%; display: inline-block;"></span> Live</span>`
           : `<span class="badge" style="background: rgba(100, 116, 139, 0.08); color: #64748B; font-size: 11px; padding: 3px 6px;">Offline</span>`;
 
+        const avatarHtml = u.avatarUrl 
+          ? `<img src="${toDirectDriveLink(u.avatarUrl)}" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid var(--brd);" />`
+          : `<div class="user-avatar" style="width: 38px; height: 38px; font-size: 15px; display: inline-flex; align-items: center; justify-content: center; background: var(--bg2); color: var(--txt); border-radius: 50%; font-weight: 700; border: 2px solid var(--brd);">${(u.name || 'U').charAt(0).toUpperCase()}</div>`;
+
         body.innerHTML += `
           <tr>
             <td><strong>${u.id}</strong></td>
             <td>
-              <strong>${u.name}</strong>
-              <div style="margin-top: 4px;">${statusBadge}</div>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                ${avatarHtml}
+                <div>
+                  <strong style="font-size: 14.5px;">${u.name}</strong>
+                  <div style="margin-top: 4px;">${statusBadge}</div>
+                </div>
+              </div>
             </td>
             <td>
               ${u.email}
