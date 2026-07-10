@@ -7902,13 +7902,14 @@
         return;
       }
 
+      let html = '';
       list.forEach(t => {
         const sub = t.totals && t.totals.subTotal ? parseFloat(t.totals.subTotal) : parseFloat(t.debit);
         const tax = t.totals && t.totals.cgst ? (parseFloat(t.totals.cgst) + parseFloat(t.totals.sgst)) : 0;
         const grand = t.totals && t.totals.grandTotal ? parseFloat(t.totals.grandTotal) : parseFloat(t.debit);
         const due = t.totals && t.totals.balanceDue ? parseFloat(t.totals.balanceDue) : 0;
 
-        body.innerHTML += `
+        html += `
           <tr>
             <td class="admin-only" style="text-align: center;"><input type="checkbox" class="sales-select-checkbox" data-id="${t.id}" onchange="updateSelectedSalesCount()" style="width: 16px; height: 16px; cursor: pointer;"></td>
             <td><strong>${t.voucherNo}</strong></td>
@@ -7929,8 +7930,7 @@
           </tr>
         `;
       });
-
-
+      body.innerHTML = html;
     }
 
     function renderPurchases() {
@@ -7945,13 +7945,14 @@
         return;
       }
 
+      let html = '';
       list.forEach(t => {
         const sub = t.totals && t.totals.subTotal ? parseFloat(t.totals.subTotal) : parseFloat(t.credit);
         const tax = t.totals && t.totals.cgst ? (parseFloat(t.totals.cgst) + parseFloat(t.totals.sgst)) : 0;
         const grand = t.totals && t.totals.grandTotal ? parseFloat(t.totals.grandTotal) : parseFloat(t.credit);
         const due = t.totals && t.totals.balanceDue ? parseFloat(t.totals.balanceDue) : 0;
 
-        body.innerHTML += `
+        html += `
           <tr>
             <td><strong>${t.voucherNo}</strong></td>
             <td>${formatDate(t.date)}</td>
@@ -7971,8 +7972,7 @@
           </tr>
         `;
       });
-
-
+      body.innerHTML = html;
     }
 
     function openInvoiceModal(type, preselectedPartyId) {
@@ -8433,10 +8433,11 @@
         return;
       }
 
+      let html = '';
       list.forEach(t => {
         const amt = t.txnType === 'Receipt' ? parseFloat(t.credit || 0) : parseFloat(t.debit || 0);
 
-        body.innerHTML += `
+        html += `
           <tr>
             <td><strong>${t.voucherNo || t.id}</strong></td>
             <td>${formatDate(t.date)}</td>
@@ -8458,8 +8459,7 @@
           </tr>
         `;
       });
-
-
+      body.innerHTML = html;
     }
 
     function openReceiptModal(type, preselectedPartyId) {
