@@ -1726,6 +1726,57 @@
               </div>
             </div>
 
+            <div class="dashboard-grid" style="margin-top: 20px;">
+              <div class="dashboard-card">
+                <div class="card-header">
+                  <h3>Top Parties with Highest Dues</h3>
+                </div>
+                <div style="max-height: 320px; overflow-y: auto;">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Party Name</th>
+                          <th style="width:25%;">Type</th>
+                          <th class="text-right" style="width:30%;">Balance (₹)</th>
+                          <th class="text-center" style="width:15%;">Remind</th>
+                        </tr>
+                      </thead>
+                      <tbody id="topDuesBody">
+                        <tr>
+                          <td colspan="4" class="text-center">No outstanding dues.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="dashboard-card">
+                <div class="card-header">
+                  <h3>Cylinder / Product Stock Summary</h3>
+                </div>
+                <div style="max-height: 320px; overflow-y: auto;">
+                  <div class="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Product Name</th>
+                          <th>Category</th>
+                          <th class="text-right">Available Stock</th>
+                        </tr>
+                      </thead>
+                      <tbody id="quickStockBody">
+                        <tr>
+                          <td colspan="3" class="text-center">No stock items available.</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="dashboard-card" style="margin-top: 20px;">
               <div class="card-header">
                 <h3>Recent Transactions</h3>
@@ -4105,11 +4156,28 @@
       return url;
     }
 
+    function parseDate(dateStr) {
+      if (!dateStr) return new Date();
+      if (typeof dateStr === 'string' && dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if (parts.length === 3) {
+          if (parts[2].length === 4) {
+            // DD-MM-YYYY
+            return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+          } else if (parts[0].length === 4) {
+            // YYYY-MM-DD
+            return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          }
+        }
+      }
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? new Date() : d;
+    }
+
     function formatDate(dateStr) {
       if (!dateStr) return '--';
       try {
-        const d = new Date(dateStr);
-        if (isNaN(d.getTime())) return dateStr;
+        const d = parseDate(dateStr);
         const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         return `${d.getDate().toString().padStart(2, '0')}-${months[d.getMonth()]}-${d.getFullYear()}`;
       } catch(e) {
@@ -6278,7 +6346,7 @@
 
         // Transactions calculations
         App.data.transactions.forEach(t => {
-          const d = new Date(t.date);
+          const d = parseDate(t.date);
           const grandTotal = t.totals && t.totals.grandTotal ? parseFloat(t.totals.grandTotal) : 0;
           
           if (t.txnType === 'Sale' && d.getMonth() === thisMonth && d.getFullYear() === thisYear) {
@@ -6343,10 +6411,69 @@
           });
         }
 
+        // --- NEW FEATURE: Top 5 Parties with Highest Dues ---
+        const topDuesBody = document.getElementById('topDuesBody');
+        topDuesBody.innerHTML = '';
+        const outstandingParties = App.data.parties.map(p => {
+          return {
+            id: p.id,
+            name: p.name,
+            type: p.type,
+            balance: partyBalance[p.id] || 0
+          };
+        })
+        .filter(p => p.balance > 0) // only debtors (who owe money)
+        .sort((a, b) => b.balance - a.balance)
+        .slice(0, 5);
+
+        if (outstandingParties.length === 0) {
+          topDuesBody.innerHTML = '<tr><td colspan="4" class="text-center text-secondary">No outstanding dues.</td></tr>';
+        } else {
+          outstandingParties.forEach(p => {
+            const displayType = getPartyBaseType(p) === 'Customer' ? 'badge-primary' : 'badge-warning';
+            topDuesBody.innerHTML += `
+              <tr>
+                <td><strong>${p.name}</strong></td>
+                <td><span class="badge ${displayType}">${p.type}</span></td>
+                <td class="text-right" style="font-weight:700; color:var(--dan);">${formatCurrency(p.balance)}</td>
+                <td class="text-center">
+                  <button class="btn btn-icon" onclick="sendWhatsAppReminder('${p.id}')" style="color:#25D366; font-size:14px; border:none; background:none; cursor:pointer;" title="Send Reminder">
+                    <i class="fa-brands fa-whatsapp"></i>
+                  </button>
+                </td>
+              </tr>
+            `;
+          });
+        }
+
+        // --- NEW FEATURE: Cylinder / Product Stock Summary ---
+        const quickStockBody = document.getElementById('quickStockBody');
+        quickStockBody.innerHTML = '';
+        const sortedProducts = [...App.data.products].sort((a,b) => b.stock - a.stock);
+        if (sortedProducts.length === 0) {
+          quickStockBody.innerHTML = '<tr><td colspan="3" class="text-center text-secondary">No products available.</td></tr>';
+        } else {
+          sortedProducts.forEach(p => {
+            const stockVal = parseFloat(p.stock || 0);
+            const minVal = parseFloat(p.minStock || 0);
+            let stockColor = 'var(--suc)';
+            if (stockVal <= minVal) stockColor = 'var(--dan)';
+            else if (stockVal <= minVal * 2) stockColor = 'var(--war)';
+
+            quickStockBody.innerHTML += `
+              <tr>
+                <td><strong>${p.name}</strong></td>
+                <td><span class="badge badge-secondary" style="font-size:10px;">${p.category || 'General'}</span></td>
+                <td class="text-right" style="font-weight:700; color:${stockColor};">${p.stock} ${p.unit}</td>
+              </tr>
+            `;
+          });
+        }
+
         // Recent Transactions table
         const recentTxnsBody = document.getElementById('recentTxnsBody');
         recentTxnsBody.innerHTML = '';
-        const recentTxns = [...App.data.transactions].sort((a,b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
+        const recentTxns = [...App.data.transactions].sort((a,b) => parseDate(b.date) - parseDate(a.date)).slice(0, 8);
         
         if (recentTxns.length === 0) {
           recentTxnsBody.innerHTML = '<tr><td colspan="6" class="text-center">No transactions recorded yet.</td></tr>';
@@ -6384,7 +6511,7 @@
       const currentYear = new Date().getFullYear();
 
       App.data.transactions.forEach(t => {
-        const d = new Date(t.date);
+        const d = parseDate(t.date);
         if (d.getFullYear() === currentYear) {
           const m = d.getMonth();
           const amount = t.totals && t.totals.grandTotal ? parseFloat(t.totals.grandTotal) : 0;
@@ -8715,7 +8842,7 @@
       });
 
       const cardsGrid = document.getElementById('expenseSummaryGrid');
-      cardsGrid.innerHTML = `
+      let gridHtml = `
         <div class="kpi-card" style="border-left:4px solid var(--dan)">
           <div class="kpi-details">
             <h3>Grand Total Expenses</h3>
@@ -8724,7 +8851,7 @@
         </div>
       `;
       Object.keys(catTotals).forEach(cat => {
-        cardsGrid.innerHTML += `
+        gridHtml += `
           <div class="kpi-card">
             <div class="kpi-details">
               <h3>${cat}</h3>
@@ -8733,14 +8860,16 @@
           </div>
         `;
       });
+      cardsGrid.innerHTML = gridHtml;
 
       if (list.length === 0) {
         body.innerHTML = '<tr><td colspan="7" class="text-center">No expense entries found.</td></tr>';
         return;
       }
 
+      let tableHtml = '';
       list.forEach(e => {
-        body.innerHTML += `
+        tableHtml += `
           <tr>
             <td><strong>${e.id}</strong></td>
             <td>${formatDate(e.date)}</td>
@@ -8757,8 +8886,7 @@
           </tr>
         `;
       });
-
-
+      body.innerHTML = tableHtml;
     }
 
     function openExpenseModal() {
