@@ -6920,6 +6920,8 @@
             partyName: party.name,
             description: description,
             txnType: txnType,
+            debit: txnType === 'Sale' || txnType === 'Payment' ? amount : 0,
+            credit: txnType === 'Purchase' || txnType === 'Receipt' ? amount : 0,
             amount: amount,
             paymentMode: paymentMode || 'Cash',
             bankAccountId: bankAccountId,
