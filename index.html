@@ -5955,7 +5955,7 @@
 
     function handleLogin(e) {
       e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
+      const email = document.getElementById('loginEmail').value.trim().toLowerCase();
       const pass = document.getElementById('loginPassword').value;
       const passwordHash = simpleHash(pass);
 
@@ -13012,7 +13012,7 @@
         const payload = {
           id: id,
           name: document.getElementById('userFullName').value,
-          email: document.getElementById('userEmail').value,
+          email: document.getElementById('userEmail').value.trim().toLowerCase(),
           role: document.getElementById('userRole').value,
           status: document.getElementById('userStatus').value,
           partyId: document.getElementById('userPartyId').value || '',
