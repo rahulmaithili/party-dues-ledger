@@ -5495,9 +5495,12 @@
     // ===================================================================
     // Debounce helper for realtime listener UI refresh
     const _renderDebounce = {};
-    function _debouncedRender(key, fn, delay = 300) {
+    function _debouncedRender(key, fn, delay = 1200) {
       clearTimeout(_renderDebounce[key]);
-      _renderDebounce[key] = setTimeout(fn, delay);
+      _renderDebounce[key] = setTimeout(function() {
+        // Use requestAnimationFrame to avoid blocking the UI thread
+        requestAnimationFrame(fn);
+      }, delay);
     }
 
     function startRealtimeListeners() {
@@ -5533,7 +5536,17 @@
           }
           
           if (!App.currentUser) return;
-          // Debounced UI refresh to prevent rapid re-renders
+          // Debounced UI refresh to prevent rapid re-renders on Firestore updates
+          // Only re-render the current active page — skip heavy collections on inactive pages
+          const skipOnThisPage = {
+            transactions: ['products','parties','banking','users','settings','reports'],
+            expenses:     ['products','parties','sales','purchases','users','settings'],
+            parties:      ['sales','purchases','receipts','expenses','banking'],
+            products:     ['sales','purchases','receipts','expenses','banking']
+          };
+          const skipList = skipOnThisPage[key] || [];
+          if (skipList.includes(App.currentPage)) return;
+
           _debouncedRender(key, () => {
             const p = App.currentPage;
             if (p === 'dashboard') loadDashboard();
@@ -6297,18 +6310,15 @@
       const sheetsParam = (sheetsList && sheetsList.length) ? sheetsList.join(',') : 'Parties,Products,BankAccounts,Transactions,Expenses,Quotations,PurchaseOrders,DeliveryChallans,ActivityLog,Notifications,CylinderSecurity,CompanyProfile,CRMFollowups,PartyTypes';
       callServer('getAllData', { sheets: sheetsParam }, function(res) {
         if (res.success) {
-          if (sheetsList && sheetsList.length) {
-            Object.keys(res).forEach(key => { if (key !== 'success') App.data[key] = res[key]; });
-            if (res.companyProfile) _processCompanyProfile(res);
-            loadDashboard();
-            if (callback) callback();
-          } else {
-            Object.keys(res).forEach(key => { if (key !== 'success') App.data[key] = res[key]; });
+          Object.keys(res).forEach(key => { if (key !== 'success') App.data[key] = res[key]; });
+          if (res.companyProfile) _processCompanyProfile(res);
+          // Only reload dashboard on a full sync (no sheetsList), not on targeted saves
+          if (!sheetsList || !sheetsList.length) {
             _processCompanyProfile(res);
-            loadDashboard();
             populateGlobalDropdowns();
-            if (callback) callback();
+            loadDashboard();
           }
+          if (callback) callback();
         }
       }, null, true); // silentMode - no spinner for background refreshes
     }
