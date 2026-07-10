@@ -8392,124 +8392,47 @@
       let tableRows = '';
       if (sortedHistory.length === 0) {
         const entryDate = formatDate(new Date().toISOString().split('T')[0]);
-        tableRows = `
-          <tr>
-            <td style="text-align: center;">${entryDate}</td>
-            <td class="text-right">${formatCurrency(p.purchaseRate || 0)}</td>
-            <td class="text-right">${formatCurrency(p.saleRate || 0)}</td>
-            <td>Initial Setup</td>
-          </tr>
-        `;
+        tableRows = '<tr><td style="text-align:center;">' + entryDate + '</td><td style="text-align:right;">' + formatCurrency(p.purchaseRate || 0) + '</td><td style="text-align:right;">' + formatCurrency(p.saleRate || 0) + '</td><td>Initial Setup</td></tr>';
       } else {
-        sortedHistory.forEach(h => {
-          tableRows += `
-            <tr>
-              <td style="text-align: center;">${h.date || '--'}</td>
-              <td class="text-right">${formatCurrency(h.purchaseRate || 0)}</td>
-              <td class="text-right">${formatCurrency(h.saleRate || 0)}</td>
-              <td>${h.updatedBy || 'Admin'}</td>
-            </tr>
-          `;
+        sortedHistory.forEach(function(h) {
+          tableRows += '<tr><td style="text-align:center;">' + (h.date || '--') + '</td><td style="text-align:right;">' + formatCurrency(h.purchaseRate || 0) + '</td><td style="text-align:right;">' + formatCurrency(h.saleRate || 0) + '</td><td>' + (h.updatedBy || 'Admin') + '</td></tr>';
         });
       }
 
+      const companyName = (App.data.companyProfile && App.data.companyProfile.companyName) || 'Mr.Rahul ERP';
+      const companyAddress = (App.data.companyProfile && App.data.companyProfile.companyAddress) || '';
+      const companyPhone = (App.data.companyProfile && App.data.companyProfile.companyPhone) || '';
+      const companyLogo = (App.data.companyProfile && App.data.companyProfile.companyLogo) || '';
+      const logoHtml = companyLogo ? '<img src="' + companyLogo + '" style="max-height:60px; object-fit:contain;">' : '';
+
+      const html = '<!DOCTYPE html><html><head>'
+        + '<title>Price History Log - ' + p.name + '</title>'
+        + '<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">'
+        + '<style>'
+        + 'body{font-family:Inter,sans-serif;color:#1E293B;padding:40px;margin:0;background:#FFF;}'
+        + '.header{display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #0F172A;padding-bottom:20px;margin-bottom:20px;}'
+        + '.company-details h1{font-size:24px;font-weight:700;color:#0F172A;margin:0 0 6px 0;}'
+        + '.company-details p{font-size:13px;color:#475569;margin:0 0 4px 0;}'
+        + '.title{font-size:18px;font-weight:700;color:#0F172A;margin-bottom:20px;text-transform:uppercase;letter-spacing:0.5px;}'
+        + 'table{width:100%;border-collapse:collapse;margin-top:10px;}'
+        + 'th{background:#F1F5F9;color:#475569;font-weight:600;font-size:11.5px;text-transform:uppercase;padding:10px 14px;border:1px solid #E2E8F0;text-align:left;}'
+        + 'td{padding:10px 14px;border:1px solid #E2E8F0;font-size:13px;color:#334155;}'
+        + '@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact;}}'
+        + '</style>'
+        + '</head><body>'
+        + '<div class="header"><div class="company-details"><h1>' + companyName + '</h1><p>' + companyAddress + '</p><p><strong>Mobile:</strong> ' + companyPhone + '</p></div>' + logoHtml + '</div>'
+        + '<div class="title">Price History Log: ' + p.name + ' (ID: ' + p.id + ')</div>'
+        + '<table><thead><tr>'
+        + '<th style="width:25%;text-align:center;">Date</th>'
+        + '<th style="width:25%;text-align:right;">Purchase Price</th>'
+        + '<th style="width:25%;text-align:right;">Sale Price</th>'
+        + '<th style="width:25%;">Updated By</th>'
+        + '</tr></thead><tbody>' + tableRows + '</tbody></table>'
+        + '<script>window.onload=function(){setTimeout(function(){window.print();},500);};<' + '/script>'
+        + '</body></html>';
+
       const w = window.open();
-      w.document.write(\`
-        <html>
-          <head>
-            <title>Price History Log - \${p.name}</title>
-            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-            <style>
-              body { font-family: 'Inter', sans-serif; color: #1E293B; padding: 40px; margin: 0; background: #FFF; }
-              .header {
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-                border-bottom: 2px solid #0F172A;
-                padding-bottom: 20px;
-                margin-bottom: 20px;
-              }
-              .company-details h1 {
-                font-size: 24px;
-                font-weight: 700;
-                color: #0F172A;
-                margin: 0 0 6px 0;
-              }
-              .company-details p {
-                font-size: 13px;
-                color: #475569;
-                margin: 0 0 4px 0;
-              }
-              .logo { max-height: 60px; object-fit: contain; }
-              .statement-title {
-                font-size: 18px;
-                font-weight: 700;
-                color: #0F172A;
-                margin-bottom: 20px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-              }
-              table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-              th {
-                background: #F1F5F9;
-                color: #475569;
-                font-weight: 600;
-                font-size: 11.5px;
-                text-transform: uppercase;
-                letter-spacing: 0.5px;
-                padding: 10px 14px;
-                border: 1px solid #E2E8F0;
-                text-align: left;
-              }
-              td {
-                padding: 10px 14px;
-                border: 1px solid #E2E8F0;
-                font-size: 13px;
-                color: #334155;
-              }
-              .text-right { text-align: right; }
-              .text-center { text-align: center; }
-              @media print {
-                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-              }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <div class="company-details">
-                <h1>\${App.data.companyProfile.companyName || 'Mr.Rahul ERP'}</h1>
-                <p>\${App.data.companyProfile.companyAddress || ''}</p>
-                <p><strong>Mobile:</strong> \${App.data.companyProfile.companyPhone || ''}</p>
-              </div>
-              \${App.data.companyProfile.companyLogo ? \`<img src="\${App.data.companyProfile.companyLogo}" class="logo">\` : ''}
-            </div>
-
-            <div class="statement-title">Product Price History Log: \${p.name} (ID: \${p.id})</div>
-
-            <table>
-              <thead>
-                <tr>
-                  <th class="text-center" style="width: 25%;">Date</th>
-                  <th class="text-right" style="width: 25%;">Purchase Price</th>
-                  <th class="text-right" style="width: 25%;">Sale Price</th>
-                  <th style="width: 25%;">Updated By</th>
-                </tr>
-              </thead>
-              <tbody>
-                \${tableRows}
-              </tbody>
-            </table>
-
-            <script>
-              window.onload = function() {
-                setTimeout(function() {
-                  window.print();
-                }, 500);
-              };
-            </s\` + \`cript>
-          </body>
-        </html>
-      \`);
+      w.document.write(html);
       w.document.close();
     }
 
