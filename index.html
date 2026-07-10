@@ -6874,7 +6874,7 @@
           if (txnType === 'Sale' || txnType === 'Purchase') {
             const productName = productNameIdx !== -1 ? String(row[productNameIdx] || '').trim() : '';
             if (productName && qty > 0) {
-              const product = App.data.products.find(p => String(p.name || '').toLowerCase() === productName.toLowerCase());
+              const product = App.data.products.find(p => String(p.name || '').trim().toLowerCase() === productName.trim().toLowerCase());
               if (product) {
                 items.push({
                   productId: product.id,
