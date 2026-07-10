@@ -6767,11 +6767,11 @@
 
     function downloadTransactionTemplate() {
       document.getElementById('importDropdownMenu').style.display = 'none';
-      const headers = ['partyName', 'date', 'type', 'amount', 'description', 'voucherNo', 'paymentMode', 'bankRef', 'linkedInvoice', 'bankAccountId', 'productName', 'quantity'];
+      const headers = ['partyName', 'date', 'type', 'productName', 'rate', 'quantity', 'amount', 'paymentMode'];
       const sampleRows = [
-        ['Ramesh Traders', '2026-07-08', 'Sale', '5000', 'Goods sold', 'INV-1001', 'Cash', '', '', '', 'Commercial 19KG', '5'],
-        ['Ramesh Traders', '2026-07-09', 'Receipt', '2000', 'Part payment', 'REC-2026-001', 'Cash', '', '', '', '', ''],
-        ['Shyam Suppliers', '2026-07-10', 'Payment', '1500', 'Advance payment', 'PAY-2026-001', 'Bank', 'TXN-123', '', 'BA002', '', '']
+        ['Ramesh Traders', '2026-07-08', 'Sale', '14.2 KG Domestic Refill', '1000', '5', '', ''],
+        ['Ramesh Traders', '2026-07-09', 'Receipt', '', '', '', '2000', 'Cash'],
+        ['Shyam Suppliers', '2026-07-10', 'Payment', '', '', '', '1500', 'Bank']
       ];
 
       let csv = headers.join(',') + '\r\n';
@@ -6820,18 +6820,14 @@
         const partyNameIdx = findColumn(['partyname', 'party name']);
         const dateIdx = findColumn(['date', 'txn date']);
         const typeIdx = findColumn(['type', 'txn type']);
-        const amountIdx = findColumn(['amount', 'amt', 'total']);
-        const descriptionIdx = findColumn(['description', 'narration']);
-        const voucherIdx = findColumn(['voucher', 'voucher no', 'voucherno']);
-        const paymentModeIdx = findColumn(['paymentmode', 'mode']);
-        const bankRefIdx = findColumn(['bankref', 'bank ref', 'reference']);
-        const linkedInvoiceIdx = findColumn(['linkedinvoice', 'linked invoice']);
-        const bankAccountIdx = findColumn(['bankaccountid', 'bank account id']);
         const productNameIdx = findColumn(['productname', 'product name', 'product']);
-        const quantityIdx = findColumn(['quantity', 'qty']);
+        const rateIdx = findColumn(['rate', 'price']);
+        const quantityIdx = findColumn(['quantity', 'quantity', 'qty']);
+        const amountIdx = findColumn(['amount', 'amt', 'receiptamount', 'receipt amount']);
+        const paymentModeIdx = findColumn(['paymentmode', 'payment mode', 'mode']);
 
-        if (partyNameIdx === -1 || dateIdx === -1 || typeIdx === -1 || amountIdx === -1) {
-          showToast('CSV me partyName, date, type aur amount columns zaroori hain.', 'error');
+        if (partyNameIdx === -1 || dateIdx === -1 || typeIdx === -1) {
+          showToast('CSV me partyName, date, aur type columns zaroori hain.', 'error');
           return;
         }
 
@@ -6850,58 +6846,67 @@
           else if (rawType === 'payment' || rawType === 'pay') txnType = 'Payment';
           else if (rawType === 'receipt' || rawType === 'receive') txnType = 'Receipt';
 
-          const amount = parseFloat(row[amountIdx] || 0);
           const dateValue = String(row[dateIdx] || '').trim() || new Date().toISOString().split('T')[0];
-          const description = descriptionIdx !== -1 ? String(row[descriptionIdx] || '') : `${txnType} Entry`;
-          const voucherNo = voucherIdx !== -1 ? String(row[voucherIdx] || '') : `IMP-${Date.now()}-${idx + 1}`;
-          const paymentMode = paymentModeIdx !== -1 ? String(row[paymentModeIdx] || 'Cash') : 'Cash';
-          const bankRef = bankRefIdx !== -1 ? String(row[bankRefIdx] || '') : '';
-          const linkedInvoice = linkedInvoiceIdx !== -1 ? String(row[linkedInvoiceIdx] || '') : '';
-          const bankAccountId = bankAccountIdx !== -1 ? String(row[bankAccountIdx] || '') : (paymentMode === 'Cash' ? 'BA001' : 'BA002');
-          
-          const productName = productNameIdx !== -1 ? String(row[productNameIdx] || '').trim() : '';
-          const qty = quantityIdx !== -1 ? parseInt(row[quantityIdx] || 0) : 0;
+          const paymentMode = paymentModeIdx !== -1 ? String(row[paymentModeIdx] || '').trim() : '';
+          const bankAccountId = paymentMode.toLowerCase() === 'bank' ? 'BA002' : 'BA001';
+
+          let rate = rateIdx !== -1 ? parseFloat(row[rateIdx] || 0) : 0;
+          let qty = quantityIdx !== -1 ? parseFloat(row[quantityIdx] || 0) : 0;
+          let amount = amountIdx !== -1 ? parseFloat(row[amountIdx] || 0) : 0;
+
+          if ((txnType === 'Sale' || txnType === 'Purchase') && rate > 0 && qty > 0) {
+            amount = rate * qty;
+          }
+
+          if (amount <= 0) {
+            return; // Skip invalid transactions
+          }
+
+          const description = `${txnType} Entry` + (txnType === 'Sale' || txnType === 'Purchase' ? ` for items` : '');
+          const voucherNo = `IMP-${Date.now()}-${idx + 1}`;
 
           let items = [];
           let totals = null;
 
-          if ((txnType === 'Sale' || txnType === 'Purchase') && productName && qty > 0) {
-            const product = App.data.products.find(p => String(p.name || '').toLowerCase() === productName.toLowerCase());
-            if (product) {
-              const unitPrice = amount / qty;
-              items.push({
-                productId: product.id,
-                productName: product.name,
-                price: unitPrice,
-                quantity: qty,
-                total: amount,
-                cylinderReturn: 0
-              });
-              
-              let paidCash = 0;
-              let paidBank = 0;
-              let balanceDue = amount;
-              if (paymentMode.toLowerCase() === 'cash') {
-                paidCash = amount;
-                balanceDue = 0;
-              } else if (paymentMode.toLowerCase() === 'bank') {
-                paidBank = amount;
-                balanceDue = 0;
+          if (txnType === 'Sale' || txnType === 'Purchase') {
+            const productName = productNameIdx !== -1 ? String(row[productNameIdx] || '').trim() : '';
+            if (productName && qty > 0) {
+              const product = App.data.products.find(p => String(p.name || '').toLowerCase() === productName.toLowerCase());
+              if (product) {
+                items.push({
+                  productId: product.id,
+                  productName: product.name,
+                  price: rate || (amount / qty),
+                  quantity: qty,
+                  total: amount,
+                  cylinderReturn: 0
+                });
               }
-              
-              totals = {
-                subTotal: amount,
-                discount: 0,
-                cgst: 0,
-                sgst: 0,
-                igst: 0,
-                roundOff: 0,
-                grandTotal: amount,
-                paidCash: paidCash,
-                paidBank: paidBank,
-                balanceDue: balanceDue
-              };
             }
+
+            let paidCash = 0;
+            let paidBank = 0;
+            let balanceDue = amount;
+            if (paymentMode.toLowerCase() === 'cash') {
+              paidCash = amount;
+              balanceDue = 0;
+            } else if (paymentMode.toLowerCase() === 'bank') {
+              paidBank = amount;
+              balanceDue = 0;
+            }
+
+            totals = {
+              subTotal: amount,
+              discount: 0,
+              cgst: 0,
+              sgst: 0,
+              igst: 0,
+              roundOff: 0,
+              grandTotal: amount,
+              paidCash: paidCash,
+              paidBank: paidBank,
+              balanceDue: balanceDue
+            };
           }
 
           rowsToImport.push({
@@ -6913,10 +6918,10 @@
             description: description,
             txnType: txnType,
             amount: amount,
-            paymentMode: paymentMode,
+            paymentMode: paymentMode || 'Cash',
             bankAccountId: bankAccountId,
-            bankRef: bankRef,
-            linkedInvoice: linkedInvoice,
+            bankRef: '',
+            linkedInvoice: '',
             items: items,
             totals: totals,
             enteredBy: App.currentUser.id,
