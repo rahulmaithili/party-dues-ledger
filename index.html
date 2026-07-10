@@ -2050,6 +2050,9 @@
             <div class="dashboard-card" style="padding: 24px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <h3 style="margin: 0; font-weight: 700; color: var(--txt);" id="historyLogTitle">Price History Log</h3>
+                <button class="btn btn-secondary btn-sm" id="btnPrintPriceHistory" onclick="printPriceHistory()" style="display: none; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-print"></i> Print Log
+                </button>
               </div>
               <div class="table-container">
                 <table>
@@ -4266,6 +4269,16 @@
       }
       const d = new Date(dateStr);
       return isNaN(d.getTime()) ? new Date() : d;
+    }
+
+    function toIsoDateString(dateStr) {
+      if (!dateStr) return '';
+      const d = parseDate(dateStr);
+      if (isNaN(d.getTime())) return '';
+      const year = d.getFullYear();
+      const month = (d.getMonth() + 1).toString().padStart(2, '0');
+      const day = d.getDate().toString().padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
 
     function formatDate(dateStr) {
@@ -8151,13 +8164,30 @@
       openModal('productPriceHistoryModal');
     }
 
+    window._editingPriceHistoryIdx = null;
+
+    function resetPriceHistoryEditState() {
+      window._editingPriceHistoryIdx = null;
+      const submitBtn = document.querySelector('#priceHistoryForm button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add';
+        submitBtn.style.background = '';
+        submitBtn.style.color = '';
+        submitBtn.classList.add('btn-accent');
+      }
+    }
+
     function loadProductPriceHistoryPageData() {
       const pid = document.getElementById('historyProductId').value;
       const body = document.getElementById('priceHistoryPageTableBody');
       const title = document.getElementById('historyLogTitle');
+      const printBtn = document.getElementById('btnPrintPriceHistory');
       
+      resetPriceHistoryEditState();
+
       if (!pid) {
         title.textContent = 'Price History Log';
+        if (printBtn) printBtn.style.display = 'none';
         body.innerHTML = '<tr><td colspan="5" class="text-center text-secondary" style="padding: 20px;">Please select a product above to view price history logs.</td></tr>';
         document.getElementById('historyDate').value = '';
         document.getElementById('historyPurchaseRate').value = '';
@@ -8169,6 +8199,7 @@
       if (!p) return;
 
       title.textContent = `Price History Log: ${p.name}`;
+      if (printBtn) printBtn.style.display = 'inline-flex';
       
       // Prefill rates with current product rate for quick edits
       document.getElementById('historyDate').value = new Date().toISOString().split('T')[0];
@@ -8185,14 +8216,18 @@
             <td class="text-right">${formatCurrency(p.purchaseRate || 0)}</td>
             <td class="text-right">${formatCurrency(p.saleRate || 0)}</td>
             <td>Initial Setup</td>
-            <td class="text-center">--</td>
+            <td class="text-center">
+              <div class="flex-gap" style="justify-content: center;">
+                <button class="btn btn-icon admin-only" onclick="editPriceHistoryRecord('${p.id}', 0)" title="Edit Entry"><i class="fa-solid fa-pen-to-square"></i></button>
+              </div>
+            </td>
           </tr>
         `;
       } else {
         const sortedHistory = [...history].reverse();
         let html = '';
-        sortedHistory.forEach((h, reverseIdx) => {
-          // Find original index in chronological array to delete correctly
+        sortedHistory.forEach(h => {
+          // Find original index in chronological array to modify correctly
           const originalIdx = history.indexOf(h);
           html += `
             <tr>
@@ -8201,13 +8236,44 @@
               <td class="text-right">${formatCurrency(h.saleRate || 0)}</td>
               <td>${h.updatedBy || 'Admin'}</td>
               <td class="text-center">
-                <button class="btn btn-icon admin-only" onclick="deletePriceHistoryRecord('${p.id}', ${originalIdx})" style="color:var(--dan);" title="Delete Entry"><i class="fa-solid fa-trash"></i></button>
+                <div class="flex-gap" style="justify-content: center;">
+                  <button class="btn btn-icon admin-only" onclick="editPriceHistoryRecord('${p.id}', ${originalIdx})" title="Edit Entry"><i class="fa-solid fa-pen-to-square"></i></button>
+                  <button class="btn btn-icon admin-only" onclick="deletePriceHistoryRecord('${p.id}', ${originalIdx})" style="color:var(--dan);" title="Delete Entry"><i class="fa-solid fa-trash"></i></button>
+                </div>
               </td>
             </tr>
           `;
         });
         body.innerHTML = html;
       }
+    }
+
+    function editPriceHistoryRecord(productId, originalIdx) {
+      const p = App.data.products.find(x => x.id === productId);
+      if (!p) return;
+
+      const history = p.priceHistory || [];
+      const record = history[originalIdx] || {
+        date: formatDate(new Date().toISOString().split('T')[0]),
+        purchaseRate: p.purchaseRate,
+        saleRate: p.saleRate,
+        updatedBy: 'Initial Setup'
+      };
+
+      document.getElementById('historyDate').value = toIsoDateString(record.date);
+      document.getElementById('historyPurchaseRate').value = record.purchaseRate;
+      document.getElementById('historySaleRate').value = record.saleRate;
+
+      const submitBtn = document.querySelector('#priceHistoryForm button[type="submit"]');
+      if (submitBtn) {
+        submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Update';
+        submitBtn.classList.remove('btn-accent');
+        submitBtn.style.background = 'linear-gradient(135deg, #10B981, #059669)';
+        submitBtn.style.color = '#FFF';
+      }
+
+      window._editingPriceHistoryIdx = originalIdx;
+      showToast('Prefilled price record for editing', 'info');
     }
 
     function savePriceHistoryRecord(e) {
@@ -8235,32 +8301,44 @@
         updatedBy: updaterName
       };
 
-      const history = p.priceHistory ? [...p.priceHistory] : [];
+      let history = p.priceHistory ? [...p.priceHistory] : [];
       
-      // Reconstruct initial entry if empty
-      if (history.length === 0) {
-        history.push({
-          date: formatDate(new Date().toISOString().split('T')[0]),
-          purchaseRate: p.purchaseRate || 0,
-          saleRate: p.saleRate || 0,
-          updatedBy: 'Initial Setup'
-        });
+      if (window._editingPriceHistoryIdx !== null) {
+        const idx = window._editingPriceHistoryIdx;
+        if (history.length === 0) {
+          history.push(newEntry);
+        } else {
+          history[idx] = newEntry;
+        }
+        resetPriceHistoryEditState();
+      } else {
+        // Reconstruct initial entry if empty and this is a new entry
+        if (history.length === 0) {
+          history.push({
+            date: formatDate(new Date().toISOString().split('T')[0]),
+            purchaseRate: p.purchaseRate || 0,
+            saleRate: p.saleRate || 0,
+            updatedBy: 'Initial Setup'
+          });
+        }
+        history.push(newEntry);
       }
 
-      // Add new entry and sort chronologically by date
-      history.push(newEntry);
+      // Sort chronologically by date
       history.sort((a, b) => parseDate(a.date) - parseDate(b.date));
 
-      // Also update the current product rates to match the latest chronological rate!
-      const latestRate = history[history.length - 1];
-      p.purchaseRate = latestRate.purchaseRate;
-      p.saleRate = latestRate.saleRate;
+      // Update the current product rates to match the latest chronological rate!
+      if (history.length > 0) {
+        const latestRate = history[history.length - 1];
+        p.purchaseRate = latestRate.purchaseRate;
+        p.saleRate = latestRate.saleRate;
+      }
       p.priceHistory = history;
 
-      showLoading(true, 'Saving historical record...');
+      showLoading(true, 'Saving price record...');
       callServer('saveProduct', p, function() {
         showLoading(false);
-        showToast('Price history record saved successfully', 'success');
+        showToast('Price record saved successfully', 'success');
         syncAllData(() => {
           loadProductPriceHistoryPageData();
           renderProducts();
@@ -8279,6 +8357,10 @@
         history.splice(originalIdx, 1);
       }
 
+      if (window._editingPriceHistoryIdx === originalIdx) {
+        resetPriceHistoryEditState();
+      }
+
       // Update current rates to match latest remaining entry if history isn't empty
       if (history.length > 0) {
         const latestRate = history[history.length - 1];
@@ -8290,12 +8372,145 @@
       showLoading(true, 'Deleting price record...');
       callServer('saveProduct', p, function() {
         showLoading(false);
-        showToast('Price history record deleted successfully', 'success');
+        showToast('Price record deleted successfully', 'success');
         syncAllData(() => {
           loadProductPriceHistoryPageData();
           renderProducts();
         }, ["Products"]);
       });
+    }
+
+    function printPriceHistory() {
+      const pid = document.getElementById('historyProductId').value;
+      if (!pid) return;
+      const p = App.data.products.find(x => x.id === pid);
+      if (!p) return;
+
+      const history = p.priceHistory || [];
+      const sortedHistory = [...history].reverse();
+
+      let tableRows = '';
+      if (sortedHistory.length === 0) {
+        const entryDate = formatDate(new Date().toISOString().split('T')[0]);
+        tableRows = `
+          <tr>
+            <td style="text-align: center;">${entryDate}</td>
+            <td class="text-right">${formatCurrency(p.purchaseRate || 0)}</td>
+            <td class="text-right">${formatCurrency(p.saleRate || 0)}</td>
+            <td>Initial Setup</td>
+          </tr>
+        `;
+      } else {
+        sortedHistory.forEach(h => {
+          tableRows += `
+            <tr>
+              <td style="text-align: center;">${h.date || '--'}</td>
+              <td class="text-right">${formatCurrency(h.purchaseRate || 0)}</td>
+              <td class="text-right">${formatCurrency(h.saleRate || 0)}</td>
+              <td>${h.updatedBy || 'Admin'}</td>
+            </tr>
+          `;
+        });
+      }
+
+      const w = window.open();
+      w.document.write(\`
+        <html>
+          <head>
+            <title>Price History Log - \${p.name}</title>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+              body { font-family: 'Inter', sans-serif; color: #1E293B; padding: 40px; margin: 0; background: #FFF; }
+              .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 2px solid #0F172A;
+                padding-bottom: 20px;
+                margin-bottom: 20px;
+              }
+              .company-details h1 {
+                font-size: 24px;
+                font-weight: 700;
+                color: #0F172A;
+                margin: 0 0 6px 0;
+              }
+              .company-details p {
+                font-size: 13px;
+                color: #475569;
+                margin: 0 0 4px 0;
+              }
+              .logo { max-height: 60px; object-fit: contain; }
+              .statement-title {
+                font-size: 18px;
+                font-weight: 700;
+                color: #0F172A;
+                margin-bottom: 20px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              }
+              table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+              th {
+                background: #F1F5F9;
+                color: #475569;
+                font-weight: 600;
+                font-size: 11.5px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                padding: 10px 14px;
+                border: 1px solid #E2E8F0;
+                text-align: left;
+              }
+              td {
+                padding: 10px 14px;
+                border: 1px solid #E2E8F0;
+                font-size: 13px;
+                color: #334155;
+              }
+              .text-right { text-align: right; }
+              .text-center { text-align: center; }
+              @media print {
+                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div class="company-details">
+                <h1>\${App.data.companyProfile.companyName || 'Mr.Rahul ERP'}</h1>
+                <p>\${App.data.companyProfile.companyAddress || ''}</p>
+                <p><strong>Mobile:</strong> \${App.data.companyProfile.companyPhone || ''}</p>
+              </div>
+              \${App.data.companyProfile.companyLogo ? \`<img src="\${App.data.companyProfile.companyLogo}" class="logo">\` : ''}
+            </div>
+
+            <div class="statement-title">Product Price History Log: \${p.name} (ID: \${p.id})</div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th class="text-center" style="width: 25%;">Date</th>
+                  <th class="text-right" style="width: 25%;">Purchase Price</th>
+                  <th class="text-right" style="width: 25%;">Sale Price</th>
+                  <th style="width: 25%;">Updated By</th>
+                </tr>
+              </thead>
+              <tbody>
+                \${tableRows}
+              </tbody>
+            </table>
+
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 500);
+              };
+            </s\` + \`cript>
+          </body>
+        </html>
+      \`);
+      w.document.close();
     }
 
     function editProduct(id) {
