@@ -2870,6 +2870,10 @@
                   <label style="color:var(--txt)">Terms & Conditions</label>
                   <textarea id="setCompanyTerms" class="light-form-control" style="height: 100px; resize: none;"></textarea>
                 </div>
+                <div class="form-group">
+                  <label style="color:var(--txt)">Gemini AI API Key <span style="font-size:11px; color:var(--txt2); font-weight:400;">(for AI features - OCR, WhatsApp drafts)</span></label>
+                  <input type="password" id="setGeminiApiKey" class="light-form-control" placeholder="AIzaSy... (Get from Google AI Studio)" style="margin-top: 6px;">
+                </div>
                 <button type="submit" class="btn btn-primary"><i class="fa-solid fa-save"></i> Save Profile</button>
               </form>
             </div>
@@ -5008,6 +5012,79 @@
         console.error("Storage upload failed, falling back to Data URL if small.", e);
         return fallbackToDataUrl();
       }
+    }
+
+    // ==================== GOOGLE GEMINI AI HELPERS ====================
+    async function callGeminiAI(prompt, systemInstruction = '') {
+      const apiKey = App.data.companyProfile && App.data.companyProfile.geminiApiKey;
+      if (!apiKey) {
+        throw new Error("Gemini AI API Key is not configured. Please add it in App Settings.");
+      }
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+      
+      const requestBody = {
+        contents: [{
+          parts: [{ text: prompt }]
+        }]
+      };
+
+      if (systemInstruction) {
+        requestBody.systemInstruction = {
+          parts: [{ text: systemInstruction }]
+        };
+      }
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }
+
+    async function callGeminiVision(prompt, base64Data, mimeType) {
+      const apiKey = App.data.companyProfile && App.data.companyProfile.geminiApiKey;
+      if (!apiKey) {
+        throw new Error("Gemini AI API Key is not configured. Please add it in App Settings.");
+      }
+
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+      const requestBody = {
+        contents: [{
+          parts: [
+            { text: prompt },
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: base64Data
+              }
+            }
+          ]
+        }]
+      };
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     }
 
     // Main Firebase action dispatcher (drop-in replacement for callServer)
@@ -13874,6 +13951,7 @@
       document.getElementById('setCompanyQrCode').value = cp.companyQrCode || '';
       document.getElementById('setCompanyUpiId').value = cp.companyUpiId || '';
       document.getElementById('setEnableGst').checked = (cp.enableGst !== false && cp.enableGst !== 'false');
+      document.getElementById('setGeminiApiKey').value = cp.geminiApiKey || '';
 
       // Update Logo Preview UI
       if (cp.companyLogo) {
@@ -14502,7 +14580,8 @@
         companyQrCode: document.getElementById('setCompanyQrCode').value || '',
         companyUpiId: document.getElementById('setCompanyUpiId').value.trim() || '',
         termsAndConditions: document.getElementById('setCompanyTerms').value,
-        enableGst: document.getElementById('setEnableGst').checked
+        enableGst: document.getElementById('setEnableGst').checked,
+        geminiApiKey: document.getElementById('setGeminiApiKey').value.trim() || ''
       };
 
       callServer('saveSettings', payload, function() {
