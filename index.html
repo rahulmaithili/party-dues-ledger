@@ -4207,6 +4207,7 @@
                   <th class="text-right">Debit (₹)</th>
                   <th class="text-right">Credit (₹)</th>
                   <th class="text-right">Running Balance (₹)</th>
+                  <th class="text-center admin-only" style="width: 10%;">Action</th>
                 </tr>
               </thead>
               <tbody id="ledgerTableBody"></tbody>
@@ -4306,6 +4307,7 @@
 
     // Global flags for ledger redirection
     let reopenLedgerPartyId = null;
+    window._activeLedgerPartyId = null;
     let userSavedTransaction = false;
 
     // State management
@@ -5668,6 +5670,11 @@
             else if (p === 'users') renderUsers();
             else if (p === 'paymentRequests') renderPaymentRequests();
             
+            // Re-render open ledger modal if active
+            if (window._activeLedgerPartyId) {
+              viewPartyLedger(window._activeLedgerPartyId);
+            }
+            
             // Re-render followups if currently open for any party
             const followupPartyIdEl = document.getElementById('followupPartyId');
             if (followupPartyIdEl && followupPartyIdEl.value) {
@@ -5934,6 +5941,9 @@
 
     function closeModal(id) {
       document.getElementById(id).style.display = 'none';
+      if (id === 'ledgerModal') {
+        window._activeLedgerPartyId = null;
+      }
       if (id === 'confirmModal') {
         // Also remove backdrop class for active modal to prevent lingering backdrop styling issues
         document.getElementById(id).classList.remove('active');
@@ -6425,6 +6435,9 @@
             _processCompanyProfile(res);
             populateGlobalDropdowns();
             loadDashboard();
+          }
+          if (window._activeLedgerPartyId) {
+            viewPartyLedger(window._activeLedgerPartyId);
           }
           if (callback) callback();
         }
@@ -11004,6 +11017,7 @@
 
     // Party statement print popup
     function viewPartyLedger(id) {
+      window._activeLedgerPartyId = id;
       const p = App.data.parties.find(x => x.id === id);
       if (!p) return;
 
@@ -11072,6 +11086,15 @@
           descHTML += cylText;
         }
         
+        const actionCell = `
+          <td class="text-center admin-only">
+            <div class="flex-gap" style="justify-content: center;">
+              <button class="btn btn-icon" onclick="editLedgerTransaction('${t.id}', '${t.txnType}', '${p.id}')" title="Edit Entry"><i class="fa-solid fa-pen-to-square"></i></button>
+              <button class="btn btn-icon" onclick="deleteLedgerTransaction('${t.id}', '${p.id}')" style="color:var(--dan);" title="Delete Entry"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </td>
+        `;
+        
         body.innerHTML += `
           <tr>
             <td>${formatDate(t.date)}</td>
@@ -11081,6 +11104,7 @@
             <td class="text-right text-danger">${debit > 0 ? formatCurrency(debit) : '--'}</td>
             <td class="text-right text-success">${credit > 0 ? formatCurrency(credit) : '--'}</td>
             <td class="text-right" style="font-weight:600;">${formatCurrency(runningBal)}</td>
+            ${actionCell}
           </tr>
         `;
       });
@@ -11134,6 +11158,21 @@
 
       switchLedgerTab('ledger');
       openModal('ledgerModal');
+    }
+
+    function editLedgerTransaction(txnId, txnType, partyId) {
+      reopenLedgerPartyId = partyId;
+      closeModal('ledgerModal');
+      if (txnType === 'Sale' || txnType === 'Purchase' || txnType === 'Return') {
+        editInvoice(txnId);
+      } else if (txnType === 'Receipt' || txnType === 'Payment') {
+        editReceipt(txnId);
+      }
+    }
+
+    function deleteLedgerTransaction(txnId, partyId) {
+      window._activeLedgerPartyId = partyId;
+      deleteTransaction(txnId);
     }
 
     function printReport() {
