@@ -9099,7 +9099,7 @@
       document.getElementById('invoiceId').value = t.id;
       document.getElementById('invoiceTxnType').value = t.txnType;
       document.getElementById('invoiceModalTitle').textContent = `Edit ${t.txnType} Invoice`;
-      document.getElementById('invoiceDate').value = t.date;
+      document.getElementById('invoiceDate').value = toIsoDateString(t.date);
       document.getElementById('invoiceVoucherNo').value = t.voucherNo;
       
       const pSelect = document.getElementById('invoicePartyId');
@@ -9487,7 +9487,7 @@
       document.getElementById('receiptId').value = t.id;
       document.getElementById('receiptTxnType').value = t.txnType;
       document.getElementById('receiptModalTitle').textContent = `Edit ${t.txnType}`;
-      document.getElementById('receiptDate').value = t.date;
+      document.getElementById('receiptDate').value = toIsoDateString(t.date);
       document.getElementById('receiptAmount').value = t.txnType === 'Receipt' ? t.credit : t.debit;
       document.getElementById('receiptMode').value = t.paymentMode || 'Cash';
       
@@ -9647,7 +9647,7 @@
 
       document.getElementById('expenseId').value = e.id;
       document.getElementById('expenseCategory').value = e.category;
-      document.getElementById('expenseDate').value = e.date;
+      document.getElementById('expenseDate').value = toIsoDateString(e.date);
       document.getElementById('expenseAmount').value = e.amount;
       document.getElementById('expenseMode').value = e.paymentMode || 'Cash';
       document.getElementById('expenseBankRef').value = e.bankRef || '';
@@ -9896,7 +9896,7 @@
       document.getElementById('docId').value = doc.id;
       document.getElementById('docType').value = type;
       document.getElementById('docModalTitle').textContent = `Edit ${type}`;
-      document.getElementById('docDate').value = doc.date;
+      document.getElementById('docDate').value = toIsoDateString(doc.date);
       document.getElementById('docVoucherNo').value = doc.voucherNo;
       
       const isPO = type === 'PurchaseOrder';
@@ -9909,7 +9909,7 @@
       initSearchableDropdown('docPartyId');
 
       document.getElementById('docStatus').value = doc.status;
-      document.getElementById('docExtraDate').value = doc.validTill || doc.expectedDelivery || '';
+      document.getElementById('docExtraDate').value = toIsoDateString(doc.validTill || doc.expectedDelivery);
       document.getElementById('docNotes').value = doc.notes || '';
 
       activeDocItems = [];
@@ -10580,7 +10580,7 @@
       
       document.getElementById('secDepQty').value = t.cylinderOut || 1;
       document.getElementById('secDepAmount').value = t.credit || 0;
-      document.getElementById('secDepDate').value = t.date;
+      document.getElementById('secDepDate').value = toIsoDateString(t.date);
       document.getElementById('secDepAccountId').value = t.bankAccountId || 'BA001';
       document.getElementById('secDepNotes').value = t.description || '';
 
@@ -10619,7 +10619,7 @@
       document.getElementById('secRefRecordId').value = t.securityRecordId;
       document.getElementById('secRefQty').value = t.cylinderIn || 1;
       document.getElementById('secRefAmount').value = t.debit || 0;
-      document.getElementById('secRefDate').value = t.date;
+      document.getElementById('secRefDate').value = toIsoDateString(t.date);
       document.getElementById('secRefAccountId').value = t.bankAccountId || 'BA001';
       document.getElementById('secRefNotes').value = t.description || '';
 
