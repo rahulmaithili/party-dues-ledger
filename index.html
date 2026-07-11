@@ -3032,7 +3032,7 @@
         <h3><i class="fa-solid fa-qrcode" style="color: var(--acc);"></i> Pay via UPI / QR Code</h3>
         <i class="fa-solid fa-xmark pointer" onclick="closeModal('paymentQrModal')"></i>
       </div>
-      <div class="modal-body" style="padding: 20px 24px 0;">
+      <div class="modal-body" style="padding: 20px 24px;">
         <!-- Invoice context banner (shown when paying for a specific invoice) -->
         <div id="paymentQrInvoiceBanner" style="display:none; background:linear-gradient(135deg,#EFF6FF,#DBEAFE); border:1px solid #BFDBFE; border-radius:10px; padding:10px 14px; margin-bottom:14px; text-align:left;">
           <p style="font-size:11px; font-weight:700; color:#1D4ED8; text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;"><i class="fa-solid fa-file-invoice"></i> Invoice Payment</p>
@@ -3059,7 +3059,7 @@
           <p style="font-size:12.5px; font-weight:400; color:#7F1D1D; margin:4px 0 0 0; line-height:1.4;">Please close this window and open it again to generate a new dynamic QR code.</p>
         </div>
 
-        <img id="paymentQrImage" src="" alt="UPI QR Code" style="max-width: 220px; width: 100%; border: 4px solid #E2E8F0; border-radius: 12px; display:none;">
+        <img id="paymentQrImage" src="" alt="UPI QR Code" style="max-width: 220px; width: 100%; border: 4px solid #E2E8F0; border-radius: 12px; display:none; margin: 0 auto;">
         <div id="paymentQrInfo" style="display:none; margin-top: 14px;">
           <p style="font-size: 13px; color: var(--txt2); margin-bottom: 2px;">Is QR ko scan karo aur payment karo</p>
           <p style="font-size: 12px; color: #94A3B8; margin-bottom:12px;">Google Pay, PhonePe, Paytm, ya kisi bhi UPI app se</p>
@@ -3070,23 +3070,25 @@
           <p id="paymentUpiMobileNote" style="display:none; font-size: 11.5px; color: var(--txt2); margin-top:-6px; margin-bottom:12px; font-weight: 500;">
             <i class="fa-solid fa-circle-info" style="color:var(--acc);"></i> Yeh button sirf Mobile phone par kaam karega. Computer/Laptop par upar diye gaye QR Code ko scan karein.
           </p>
-          <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:10px 14px; font-size:13px; color:#166534;">
+          <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:10px 14px; font-size:13px; color:#166534; margin-bottom: 14px;">
             <i class="fa-solid fa-circle-check"></i> Payment karne ke baad neeche "Payment Done" button dabao
           </div>
         </div>
-      </div>
-      <div class="modal-footer" style="flex-direction: column; gap: 10px; padding: 16px 24px 24px;">
+
+        <!-- Inputs moved inside modal-body for proper scrolling -->
         <div id="paymentQrAmountRow" style="display:none; width:100%; text-align:left; margin-bottom:4px;">
           <label style="font-size:13px; font-weight:600; color:var(--txt);">Payment Amount (₹)</label>
-          <input type="number" id="paymentQrAmount" class="form-control" placeholder="e.g. 500" min="1" style="margin-top:6px;" oninput="updateUpiDeepLink()">
+          <input type="number" id="paymentQrAmount" class="light-form-control" placeholder="e.g. 500" min="1" style="margin-top:6px;" oninput="updateUpiDeepLink()">
           <label style="font-size:13px; font-weight:600; color:var(--txt); margin-top:10px; display:block;">UTR / Reference Number</label>
-          <input type="text" id="paymentQrUtr" class="form-control" placeholder="UPI Transaction ID / UTR No." style="margin-top:6px;">
+          <input type="text" id="paymentQrUtr" class="light-form-control" placeholder="UPI Transaction ID / UTR No." style="margin-top:6px;">
           <label style="font-size:13px; font-weight:600; color:var(--txt); margin-top:10px; display:block;">Narration / Note</label>
-          <input type="text" id="paymentQrNarration" class="form-control" placeholder="e.g. Invoice #INV-2026-001" style="margin-top:6px;" oninput="updateUpiDeepLink()">
+          <input type="text" id="paymentQrNarration" class="light-form-control" placeholder="e.g. Invoice #INV-2026-001" style="margin-top:6px;" oninput="updateUpiDeepLink()">
           <div style="background:#FEF9C3; border:1px solid #FDE047; border-radius:8px; padding:10px 14px; font-size:12.5px; color:#713F12; margin-top:10px;">
             <i class="fa-solid fa-clock" style="color:#D97706;"></i> <strong>Note:</strong> Payment abhi pending rahega. Admin bank statement se verify karke approve karega, tab hi balance adjust hoga.
           </div>
         </div>
+      </div>
+      <div class="modal-footer" style="flex-direction: column; gap: 10px; padding: 16px 24px;">
         <button id="paymentDoneBtn" class="btn btn-accent w-full" style="display:none;" onclick="submitPaymentRequest()">
           <i class="fa-solid fa-paper-plane"></i> Submit Payment Request
         </button>
@@ -3115,7 +3117,7 @@
           <input type="hidden" id="apprRequestId">
           <div class="form-group">
             <label style="font-size:13px; font-weight:600; color:var(--txt);">Approval Action *</label>
-            <select id="apprAction" class="form-control" required onchange="toggleApprovalActionFields()">
+            <select id="apprAction" class="light-form-control" required onchange="toggleApprovalActionFields()">
               <option value="Approved">Approve Payment (Credit Party Balance)</option>
               <option value="Rejected">Reject Payment (Do Not Credit)</option>
             </select>
@@ -3123,14 +3125,14 @@
           
           <div class="form-group" id="apprBankAccountGroup">
             <label style="font-size:13px; font-weight:600; color:var(--txt);">Credit Bank Account *</label>
-            <select id="apprBankAccountId" class="form-control">
+            <select id="apprBankAccountId" class="light-form-control">
               <!-- Dynamically populated bank accounts -->
             </select>
           </div>
           
           <div class="form-group">
             <label style="font-size:13px; font-weight:600; color:var(--txt);" id="apprReasonLabel">Remarks / Reason *</label>
-            <textarea id="apprReason" class="form-control" rows="3" required placeholder="Enter approval/rejection remarks..."></textarea>
+            <textarea id="apprReason" class="light-form-control" rows="3" required placeholder="Enter approval/rejection remarks..."></textarea>
           </div>
 
           <button type="submit" class="btn btn-accent w-full" style="margin-top: 14px; font-weight: 700; height: 42px;">
@@ -6727,8 +6729,13 @@
               }
             }
 
+            // Check if there is a pending payment request for this specific invoice
+            const pendingRequest = (App.data.paymentRequests || []).find(r => r.linkedInvoiceId === t.id && r.status === 'Pending');
+
             const payBtn = (t.txnType === 'Sale' || t.txnType === 'Purchase') && balanceDue > 0
-              ? `<button class="btn btn-sm" style="background: linear-gradient(135deg,#065F46,#047857); color:#fff; font-size:11px; padding:4px 10px; border-radius:6px; gap:4px; display:inline-flex; align-items:center; white-space:nowrap;" onclick="openPaymentQrModal('${t.id}', ${balanceDue}, '${t.voucherNo || t.id}')" title="Pay ₹${balanceDue.toFixed(2)} for this invoice"><i class="fa-solid fa-qrcode"></i> Pay ₹${Math.ceil(balanceDue)}</button>`
+              ? (pendingRequest 
+                 ? `<span class="badge badge-warning" style="font-size: 11px; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;" title="Payment verification pending admin approval"><i class="fa-solid fa-clock"></i> Pending Approval</span>`
+                 : `<button class="btn btn-sm" style="background: linear-gradient(135deg,#065F46,#047857); color:#fff; font-size:11px; padding:4px 10px; border-radius:6px; gap:4px; display:inline-flex; align-items:center; white-space:nowrap;" onclick="openPaymentQrModal('${t.id}', ${balanceDue}, '${t.voucherNo || t.id}')" title="Pay ₹${balanceDue.toFixed(2)} for this invoice"><i class="fa-solid fa-qrcode"></i> Pay ₹${Math.ceil(balanceDue)}</button>`)
               : '';
 
             recentBody.innerHTML += `
@@ -14740,6 +14747,32 @@
           const credit = parseFloat(t.credit || 0);
           const proofLink = t.proofUrl ? `<a href="javascript:void(0)" onclick="openDocumentViewer('${t.proofUrl}', 'Payment Proof - ${t.voucherNo || t.id}')" style="color:var(--acc);" title="View Proof"><i class="fa-solid fa-file-image"></i></a>` : '--';
           
+          // Robust balance due calculation:
+          let balanceDue = 0;
+          if (t.txnType === 'Sale' || t.txnType === 'Purchase') {
+            const storedDue = t.totals && t.totals.balanceDue !== undefined ? parseFloat(t.totals.balanceDue) : -1;
+            if (storedDue > 0) {
+              balanceDue = storedDue;
+            } else if (storedDue === -1 && debit > 0) {
+              balanceDue = debit;
+            } else if (storedDue === 0) {
+              const grandTotal = t.totals && t.totals.grandTotal ? parseFloat(t.totals.grandTotal) : debit;
+              const paidSoFar = (t.totals && t.totals.paidCash ? parseFloat(t.totals.paidCash) : 0)
+                              + (t.totals && t.totals.paidBank ? parseFloat(t.totals.paidBank) : 0);
+              const calculatedDue = Math.max(0, grandTotal - paidSoFar);
+              balanceDue = calculatedDue;
+            }
+          }
+
+          // Check if there is a pending payment request for this specific invoice
+          const pendingRequest = (App.data.paymentRequests || []).find(r => r.linkedInvoiceId === t.id && r.status === 'Pending');
+
+          const payBtn = (t.txnType === 'Sale' || t.txnType === 'Purchase') && balanceDue > 0
+            ? (pendingRequest 
+               ? `<span class="badge badge-warning" style="font-size: 11px; padding: 4px 8px; border-radius: 6px; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; margin-left: 6px;" title="Payment verification pending admin approval"><i class="fa-solid fa-clock"></i> Pending Approval</span>`
+               : `<button class="btn btn-sm" style="background: linear-gradient(135deg,#065F46,#047857); color:#fff; font-size:11px; padding:4px 10px; border-radius:6px; gap:4px; display:inline-flex; align-items:center; white-space:nowrap; margin-left: 6px;" onclick="openPaymentQrModal('${t.id}', ${balanceDue}, '${t.voucherNo || t.id}')" title="Pay ₹${balanceDue.toFixed(2)} for this invoice"><i class="fa-solid fa-qrcode"></i> Pay ₹${Math.ceil(balanceDue)}</button>`)
+            : '';
+
           body.innerHTML += `
             <tr>
               <td><strong>${t.voucherNo || t.id}</strong></td>
@@ -14749,8 +14782,10 @@
               <td class="text-right">${credit > 0 ? formatCurrency(credit) : '--'}</td>
               <td>${t.paymentMode || 'Cash'}</td>
               <td class="text-center">${proofLink}</td>
-              <td class="text-center">
+              <td class="text-center" style="white-space:nowrap;">
+                <button class="btn btn-icon" onclick="viewVoucher('${t.id}')" title="View Details"><i class="fa-solid fa-eye"></i></button>
                 <button class="btn btn-icon" onclick="printVoucher('${t.id}')" title="Print Invoice"><i class="fa-solid fa-print"></i></button>
+                ${payBtn}
               </td>
             </tr>
           `;
