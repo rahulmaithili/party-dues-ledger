@@ -3259,6 +3259,48 @@
     </div>
   </div>
 
+  <!-- WHATSAPP DRAFT MODAL -->
+  <div class="modal-backdrop" id="whatsappDraftModal">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3>WhatsApp Reminder Draft</h3>
+        <i class="fa-solid fa-xmark pointer" onclick="closeModal('whatsappDraftModal')"></i>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <div class="form-group">
+          <label style="color:var(--txt); font-weight:600; display:block; margin-bottom:8px;">Message Draft</label>
+          <textarea id="whatsappDraftText" class="light-form-control" style="height: 180px; resize: none; font-size:13.5px; line-height:1.5;"></textarea>
+        </div>
+        
+        <div id="aiReminderActions" style="margin-top: 14px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: 8px; padding: 14px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:12.5px; font-weight:700; color:var(--acc); display:flex; align-items:center; gap:6px;">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Rewrite with Gemini AI
+            </span>
+            <span id="aiReminderStatus" style="font-size:11.5px; color:var(--txt2); font-weight:500;"></span>
+          </div>
+          <div class="grid-2" style="gap: 8px;">
+            <select id="aiReminderTone" class="light-form-control" style="font-size: 12.5px;">
+              <option value="friendly">Polite & Friendly (Hindi/Eng mix)</option>
+              <option value="professional">Professional English</option>
+              <option value="strict">Urgent / Final Warning</option>
+              <option value="hindi">Pure Hindi (हिंदी)</option>
+            </select>
+            <button class="btn btn-accent btn-sm" id="btnRewriteReminder" onclick="rewriteReminderWithAI()" style="font-size:12px; font-weight:700; padding:6px 12px; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Generate AI Draft
+            </button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer" style="gap: 8px; display:flex;">
+        <button class="btn btn-secondary w-full" onclick="closeModal('whatsappDraftModal')">Cancel</button>
+        <button class="btn btn-success w-full" id="btnSendWhatsApp" onclick="sendWhatsAppDraft()" style="background:#25D366; color:#fff; font-weight:700; border:none; display:inline-flex; align-items:center; justify-content:center; gap:6px;">
+          <i class="fa-brands fa-whatsapp"></i> Send via WhatsApp
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- PARTY MODAL -->
   <div class="modal-backdrop" id="partyModal">
     <div class="modal-card">
@@ -15178,7 +15220,10 @@
     }
 
     // WhatsApp dues reminder
+    let activeReminderPartyId = null;
+
     function sendWhatsAppReminder(partyId) {
+      activeReminderPartyId = partyId;
       const p = App.data.parties.find(x => x.id === partyId);
       if (!p) return;
       
@@ -15197,12 +15242,92 @@
       const companyPhone = App.data.companyProfile.companyPhone || '';
       const formattedBal = formatCurrency(balance);
       const todayStr = formatDate(new Date().toISOString().split('T')[0]);
+      
+      const defaultMsg = `⚠️ *OUTSTANDING DUES REMINDER* ⚠️\n\nDear *${p.name}*,\n\nThis is a friendly reminder from *${companyName}* regarding your outstanding balance.\n\n🔹 *Outstanding Dues:* *${formattedBal}*\n🔹 *Statement Date:* ${todayStr}\n\nPlease clear the dues at your earliest convenience. You can make payment via Cash, Bank Transfer, or UPI.\n\nIf you have already made the payment, please ignore this statement.\n\nThank you for your business!\n\n📞 *Contact Support:* ${companyPhone}`;
+      
+      document.getElementById('whatsappDraftText').value = defaultMsg;
+      
+      // Enable/Disable AI options depending on API key availability
+      const hasApiKey = !!(App.data.companyProfile && App.data.companyProfile.geminiApiKey);
+      const aiBlock = document.getElementById('aiReminderActions');
+      if (aiBlock) {
+        aiBlock.style.display = hasApiKey ? 'block' : 'none';
+      }
+      
+      const status = document.getElementById('aiReminderStatus');
+      if (status) status.textContent = '';
+
+      openModal('whatsappDraftModal');
+    }
+
+    function sendWhatsAppDraft() {
+      if (!activeReminderPartyId) return;
+      const p = App.data.parties.find(x => x.id === activeReminderPartyId);
+      if (!p) return;
+      
+      const msg = document.getElementById('whatsappDraftText').value;
       const cleanMobile = p.mobile.replace(/[^0-9]/g, '');
       const mobileWithCode = cleanMobile.length === 10 ? '91' + cleanMobile : cleanMobile;
       
-      const msg = `⚠️ *OUTSTANDING DUES REMINDER* ⚠️\n\nDear *${p.name}*,\n\nThis is a friendly reminder from *${companyName}* regarding your outstanding balance.\n\n🔹 *Outstanding Dues:* *${formattedBal}*\n🔹 *Statement Date:* ${todayStr}\n\nPlease clear the dues at your earliest convenience. You can make payment via Cash, Bank Transfer, or UPI.\n\nIf you have already made the payment, please ignore this statement.\n\nThank you for your business!\n\n📞 *Contact Support:* ${companyPhone}`;
       const url = `https://wa.me/${mobileWithCode}?text=${encodeURIComponent(msg)}`;
       window.open(url, '_blank');
+      closeModal('whatsappDraftModal');
+    }
+
+    async function rewriteReminderWithAI() {
+      if (!activeReminderPartyId) return;
+      const p = App.data.parties.find(x => x.id === activeReminderPartyId);
+      if (!p) return;
+      
+      let balance = parseFloat(p.openingBalance || 0);
+      App.data.transactions.filter(t => t.partyId === p.id).forEach(t => {
+        balance += parseFloat(t.debit || 0) - parseFloat(t.credit || 0);
+      });
+      
+      const companyName = App.data.companyProfile.companyName || 'Mr.Rahul ERP';
+      const companyPhone = App.data.companyProfile.companyPhone || '';
+      const formattedBal = formatCurrency(balance);
+      const todayStr = formatDate(new Date().toISOString().split('T')[0]);
+      const tone = document.getElementById('aiReminderTone').value;
+      
+      const status = document.getElementById('aiReminderStatus');
+      const btn = document.getElementById('btnRewriteReminder');
+      status.textContent = 'Generating AI draft...';
+      status.style.color = 'var(--acc)';
+      btn.disabled = true;
+      
+      let systemInstruction = "You are a professional collection assistant for a gas cylinder supply agency. Write a payment dues reminder message.";
+      let prompt = `Write a payment dues reminder message for customer "${p.name}". The outstanding balance is ${formattedBal} as of ${todayStr}. The supplier is "${companyName}" (contact phone: ${companyPhone}). `;
+
+      if (tone === 'friendly') {
+        systemInstruction += " Write in a polite, helpful, and friendly tone using Hinglish (a mixture of Hindi and English words written in Latin script). Keep it positive and encouraging.";
+        prompt += "Draft a Hinglish message requesting payment, offering UPI/Cash/Bank transfer details.";
+      } else if (tone === 'professional') {
+        systemInstruction += " Write in a formal, professional Business English tone.";
+        prompt += "Draft a professional English message requesting payment at their earliest convenience.";
+      } else if (tone === 'strict') {
+        systemInstruction += " Write in an urgent, strict, and serious tone. Mention that this is a final reminder and failure to pay may result in legal action or suspension of cylinder delivery services.";
+        prompt += "Draft an urgent final payment warning message.";
+      } else if (tone === 'hindi') {
+        systemInstruction += " Write in pure polite Hindi language (using Devanagari script).";
+        prompt += "Draft a polite reminder message in Hindi script.";
+      }
+
+      systemInstruction += " Keep the output message concise (maximum 150 words) and ready to send via WhatsApp, including appropriate emojis and clear line breaks.";
+
+      try {
+        const draft = await callGeminiAI(prompt, systemInstruction);
+        document.getElementById('whatsappDraftText').value = draft.trim();
+        status.textContent = 'Generated successfully!';
+        status.style.color = '#10B981';
+      } catch (err) {
+        console.error(err);
+        status.textContent = 'Failed to generate!';
+        status.style.color = '#EF4444';
+        showToast("Gemini Error: " + err.message, "error");
+      } finally {
+        btn.disabled = false;
+      }
     }
 
     function emailPartyLedger() {
