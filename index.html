@@ -1983,7 +1983,7 @@
               <div>
                 <p style="font-size: 13px; font-weight: 700; color: #6EE7B7; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;">Quick Payment</p>
                 <h3 style="font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 2px;">Pay via UPI / QR Code</h3>
-                <p style="font-size: 12.5px; color: #A7F3D0;">Google Pay, PhonePe, Paytm se turant payment karein</p>
+                <p style="font-size: 12.5px; color: #A7F3D0;">Pay instantly using Google Pay, PhonePe, Paytm, or any UPI app</p>
               </div>
               <button class="btn" style="background: #fff; color: #065F46; font-weight: 700; padding: 12px 24px; font-size: 14px; border-radius: 10px; display: flex; align-items: center; gap: 8px; flex-shrink: 0;" onclick="openPaymentQrModal()">
                 <i class="fa-solid fa-qrcode"></i> Pay Now
@@ -2719,12 +2719,12 @@
             <div style="display:flex; gap:14px; align-items:flex-start;">
               <i class="fa-solid fa-circle-info" style="color:var(--acc); font-size:20px; margin-top:2px;"></i>
               <div>
-                <h4 style="font-size:14px; font-weight:700; margin-bottom:4px;">Party Portal Login Kaise Banayein?</h4>
+                <h4 style="font-size:14px; font-weight:700; margin-bottom:4px;">How to Create a Party Portal Login?</h4>
                 <p style="font-size:12.5px; color:var(--txt2); line-height:1.6;">
-                  1. Upar <strong>"Create Party Login"</strong> button click karein.<br>
-                  2. Dropdown me apni party (Customer/Supplier) select karein.<br>
-                  3. Unhe ek <strong>Email</strong> aur <strong>Password</strong> de dein.<br>
-                  4. Save hone ke baad woh party apna ledger, outstanding dues, aur invoices khud dekh sakta hai.
+                  1. Click the <strong>"Create Party Login"</strong> button above.<br>
+                  2. Select the party (Customer/Supplier) from the dropdown.<br>
+                  3. Assign them an <strong>Email</strong> and a <strong>Password</strong>.<br>
+                  4. After saving, the party can log in to view their statement, outstanding dues, and invoices independently.
                 </p>
               </div>
             </div>
@@ -2929,10 +2929,10 @@
                 <h3 style="color:#B45309; font-weight:700; font-size:16px; margin:0;"><i class="fa-solid fa-file-import"></i> Sheets to Firebase Migration</h3>
               </div>
               <p style="font-size: 13px; color: #B45309; margin-bottom: 16px; line-height: 1.5; text-align: left;">
-                Apne purane Google Sheets database ke data ko current active Firebase database par transfer (migrate) karne ke liye neeche click karein.
+                Click below to transfer (migrate) your data from the legacy Google Sheets database to the active Firebase database.
               </p>
               <div style="margin-bottom: 16px; font-size:12px; border: 1px solid #F59E0B; background:#FEF3C7; color:#92400E; padding:10px; border-radius:var(--r); text-align: left; line-height: 1.4;">
-                <i class="fa-solid fa-triangle-exclamation"></i> <strong>Caution:</strong> Isse dynamic Firebase data replace ho jayega aur Sheets wala purana data copy ho jayega.
+                <i class="fa-solid fa-triangle-exclamation"></i> <strong>Caution:</strong> This will overwrite the current Firebase data and copy the data from Google Sheets.
               </div>
               <button class="btn" onclick="runDatabaseMigrationFromGoogleSheets()" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; background:#D97706; color:#fff; font-weight:700; border:none; padding:12px; border-radius:var(--r); cursor:pointer;">
                 <i class="fa-solid fa-angles-right"></i> Start Migration to Firebase
@@ -3044,7 +3044,7 @@
 
         <div id="paymentQrNotSetMsg" style="display:none; color:var(--txt2); font-size:14px; padding:24px 0;">
           <i class="fa-solid fa-circle-xmark" style="font-size:40px; color:#CBD5E1; display:block; margin-bottom:12px;"></i>
-          Admin ne abhi QR code set nahi kiya hai.<br>Payment ke liye admin se contact karein.
+          The administrator has not configured a QR code yet.<br>Please contact the admin for payment.
         </div>
 
         <!-- QR Code Timer -->
@@ -3063,17 +3063,17 @@
 
         <img id="paymentQrImage" src="" alt="UPI QR Code" style="max-width: 220px; width: 100%; border: 4px solid #E2E8F0; border-radius: 12px; display:none; margin: 0 auto;">
         <div id="paymentQrInfo" style="display:none; margin-top: 14px;">
-          <p style="font-size: 13px; color: var(--txt2); margin-bottom: 2px;">Is QR ko scan karo aur payment karo</p>
-          <p style="font-size: 12px; color: #94A3B8; margin-bottom:12px;">Google Pay, PhonePe, Paytm, ya kisi bhi UPI app se</p>
+          <p style="font-size: 13px; color: var(--txt2); margin-bottom: 2px;">Scan this QR code to make the payment</p>
+          <p style="font-size: 12px; color: #94A3B8; margin-bottom:12px;">Using Google Pay, PhonePe, Paytm, or any UPI app</p>
           <!-- UPI Deep Link Button -->
           <a id="paymentUpiDeepLink" href="#" style="display:none; background:linear-gradient(135deg,#8B5CF6,#6D28D9); color:#fff; font-weight:700; padding:10px 20px; font-size:13px; border-radius:8px; text-decoration:none; display:inline-flex; align-items:center; gap:8px; margin-bottom:12px; justify-content:center;" target="_blank">
-            <i class="fa-solid fa-mobile-screen-button"></i> UPI App Se Pay Karein
+            <i class="fa-solid fa-mobile-screen-button"></i> Pay via UPI App
           </a>
           <p id="paymentUpiMobileNote" style="display:none; font-size: 11.5px; color: var(--txt2); margin-top:-6px; margin-bottom:12px; font-weight: 500;">
-            <i class="fa-solid fa-circle-info" style="color:var(--acc);"></i> Yeh button sirf Mobile phone par kaam karega. Computer/Laptop par upar diye gaye QR Code ko scan karein.
+            <i class="fa-solid fa-circle-info" style="color:var(--acc);"></i> This button works on mobile devices only. For computers, please scan the QR code displayed above.
           </p>
           <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:8px; padding:10px 14px; font-size:13px; color:#166534; margin-bottom: 14px;">
-            <i class="fa-solid fa-circle-check"></i> Payment karne ke baad neeche "Payment Done" button dabao
+            <i class="fa-solid fa-circle-check"></i> After making the payment, enter the UTR details and click "Submit Payment Request" below.
           </div>
         </div>
 
@@ -3086,7 +3086,7 @@
           <label style="font-size:13px; font-weight:600; color:var(--txt); margin-top:10px; display:block;">Narration / Note</label>
           <input type="text" id="paymentQrNarration" class="light-form-control" placeholder="e.g. Invoice #INV-2026-001" style="margin-top:6px;" oninput="updateUpiDeepLink()">
           <div style="background:#FEF9C3; border:1px solid #FDE047; border-radius:8px; padding:10px 14px; font-size:12.5px; color:#713F12; margin-top:10px;">
-            <i class="fa-solid fa-clock" style="color:#D97706;"></i> <strong>Note:</strong> Payment abhi pending rahega. Admin bank statement se verify karke approve karega, tab hi balance adjust hoga.
+            <i class="fa-solid fa-clock" style="color:#D97706;"></i> <strong>Note:</strong> Payment will remain pending. The administrator will verify it against the bank statement to approve it, after which the balance will be adjusted.
           </div>
         </div>
       </div>
@@ -3213,13 +3213,20 @@
   <!-- MY TRANSACTIONS MODAL -->
   <div class="modal-backdrop" id="myTransactionsModal">
     <div class="modal-card" style="max-width: 800px;">
+      <style>
+        #myTransactionsModal table th, 
+        #myTransactionsModal table td {
+          padding: 10px 8px !important;
+          font-size: 13px !important;
+        }
+      </style>
       <div class="modal-header">
         <h3>My Invoices & Transactions</h3>
         <i class="fa-solid fa-xmark pointer" onclick="closeModal('myTransactionsModal')"></i>
       </div>
       <div class="modal-body" style="padding: 0; overflow-x: auto; min-width: 0;">
         <div class="table-container" style="box-shadow: none; border-radius: 0; border: none; margin: 0;">
-          <table style="min-width: 950px; width: 100%;">
+          <table style="min-width: 750px; width: 100%;">
             <thead>
               <tr>
                 <th>Voucher No</th>
@@ -4180,13 +4187,13 @@
         <div class="modal-body">
           <div style="background: rgba(229,193,88,0.08); border: 1px solid rgba(229,193,88,0.3); border-radius: 8px; padding: 12px 14px; margin-bottom: 18px; font-size: 12.5px; color: var(--txt2); line-height:1.7;">
             <i class="fa-solid fa-lightbulb" style="color:var(--acc); margin-right:6px;"></i>
-            Party apne <strong style="color:var(--txt);">outstanding dues, invoices, aur ledger</strong> khud dekh sakti hai. Neeche party select karke login credentials de dein.
+            Parties can view their own <strong style="color:var(--txt);">outstanding dues, invoices, and ledger</strong>. Select a party below to assign login credentials.
           </div>
 
           <div class="form-group">
-            <label>Party Select Karein <span style="color:var(--dan);">*</span></label>
+            <label>Select Party <span style="color:var(--dan);">*</span></label>
             <select id="qplPartyId" class="light-form-control" onchange="fillPartyLoginDefaults()">
-              <option value="">-- Party Choose Karein --</option>
+              <option value="">-- Choose Party --</option>
             </select>
           </div>
           <div class="grid-2">
@@ -7201,7 +7208,7 @@
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      showToast('Template downloaded. Excel me data daalo aur CSV save karke upload karo.', 'success');
+      showToast('Template downloaded. Fill your data in Excel, save it as a CSV file, and upload it.', 'success');
     }
 
     function importPartyCSV(e) {
@@ -7211,7 +7218,7 @@
 
       const isExcel = /\.xlsx?$/.test(file.name.toLowerCase());
       if (isExcel) {
-        showToast('Excel file upload ke liye CSV me save karke try karo. Is version me CSV import support hai.', 'warning');
+        showToast('Please save the Excel file as a CSV file and try uploading. This version supports CSV imports.', 'warning');
         e.target.value = '';
         return;
       }
@@ -7221,7 +7228,7 @@
         const text = evt.target.result;
         const rows = parseCSVText(text);
         if (rows.length <= 1) {
-          showToast('CSV me koi data row nahi mili.', 'error');
+          showToast('No data rows found in the CSV file.', 'error');
           return;
         }
 
@@ -7252,7 +7259,7 @@
         const gpsIdx = findColumn(['gps', 'location', 'coordinates']);
 
         if (nameIdx === -1) {
-          showToast('CSV me "name" column missing hai. Template ko use karo.', 'error');
+          showToast('The "name" column is missing in the CSV file. Please use the official template.', 'error');
           return;
         }
 
@@ -7369,7 +7376,7 @@
         const text = evt.target.result;
         const rows = parseCSVText(text);
         if (rows.length <= 1) {
-          showToast('CSV me koi data row nahi mili.', 'error');
+          showToast('No data rows found in the CSV file.', 'error');
           return;
         }
 
@@ -7394,7 +7401,7 @@
         const paymentModeIdx = findColumn(['paymentmode', 'payment mode', 'mode']);
 
         if (partyNameIdx === -1 || dateIdx === -1 || typeIdx === -1) {
-          showToast('CSV me partyName, date, aur type columns zaroori hain.', 'error');
+          showToast('The columns "partyName", "date", and "type" are required in the CSV file.', 'error');
           return;
         }
 
@@ -13381,7 +13388,7 @@
     function openQuickPartyLoginModal() {
       document.getElementById('quickPartyLoginForm').reset();
       const select = document.getElementById('qplPartyId');
-      select.innerHTML = '<option value="">-- Party Choose Karein --</option>';
+      select.innerHTML = '<option value="">-- Choose Party --</option>';
 
       // Populate parties sorted alphabetically
       const sortedParties = [...App.data.parties].sort((a, b) => a.name.localeCompare(b.name));
@@ -14777,7 +14784,7 @@
 
           body.innerHTML += `
             <tr>
-              <td><strong>${t.voucherNo || t.id}</strong></td>
+              <td style="word-break: break-all; font-size: 12.5px; max-width: 140px;"><strong>${t.voucherNo || t.id}</strong></td>
               <td>${formatDate(t.date)}</td>
               <td><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
               <td class="text-right">${debit > 0 ? formatCurrency(debit) : '--'}</td>
