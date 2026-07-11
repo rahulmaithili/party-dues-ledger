@@ -4311,6 +4311,9 @@
     let userSavedTransaction = false;
 
     // State management
+    let _sessionUser = null;
+    let _sessionIsAdmin = false;
+
     const App = {
       data: {
         parties: [],
@@ -4330,11 +4333,30 @@
         partyTypes: [],
         paymentRequests: []
       },
-      currentUser: null,
       currentPage: 'dashboard',
-      isAdmin: false,
       isLoading: false
     };
+
+    Object.defineProperty(App, 'currentUser', {
+      get: function() { return _sessionUser; },
+      set: function(val) {
+        if (val) {
+          // Freeze user object so properties cannot be mutated client-side
+          _sessionUser = Object.freeze(Object.assign({}, val));
+          _sessionIsAdmin = (_sessionUser.role === 'Admin');
+        } else {
+          _sessionUser = null;
+          _sessionIsAdmin = false;
+        }
+      },
+      configurable: false
+    });
+
+    Object.defineProperty(App, 'isAdmin', {
+      get: function() { return _sessionIsAdmin; },
+      set: function() { /* Read-only property */ },
+      configurable: false
+    });
 
     // Helper functions
     function formatCurrency(amount) {

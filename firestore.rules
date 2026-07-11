@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is logged in
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    // Helper to get current user document from Firestore
+    function getUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    // Helper to check user roles
+    function isAdmin() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserDoc().role == 'Admin';
+    }
+    
+    function isStaff() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && (getUserDoc().role == 'Admin' || getUserDoc().role == 'Staff');
+    }
+    
+    function isParty() {
+      return isSignedIn() && exists(/databases/$(database)/documents/users/$(request.auth.uid)) && getUserDoc().role == 'Party';
+    }
+
+    // Rules for Users collection
+    match /users/{userId} {
+      allow read: if isSignedIn();
+      // Allow self-registration or admin editing
+      allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow update, delete: if isAdmin();
+    }
+
+    // Rules for Parties
+    match /parties/{partyId} {
+      allow read: if isStaff() || (isParty() && getUserDoc().partyId == partyId);
+      allow write: if isStaff();
+    }
+
+    // Rules for Transactions
+    match /transactions/{txnId} {
+      allow read: if isStaff() || (isParty() && getUserDoc().partyId == resource.data.partyId);
+      allow write: if isStaff();
+    }
+
+    // Rules for Payment Requests
+    match /paymentRequests/{reqId} {
+      // Party can only read their own requests. Staff can read all.
+      allow read: if isStaff() || (isParty() && getUserDoc().partyId == resource.data.partyId);
+      
+      // Party can create a request for themselves, but must set status to Pending
+      allow create: if isParty() 
+                    && getUserDoc().partyId == request.resource.data.partyId
+                    && request.resource.data.status == 'Pending';
+                    
+      // Only admin can process (update) payment requests
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Rules for Bank Accounts
+    match /bankAccounts/{accId} {
+      allow read: if isStaff();
+      allow write: if isAdmin();
+    }
+
+    // Rules for Expenses
+    match /expenses/{expId} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+    }
+
+    // Rules for Notifications
+    match /notifications/{notifId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn();
+    }
+
+    // Default rules for all other collections (Quotations, PurchaseOrders, CRM, etc.)
+    match /{document=**} {
+      allow read: if isStaff() || (isParty() && resource.data.partyId == getUserDoc().partyId);
+      allow write: if isStaff();
+    }
+  }
+}
