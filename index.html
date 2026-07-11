@@ -10431,9 +10431,10 @@
       });
 
       const w = window.open();
-      const company = App.data.settings || {};
+      const company = App.data.companyProfile || {};
       const companyName = company.companyName || 'Shiv Shakti Agency';
       const companyAddress = company.companyAddress || '';
+      const companyPhone = company.companyPhone || '';
       const companyGstin = company.companyGstin || '';
       const companyLogo = company.logoUrl || '';
 
@@ -10509,6 +10510,7 @@
               <div class="company-details">
                 <h1>${companyName}</h1>
                 ${companyAddress ? `<p>${companyAddress}</p>` : ''}
+                ${companyPhone ? `<p><strong>Mobile:</strong> ${companyPhone}</p>` : ''}
                 ${companyGstin ? `<p><strong>GSTIN:</strong> ${companyGstin}</p>` : ''}
               </div>
               ${companyLogo ? `<img class="logo" src="${companyLogo}" />` : ''}
