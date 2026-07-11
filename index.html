@@ -1771,6 +1771,10 @@
           <i class="fa-solid fa-bars hide-on-desktop" onclick="toggleSidebarDesktop()" style="font-size: 20px; cursor: pointer; color: var(--txt);"></i>
           <span style="font-weight: 600; font-size: 16px;" id="currentLocationName">Dashboard</span>
         </div>
+        <div class="topbar-center hide-on-mobile hide-for-party" style="flex: 1; max-width: 450px; margin: 0 20px; position: relative;">
+          <input type="text" id="aiCommandInput" placeholder="Ask AI: 'show overdue customers' or 'go to settings'..." style="width: 100%; height: 38px; border-radius: var(--r); border: 1px solid var(--brd); padding: 0 40px 0 16px; font-size: 13px; background: var(--card); color: var(--txt);" onkeydown="handleAiCommandKeydown(event)">
+          <i class="fa-solid fa-wand-magic-sparkles" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--acc); cursor: pointer;" onclick="runAiCommandCenter()"></i>
+        </div>
         <div class="topbar-right">
           <div class="topbar-action" onclick="toggleTheme()" title="Toggle Theme" style="margin-right: 8px;">
             <i class="fa-solid fa-moon" id="themeIcon"></i>
@@ -5257,6 +5261,142 @@
       }
     }
 
+    // ==================== AI RISK & COMMAND CENTER FUNCTIONS ====================
+    function getPartyCreditRisk(p, balance) {
+      if (getPartyBaseType(p) !== 'Customer') return null;
+      if (balance <= 0) return 'Low';
+
+      const limit = parseFloat(p.creditLimit || 0);
+      if (limit > 0 && balance > limit) {
+        return 'High';
+      }
+
+      const txns = App.data.transactions || [];
+      const today = new Date();
+      let hasVeryOldDues = false;
+
+      txns.filter(t => t.partyId === p.id && (t.txnType === 'Sale' || t.txnType === 'Purchase')).forEach(t => {
+        const debit = parseFloat(t.debit || 0);
+        if (debit > 0) {
+          const storedDue = t.totals && t.totals.balanceDue !== undefined ? parseFloat(t.totals.balanceDue) : -1;
+          let due = 0;
+          if (storedDue > 0) due = storedDue;
+          else if (storedDue === -1) due = debit;
+
+          if (due > 0) {
+            const ageDays = Math.floor((today - new Date(t.date)) / (1000 * 60 * 60 * 24));
+            if (ageDays > 30) {
+              hasVeryOldDues = true;
+            }
+          }
+        }
+      });
+
+      if (hasVeryOldDues) return 'High';
+      return 'Medium';
+    }
+
+    async function runAiCommandCenter() {
+      const inputEl = document.getElementById('aiCommandInput');
+      const text = inputEl.value.trim();
+      if (!text) return;
+
+      const hasApiKey = !!(App.data.companyProfile && App.data.companyProfile.geminiApiKey);
+      const lower = text.toLowerCase();
+
+      // Quick local navigation routes
+      if (lower === 'sales' || lower === 'sale' || lower.includes('invoice list')) {
+        navigateTo('sales');
+        inputEl.value = '';
+        return;
+      }
+      if (lower.includes('setting') || lower === 'settings') {
+        navigateTo('settings');
+        inputEl.value = '';
+        return;
+      }
+      if (lower.includes('product') || lower === 'products') {
+        navigateTo('products');
+        inputEl.value = '';
+        return;
+      }
+      if (lower.includes('receipt') || lower === 'receipts' || lower === 'payment') {
+        navigateTo('receipts');
+        inputEl.value = '';
+        return;
+      }
+      if (lower.includes('security') || lower.includes('deposit')) {
+        navigateTo('cylinderSecurity');
+        inputEl.value = '';
+        return;
+      }
+
+      if (!hasApiKey) {
+        showToast("Gemini API key is required for advanced commands. Please configure it in App Settings first.", "warning");
+        return;
+      }
+
+      showLoading(true, "AI Command Center is thinking...");
+
+      const prompt = `Classify this user search command: "${text}". 
+      Possible actions are: 
+      - navigate (target: 'dashboard', 'parties', 'products', 'priceHistory', 'sales', 'receipts', 'returns', 'cylinderSecurity', 'paymentRequests', 'banking', 'quotations', 'deliveryChallans', 'reports', 'settings')
+      - filterParties (query: 'high risk' or 'customer name' or 'overdue')
+      - searchTransactions (query: 'voucher number' or 'party name')
+
+      Return the response ONLY as a JSON object with fields 'action' (string) and 'target' (string) and 'query' (string). Do not wrap in markdown tags.`;
+
+      try {
+        const responseText = await callGeminiAI(prompt, "You are a routing helper for an ERP system.");
+        
+        let cleanJson = responseText.trim();
+        if (cleanJson.startsWith('```')) {
+          cleanJson = cleanJson.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+        }
+
+        const res = JSON.parse(cleanJson);
+        showLoading(false);
+
+        if (res.action === 'navigate' && res.target) {
+          navigateTo(res.target);
+          showToast(`Navigated to ${res.target}`, "success");
+        } else if (res.action === 'filterParties') {
+          navigateTo('parties');
+          const searchInput = document.getElementById('partySearch');
+          if (searchInput) {
+            if (res.query === 'high risk') {
+              searchInput.value = '';
+            } else {
+              searchInput.value = res.query;
+            }
+            renderParties();
+          }
+          showToast(`Searching parties for: "${res.query}"`, "success");
+        } else if (res.action === 'searchTransactions') {
+          navigateTo('sales');
+          const searchInput = document.getElementById('salesSearch');
+          if (searchInput) {
+            searchInput.value = res.query;
+            renderSales();
+          }
+          showToast(`Searching transactions for: "${res.query}"`, "success");
+        } else {
+          showToast("AI understood your request but couldn't map it. Try saying 'open settings'.", "info");
+        }
+        inputEl.value = '';
+      } catch (err) {
+        showLoading(false);
+        console.error(err);
+        showToast("AI Command Error: " + err.message, "error");
+      }
+    }
+
+    function handleAiCommandKeydown(event) {
+      if (event.key === 'Enter') {
+        runAiCommandCenter();
+      }
+    }
+
     // Main Firebase action dispatcher (drop-in replacement for callServer)
     async function callServer(action, payload, callback, failCallback, silentMode) {
       const isReadAction = ['getAllData', 'getDashboardStats', 'getReport'].includes(action);
@@ -7319,6 +7459,16 @@
         const color = balance > 0 ? 'var(--dan)' : (balance < 0 ? 'var(--suc)' : 'var(--txt)');
         const displayBal = balance === 0 ? '₹0.00' : (balance > 0 ? `${formatCurrency(balance)} (Dr)` : `${formatCurrency(Math.abs(balance))} (Cr)`);
         
+        const risk = getPartyCreditRisk(p, balance);
+        let riskBadge = '';
+        if (risk === 'Low') {
+          riskBadge = `<span class="badge" style="background:#E0F2FE; color:#0369A1; font-size:10px; padding: 2px 6px; margin-left:6px; font-weight:600;" title="Healthy payments history">Risk: Low</span>`;
+        } else if (risk === 'Medium') {
+          riskBadge = `<span class="badge" style="background:#FEF3C7; color:#B45309; font-size:10px; padding: 2px 6px; margin-left:6px; font-weight:600;" title="Outstanding balance pending">Risk: Medium</span>`;
+        } else if (risk === 'High') {
+          riskBadge = `<span class="badge" style="background:#FEE2E2; color:#B91C1C; font-size:10px; padding: 2px 6px; margin-left:6px; font-weight:600;" title="Overdue invoices > 30 days or credit limit exceeded!">Risk: High</span>`;
+        }
+
         const wsapBtn = balance > 0 ? `<button class="btn btn-icon text-success" onclick="sendWhatsAppReminder('${p.id}')" title="Send WhatsApp Reminder" style="margin-left:6px; color:#25D366 !important; background:none; border:none; padding:0; cursor:pointer;"><i class="fa-brands fa-whatsapp" style="font-size:16px;"></i></button>` : '';
 
         if (viewMode === 'list') {
@@ -7326,7 +7476,7 @@
             <tr>
               <td class="admin-only" style="text-align: center;"><input type="checkbox" class="party-select-checkbox" data-id="${p.id}" onchange="updateSelectedPartiesCount()" style="width: 16px; height: 16px; cursor: pointer;"></td>
               <td><strong>${p.id}</strong></td>
-              <td><strong>${p.name}</strong></td>
+              <td><strong>${p.name}</strong>${riskBadge}</td>
               <td><span class="badge ${getPartyBaseType(p) === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span></td>
               <td>${p.mobile}</td>
               <td class="gst-only">${p.gstin || '--'}</td>
@@ -7351,7 +7501,7 @@
                   <span style="font-size: 11px; font-weight: 700; color: var(--txt2); background: var(--bg); padding: 4px 8px; border-radius: 4px;">${p.id}</span>
                   <span class="badge ${getPartyBaseType(p) === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span>
                 </div>
-                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--txt);">${p.name}</h3>
+                <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--txt);">${p.name}${riskBadge}</h3>
                 <p style="font-size: 13px; color: var(--txt2); margin-bottom: 4px;"><i class="fa-solid fa-phone" style="margin-right: 6px; width: 14px;"></i>${p.mobile}</p>
                 <p style="font-size: 13px; color: var(--txt2); margin-bottom: 12px;"><i class="fa-solid fa-receipt" style="margin-right: 6px; width: 14px;"></i>${p.gstin || '--'}</p>
               </div>
