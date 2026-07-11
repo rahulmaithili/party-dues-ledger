@@ -7378,9 +7378,12 @@
                 items.push({
                   productId: product.id,
                   productName: product.name,
+                  rate: rate || (amount / qty),
                   price: rate || (amount / qty),
                   quantity: qty,
+                  amount: amount,
                   total: amount,
+                  emptyReturn: 0,
                   cylinderReturn: 0
                 });
               }
@@ -9122,18 +9125,19 @@
 
       const itemsList = t.items || [];
       itemsList.forEach((item, idx) => {
-        activeInvoiceItems.push({
+        const mappedItem = {
           productId: item.productId,
           quantity: item.quantity,
-          emptyReturn: item.emptyReturn || 0,
-          rate: item.rate,
+          emptyReturn: item.emptyReturn !== undefined ? item.emptyReturn : (item.cylinderReturn || 0),
+          rate: item.rate !== undefined ? item.rate : (item.price || 0),
           gst: (item.gst !== undefined && item.gst !== null) ? item.gst : 18,
-          amount: item.amount
-        });
+          amount: item.amount !== undefined ? item.amount : (item.total || 0)
+        };
+        activeInvoiceItems.push(mappedItem);
 
         let prodOptions = '';
         App.data.products.forEach(p => {
-          prodOptions += `<option value="${p.id}" ${p.id === item.productId ? 'selected' : ''}>${p.name}</option>`;
+          prodOptions += `<option value="${p.id}" ${p.id === mappedItem.productId ? 'selected' : ''}>${p.name}</option>`;
         });
 
         const tr = document.createElement('tr');
@@ -9145,18 +9149,18 @@
             </select>
           </td>
           <td>
-            <input type="number" class="light-form-control" value="${item.quantity}" min="1" oninput="handleInvoiceItemQtyChange(${idx}, this.value)" required>
+            <input type="number" class="light-form-control" value="${mappedItem.quantity}" min="1" oninput="handleInvoiceItemQtyChange(${idx}, this.value)" required>
           </td>
           <td>
-            <input type="number" class="light-form-control" value="${item.emptyReturn || 0}" min="0" oninput="handleInvoiceItemEmptyReturnChange(${idx}, this.value)">
+            <input type="number" class="light-form-control" value="${mappedItem.emptyReturn}" min="0" oninput="handleInvoiceItemEmptyReturnChange(${idx}, this.value)">
           </td>
           <td>
-            <input type="number" class="light-form-control text-right" step="0.01" value="${item.rate}" oninput="handleInvoiceItemRateChange(${idx}, this.value)" required>
+            <input type="number" class="light-form-control text-right" step="0.01" value="${mappedItem.rate}" oninput="handleInvoiceItemRateChange(${idx}, this.value)" required>
           </td>
           <td class="gst-only">
-            <input type="number" class="light-form-control text-right" value="${(item.gst !== undefined && item.gst !== null) ? item.gst : 18}" readonly>
+            <input type="number" class="light-form-control text-right" value="${(mappedItem.gst !== undefined && mappedItem.gst !== null) ? mappedItem.gst : 18}" readonly>
           </td>
-          <td class="text-right" style="font-weight:600; padding-top:20px;" id="invItemTotal_${idx}">${formatCurrency(item.amount)}</td>
+          <td class="text-right" style="font-weight:600; padding-top:20px;" id="invItemTotal_${idx}">${formatCurrency(mappedItem.amount)}</td>
           <td class="text-center">
             <i class="fa-solid fa-trash pointer text-danger" onclick="removeInvoiceItemRow(${idx})"></i>
           </td>
@@ -9917,16 +9921,17 @@
       body.innerHTML = '';
 
       (doc.items || []).forEach((item, idx) => {
-        activeDocItems.push({
+        const mappedItem = {
           productId: item.productId,
           quantity: item.quantity,
-          rate: item.rate,
-          amount: item.amount
-        });
+          rate: item.rate !== undefined ? item.rate : (item.price || 0),
+          amount: item.amount !== undefined ? item.amount : (item.total || 0)
+        };
+        activeDocItems.push(mappedItem);
 
         let prodOptions = '';
         App.data.products.forEach(p => {
-          prodOptions += `<option value="${p.id}" ${p.id === item.productId ? 'selected' : ''}>${p.name}</option>`;
+          prodOptions += `<option value="${p.id}" ${p.id === mappedItem.productId ? 'selected' : ''}>${p.name}</option>`;
         });
 
         const tr = document.createElement('tr');
@@ -9938,12 +9943,12 @@
             </select>
           </td>
           <td>
-            <input type="number" class="light-form-control" value="${item.quantity}" min="1" oninput="handleDocItemQtyChange(${idx}, this.value)" required>
+            <input type="number" class="light-form-control" value="${mappedItem.quantity}" min="1" oninput="handleDocItemQtyChange(${idx}, this.value)" required>
           </td>
           <td>
-            <input type="number" class="light-form-control text-right" step="0.01" value="${item.rate}" oninput="handleDocItemRateChange(${idx}, this.value)" required>
+            <input type="number" class="light-form-control text-right" step="0.01" value="${mappedItem.rate}" oninput="handleDocItemRateChange(${idx}, this.value)" required>
           </td>
-          <td class="text-right" style="font-weight:600; padding-top:20px;" id="docItemTotal_${idx}">${formatCurrency(item.amount)}</td>
+          <td class="text-right" style="font-weight:600; padding-top:20px;" id="docItemTotal_${idx}">${formatCurrency(mappedItem.amount)}</td>
           <td class="text-center">
             <i class="fa-solid fa-trash pointer text-danger" onclick="removeDocItemRow(${idx})"></i>
           </td>
@@ -12133,15 +12138,18 @@
 
         let itemsRows = '';
         (t.items || []).forEach((x, idx) => {
+          const rate = x.rate !== undefined ? x.rate : (x.price || 0);
+          const emptyReturn = x.emptyReturn !== undefined ? x.emptyReturn : (x.cylinderReturn || 0);
+          const amount = x.amount !== undefined ? x.amount : (x.total || 0);
           itemsRows += `
             <tr>
               <td class="text-center">${idx + 1}</td>
               <td><strong>${x.productName}</strong></td>
               <td class="text-right">${x.quantity} ${x.unit || 'Nos'}</td>
-              <td class="text-right">${x.emptyReturn || 0} ${x.unit || 'Nos'}</td>
-              <td class="text-right">${formatCurrency(x.rate)}</td>
-              <td class="text-right gst-only">${x.gst}%</td>
-              <td class="text-right" style="font-weight: 600;">${formatCurrency(x.amount)}</td>
+              <td class="text-right">${emptyReturn} ${x.unit || 'Nos'}</td>
+              <td class="text-right">${formatCurrency(rate)}</td>
+              <td class="text-right gst-only">${x.gst || 0}%</td>
+              <td class="text-right" style="font-weight: 600;">${formatCurrency(amount)}</td>
             </tr>
           `;
         });
