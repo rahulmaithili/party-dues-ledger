@@ -991,7 +991,9 @@
     .modal-body {
       padding: 24px;
       overflow-y: auto;
+      overflow-x: auto;
       flex: 1;
+      min-width: 0;
     }
 
     .modal-footer {
@@ -3215,7 +3217,7 @@
         <h3>My Invoices & Transactions</h3>
         <i class="fa-solid fa-xmark pointer" onclick="closeModal('myTransactionsModal')"></i>
       </div>
-      <div class="modal-body" style="padding: 0;">
+      <div class="modal-body" style="padding: 0; overflow-x: auto; min-width: 0;">
         <div class="table-container" style="box-shadow: none; border-radius: 0; border: none; margin: 0;">
           <table>
             <thead>
