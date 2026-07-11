@@ -268,6 +268,62 @@
       background: rgba(255, 255, 255, 0.05) !important;
     }
 
+    /* Fix dark mode styles leaking into print/preview invoice container */
+    body.dark-theme .invoice-container {
+      background: #FFFFFF !important;
+      color: #0F172A !important;
+      border-color: #E2E8F0 !important;
+    }
+    body.dark-theme .invoice-container table thead tr {
+      background: #F8FAFC !important;
+    }
+    body.dark-theme .invoice-container table thead th {
+      background: #F8FAFC !important;
+      color: #334155 !important;
+      border-bottom: 2px solid #E2E8F0 !important;
+    }
+    body.dark-theme .invoice-container table tbody tr {
+      background: #FFFFFF !important;
+      border-bottom: 1px solid #E2E8F0 !important;
+    }
+    body.dark-theme .invoice-container table tbody tr:hover {
+      background: #F8FAFC !important;
+    }
+    body.dark-theme .invoice-container table td {
+      color: #0F172A !important;
+      border-bottom-color: #E2E8F0 !important;
+    }
+    body.dark-theme .invoice-container .totals-table td {
+      color: #475569 !important;
+      background: transparent !important;
+    }
+    body.dark-theme .invoice-container .grand-total-row td {
+      color: #0F172A !important;
+      border-top: 1px solid #E2E8F0 !important;
+      background: transparent !important;
+    }
+    body.dark-theme .invoice-container .due-row td {
+      color: #DC2626 !important;
+      background: transparent !important;
+    }
+    body.dark-theme .invoice-container .amount-words {
+      background: #F8FAFC !important;
+      color: #475569 !important;
+      border: 1px dashed #E2E8F0 !important;
+    }
+    body.dark-theme .invoice-container .terms-box h4 {
+      color: #475569 !important;
+    }
+    body.dark-theme .invoice-container .terms-box p {
+      color: #64748B !important;
+    }
+    body.dark-theme .invoice-container .col-title {
+      color: #64748B !important;
+    }
+    body.dark-theme .invoice-container .divider {
+      background: #0F172A !important;
+    }
+
     * {
       margin: 0;
       padding: 0;
