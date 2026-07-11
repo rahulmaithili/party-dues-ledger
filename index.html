@@ -435,6 +435,36 @@
       justify-content: space-between;
     }
 
+    .desktop-toggle-btn {
+      cursor: pointer;
+      transition: all 0.2s ease;
+      color: var(--txt2);
+    }
+    .desktop-toggle-btn:hover {
+      color: var(--acc);
+      background: rgba(229,193,88,0.15) !important;
+    }
+    
+    @media (min-width: 993px) {
+      .hide-on-desktop {
+        display: none !important;
+      }
+      #app.collapsed #sidebar .sidebar-brand-wrapper {
+        display: none !important;
+      }
+      #app.collapsed #sidebar .desktop-toggle-btn {
+        margin: 0 auto;
+        display: inline-block !important;
+        padding: 8px 12px;
+        font-size: 18px !important;
+      }
+    }
+    @media (max-width: 992px) {
+      .hide-on-mobile {
+        display: none !important;
+      }
+    }
+
     .sidebar-header h1 {
       color: var(--acc);
       font-size: 20px;
@@ -1531,11 +1561,12 @@
     
     <!-- SIDEBAR -->
     <aside id="sidebar">
-      <div class="sidebar-header">
-        <div style="display: flex; align-items: center; gap: 10px;">
+      <div class="sidebar-header" style="position: relative;">
+        <div class="sidebar-brand-wrapper" style="display: flex; align-items: center; gap: 10px;">
           <img id="sidebarLogoImg" class="sidebar-logo" style="max-height: 32px; max-width: 32px; object-fit: contain; display: none;">
-          <h1 id="sidebarTitle">Mr.Rahul ERP</h1>
+          <h1 id="sidebarTitle" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">Mr.Rahul ERP</h1>
         </div>
+        <i class="fa-solid fa-chevron-left desktop-toggle-btn hide-on-mobile pointer" onclick="toggleSidebarDesktop()" id="sidebarToggleIcon" style="font-size: 14px; color: var(--txt2); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--brd); display: inline-block;"></i>
         <i class="fa-solid fa-xmark mobile-toggle" onclick="toggleSidebar(false)"></i>
       </div>
       <div class="sidebar-menu">
@@ -1630,7 +1661,7 @@
       <!-- TOPBAR -->
       <header id="topbar">
         <div class="topbar-left">
-          <i class="fa-solid fa-bars" onclick="toggleSidebarDesktop()" style="font-size: 20px; cursor: pointer; color: var(--txt);"></i>
+          <i class="fa-solid fa-bars hide-on-desktop" onclick="toggleSidebarDesktop()" style="font-size: 20px; cursor: pointer; color: var(--txt);"></i>
           <span style="font-weight: 600; font-size: 16px;" id="currentLocationName">Dashboard</span>
         </div>
         <div class="topbar-right">
@@ -6041,6 +6072,15 @@
       } else {
         const app = document.getElementById('app');
         app.classList.toggle('collapsed');
+        
+        const icon = document.getElementById('sidebarToggleIcon');
+        if (icon) {
+          if (app.classList.contains('collapsed')) {
+            icon.className = 'fa-solid fa-chevron-right desktop-toggle-btn hide-on-mobile pointer';
+          } else {
+            icon.className = 'fa-solid fa-chevron-left desktop-toggle-btn hide-on-mobile pointer';
+          }
+        }
       }
     }
 
