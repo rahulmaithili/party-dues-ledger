@@ -1274,6 +1274,9 @@
         width: 68px;
         overflow: visible;
       }
+      #app.collapsed #sidebar .sidebar-menu {
+        overflow: visible !important;
+      }
       /* Hide all text labels and section titles */
       #app.collapsed #sidebar #sidebarTitle,
       #app.collapsed #sidebar .sidebar-header .mobile-toggle,
@@ -1738,10 +1741,10 @@
 
         <div class="menu-section admin-only">
           <div class="menu-section-title">System Settings</div>
-          <a class="menu-item" data-page="users" onclick="navigateTo('users')">
+          <a class="menu-item" data-page="users" data-label="User Management" onclick="navigateTo('users')">
             <i class="fa-solid fa-user-gear"></i> User Management
           </a>
-          <a class="menu-item" data-page="settings" onclick="navigateTo('settings')">
+          <a class="menu-item" data-page="settings" data-label="App Settings" onclick="navigateTo('settings')">
             <i class="fa-solid fa-gears"></i> App Settings
           </a>
         </div>
@@ -2340,6 +2343,7 @@
               <p>Track returnable products given to clients and their security deposits</p>
             </div>
             <div class="flex-gap">
+              <button class="btn btn-secondary" onclick="printSecurityDeposits()"><i class="fa-solid fa-print"></i> Print List</button>
               <button class="btn btn-accent" onclick="openSecurityDepositModal()"><i class="fa-solid fa-plus"></i> New Security Deposit</button>
               <button class="btn btn-danger" onclick="openSecurityRefundModal()"><i class="fa-solid fa-arrow-rotate-left"></i> Record Refund & Return</button>
             </div>
@@ -10371,6 +10375,190 @@
           </tr>
         `;
       });
+    }
+
+    function printSecurityDeposits() {
+      const search = document.getElementById('securitySearch').value.toLowerCase();
+      const statusFilter = document.getElementById('securityFilterStatus').value;
+
+      if (!App.data.cylinderSecurity) App.data.cylinderSecurity = [];
+
+      const list = App.data.cylinderSecurity.filter(s => {
+        const matchesSearch = String(s.partyName || '').toLowerCase().includes(search) || String(s.cylinderType || '').toLowerCase().includes(search);
+        
+        let matchesStatus = true;
+        const pending = parseFloat(s.pending || 0);
+        if (statusFilter === 'Pending') matchesStatus = pending > 0;
+        else if (statusFilter === 'Returned') matchesStatus = pending === 0;
+
+        return matchesSearch && matchesStatus;
+      });
+
+      let tableRows = '';
+      let sumOut = 0;
+      let sumIn = 0;
+      let sumPending = 0;
+      let sumDeposit = 0;
+      let sumRefund = 0;
+
+      list.forEach((s, index) => {
+        const pending = parseFloat(s.pending || 0);
+        const totalOut = parseFloat(s.totalOut || 0);
+        const totalIn = parseFloat(s.totalIn || 0);
+        const deposit = parseFloat(s.depositAmount || 0);
+        const refund = parseFloat(s.refundAmount || 0);
+
+        sumOut += totalOut;
+        sumIn += totalIn;
+        sumPending += pending;
+        sumDeposit += deposit;
+        sumRefund += refund;
+
+        tableRows += `
+          <tr>
+            <td style="text-align: center;">${index + 1}</td>
+            <td><strong>${s.id}</strong></td>
+            <td><strong>${s.partyName}</strong></td>
+            <td>${s.cylinderType}</td>
+            <td style="text-align: right;">${totalOut}</td>
+            <td style="text-align: right;">${totalIn}</td>
+            <td style="text-align: right; font-weight: 700; color: ${pending > 0 ? '#EF4444' : '#334155'};">${pending}</td>
+            <td style="text-align: right;">₹${deposit.toFixed(2)}</td>
+            <td style="text-align: right;">₹${refund.toFixed(2)}</td>
+            <td>${formatDate(s.depositDate)}</td>
+          </tr>
+        `;
+      });
+
+      const w = window.open();
+      const company = App.data.settings || {};
+      const companyName = company.companyName || 'Shiv Shakti Agency';
+      const companyAddress = company.companyAddress || '';
+      const companyGstin = company.companyGstin || '';
+      const companyLogo = company.logoUrl || '';
+
+      w.document.write(`
+        <html>
+          <head>
+            <title>Cylinder & Product Security Deposits List</title>
+            <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+            <style>
+              body { font-family: 'Inter', sans-serif; color: #1E293B; padding: 40px; margin: 0; background: #FFF; }
+              .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                border-bottom: 2px solid #0F172A;
+                padding-bottom: 20px;
+                margin-bottom: 20px;
+              }
+              .company-details h1 {
+                font-size: 24px;
+                font-weight: 700;
+                color: #0F172A;
+                margin: 0 0 6px 0;
+              }
+              .company-details p {
+                font-size: 12px;
+                color: #475569;
+                margin: 2px 0;
+              }
+              .logo {
+                max-height: 70px;
+                max-width: 150px;
+                object-fit: contain;
+              }
+              .statement-title {
+                font-size: 18px;
+                font-weight: 700;
+                color: #0F172A;
+                margin: 0 0 15px 0;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+              }
+              table {
+                width: 100%;
+                border-collapse: collapse;
+                font-size: 12px;
+                margin-bottom: 30px;
+              }
+              th, td {
+                padding: 10px 12px;
+                border-bottom: 1px solid #E2E8F0;
+                text-align: left;
+              }
+              th {
+                background: #F8FAFC;
+                font-weight: 700;
+                color: #0F172A;
+              }
+              .grand-total-row td {
+                font-weight: 700;
+                font-size: 13px;
+                color: #0F172A;
+                border-top: 2px solid #0F172A;
+                background: #F8FAFC;
+              }
+              @media print {
+                body { padding: 0; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <div class="company-details">
+                <h1>${companyName}</h1>
+                ${companyAddress ? `<p>${companyAddress}</p>` : ''}
+                ${companyGstin ? `<p><strong>GSTIN:</strong> ${companyGstin}</p>` : ''}
+              </div>
+              ${companyLogo ? `<img class="logo" src="${companyLogo}" />` : ''}
+            </div>
+
+            <div class="statement-title">Security Deposits Directory (${statusFilter} Records)</div>
+            <p style="font-size:12px; margin-top:-10px; color:#64748B;">Generated on ${new Date().toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'})}</p>
+
+            <table>
+              <thead>
+                <tr>
+                  <th style="text-align: center; width: 40px;">S.No</th>
+                  <th>Voucher ID</th>
+                  <th>Customer Name</th>
+                  <th>Product / Cylinder</th>
+                  <th style="text-align: right;">Qty Out</th>
+                  <th style="text-align: right;">Qty Returned</th>
+                  <th style="text-align: right;">Pending Qty</th>
+                  <th style="text-align: right;">Deposit Collected</th>
+                  <th style="text-align: right;">Deposit Refunded</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${tableRows || '<tr><td colspan="10" style="text-align:center; padding: 20px;">No records match the current filter criteria.</td></tr>'}
+                ${tableRows ? `
+                  <tr class="grand-total-row">
+                    <td colspan="4" style="text-align: right;">Total Sum:</td>
+                    <td style="text-align: right;">${sumOut}</td>
+                    <td style="text-align: right;">${sumIn}</td>
+                    <td style="text-align: right; color: ${sumPending > 0 ? '#EF4444' : '#0F172A'};">${sumPending}</td>
+                    <td style="text-align: right;">₹${sumDeposit.toFixed(2)}</td>
+                    <td style="text-align: right;">₹${sumRefund.toFixed(2)}</td>
+                    <td></td>
+                  </tr>
+                ` : ''}
+              </tbody>
+            </table>
+
+            <script>
+              window.onload = function() {
+                setTimeout(function() {
+                  window.print();
+                }, 500);
+              };
+            ${'</scr' + 'ipt>'}
+          </body>
+        </html>
+      `);
+      w.document.close();
     }
 
     function openSecurityDepositModal() {
