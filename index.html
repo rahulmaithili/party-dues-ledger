@@ -62,6 +62,7 @@
       --sba: #E5C158;
       --sbh: #1E293B;
       --bg: #F8FAFC;
+      --bg2: #F1F5F9;
       --card: #FFFFFF;
       --pri: #3B82F6;
       --suc: #10B981;
@@ -180,11 +181,11 @@
       background: #0D1526 !important;
     }
 
-    body.dark-theme .sidebar {
+    body.dark-theme #sidebar {
       background: #080D18 !important;
     }
 
-    body.dark-theme .topbar {
+    body.dark-theme #topbar {
       background: #151F32 !important;
       border-bottom-color: #1E293B !important;
     }
@@ -6396,6 +6397,9 @@
           localStorage.setItem('theme', 'light');
         }
       }
+      if (App.currentPage === 'dashboard') {
+        loadChartsData();
+      }
     }
 
     function initializeApp() {
@@ -6833,6 +6837,10 @@
       const ctx = document.getElementById('salesChart').getContext('2d');
       if (dashboardChart) dashboardChart.destroy();
 
+      const isDarkMode = document.body.classList.contains('dark-theme');
+      const gridColor = isDarkMode ? '#1E293B' : '#F1F5F9';
+      const textColor = isDarkMode ? '#94A3B8' : '#64748B';
+
       dashboardChart = new Chart(ctx, {
         type: 'bar',
         data: {
@@ -6856,11 +6864,20 @@
           responsive: true,
           maintainAspectRatio: false,
           plugins: {
-            legend: { position: 'bottom' }
+            legend: { 
+              position: 'bottom',
+              labels: { color: textColor }
+            }
           },
           scales: {
-            y: { grid: { color: '#F1F5F9' }, ticks: { font: { family: 'Inter' } } },
-            x: { grid: { display: false }, ticks: { font: { family: 'Inter' } } }
+            y: { 
+              grid: { color: gridColor }, 
+              ticks: { color: textColor, font: { family: 'Inter' } } 
+            },
+            x: { 
+              grid: { display: false }, 
+              ticks: { color: textColor, font: { family: 'Inter' } } 
+            }
           }
         }
       });
