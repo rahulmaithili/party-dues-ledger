@@ -1640,7 +1640,8 @@
   <div id="loginPage">
     <div class="login-card">
       <div class="login-header">
-        <h2>Mr.Rahul ERP</h2>
+        <img id="loginLogoImg" style="display: none; max-height: 80px; max-width: 200px; object-fit: contain; margin: 0 auto 16px; filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.15));">
+        <h2 id="loginCompanyName">Mr.Rahul ERP</h2>
         <p>Sign in to manage Ledger & Dues</p>
       </div>
       <div id="loginErrorMsg" style="display: none; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 13.5px; text-align: center; font-weight: 500; line-height: 1.4;"></div>
@@ -1660,6 +1661,9 @@
       <div style="text-align: center; margin-top: 16px;">
         <a href="#" onclick="openForgotPasswordModal(event)" style="color: var(--txt2); font-size: 13px; text-decoration: none; font-weight: 500; transition: color 0.2s;" onmouseover="this.style.color='var(--acc)'" onmouseout="this.style.color='var(--txt2)'">Forgot Password?</a>
       </div>
+    </div>
+    <div style="position: absolute; bottom: 24px; left: 24px; color: var(--sbt); font-size: 13.5px; font-weight: 500; font-family: inherit; opacity: 0.8; pointer-events: none; z-index: 10000; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+      <i class="fa-solid fa-copyright" style="font-size: 14px;"></i> Mr.Rahul Script
     </div>
   </div>
 
@@ -4740,6 +4744,57 @@
       return true;
     }
 
+    function updateLoginCompanyProfile(profile) {
+      if (!profile) return;
+      const name = profile.companyName || 'Mr.Rahul ERP';
+      const logo = profile.companyLogo || '';
+      
+      const loginCompanyName = document.getElementById('loginCompanyName');
+      const loginLogoImg = document.getElementById('loginLogoImg');
+      
+      if (loginCompanyName) {
+        loginCompanyName.textContent = name;
+      }
+      if (loginLogoImg) {
+        if (logo) {
+          loginLogoImg.src = logo;
+          loginLogoImg.style.display = 'block';
+        } else {
+          loginLogoImg.style.display = 'none';
+          loginLogoImg.src = '';
+        }
+      }
+    }
+
+    // Load cached company profile immediately
+    try {
+      const cached = localStorage.getItem('cachedCompanyProfile');
+      if (cached) {
+        updateLoginCompanyProfile(JSON.parse(cached));
+      }
+    } catch(e) {
+      console.warn("Failed to load cached company profile:", e);
+    }
+
+    // Listen to Firebase auth state changes to fetch and cache the latest company profile
+    try {
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          db.collection('companyProfile').doc('main').get().then(doc => {
+            if (doc.exists) {
+              const profile = doc.data();
+              updateLoginCompanyProfile(profile);
+              localStorage.setItem('cachedCompanyProfile', JSON.stringify(profile));
+            }
+          }).catch(err => {
+            console.warn("Failed to fetch company profile for login page:", err);
+          });
+        }
+      });
+    } catch(e) {
+      console.warn("Firebase Auth state listener setup failed:", e);
+    }
+
     function handleBackendSetupSubmit(e) {
       e.preventDefault();
       // Firebase is configured directly — no URL needed
@@ -6973,6 +7028,11 @@
         App.data.companyProfile = cpObj;
       }
       if (App.data.companyProfile) {
+        updateLoginCompanyProfile(App.data.companyProfile);
+        try {
+          localStorage.setItem('cachedCompanyProfile', JSON.stringify(App.data.companyProfile));
+        } catch (e) {}
+
         const sidebarLogo = document.getElementById('sidebarLogoImg');
         const sidebarTitle = document.getElementById('sidebarTitle');
         if (sidebarLogo && sidebarTitle) {
