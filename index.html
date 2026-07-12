@@ -1754,11 +1754,15 @@
         </div>
       </div>
       
-      <div class="sidebar-footer pointer" onclick="openMyProfileModal()" title="Edit My Profile">
+      <div class="sidebar-footer pointer" onclick="openMyProfileModal()" title="Edit My Profile / Change Password">
         <div class="user-avatar" id="avatarName">A</div>
         <div class="user-info">
           <h4 id="userNameDisplay">Admin User</h4>
-          <p id="userRoleDisplay">Administrator</p>
+          <p id="userRoleDisplay" style="display: flex; align-items: center; gap: 4px; font-size: 11px; margin: 0; white-space: nowrap;">
+            <span id="userRoleText">Administrator</span>
+            <span style="color: var(--txt3);">•</span>
+            <span style="color: var(--acc); font-weight: 600; display: flex; align-items: center; gap: 3px;"><i class="fa-solid fa-key" style="font-size: 9px;"></i> Password</span>
+          </p>
         </div>
         <i class="fa-solid fa-right-from-bracket pointer text-white hover:text-danger" onclick="event.stopPropagation(); logout()" title="Logout"></i>
       </div>
@@ -1780,6 +1784,9 @@
           <i class="fa-solid fa-wand-magic-sparkles" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--acc); cursor: pointer;" onclick="runAiCommandCenter()"></i>
         </div>
         <div class="topbar-right">
+          <div class="topbar-action" onclick="openMyProfileModal()" title="Change Password / Profile" style="margin-right: 8px;">
+            <i class="fa-solid fa-key" style="color: var(--acc);"></i>
+          </div>
           <div class="topbar-action" onclick="toggleTheme()" title="Toggle Theme" style="margin-right: 8px;">
             <i class="fa-solid fa-moon" id="themeIcon"></i>
           </div>
@@ -6797,7 +6804,12 @@
       
       // Apply permissions and UI roles
       document.getElementById('userNameDisplay').textContent = user.name;
-      document.getElementById('userRoleDisplay').textContent = user.role;
+      const roleTextEl = document.getElementById('userRoleText');
+      if (roleTextEl) {
+        roleTextEl.textContent = user.role;
+      } else {
+        document.getElementById('userRoleDisplay').textContent = user.role;
+      }
       
       const avatarName = document.getElementById('avatarName');
       if (user.avatarUrl) {
@@ -6943,7 +6955,12 @@
             
             // Re-render sidebar profile elements
             document.getElementById('userNameDisplay').textContent = App.currentUser.name;
-            document.getElementById('userRoleDisplay').textContent = App.currentUser.role;
+            const roleTextEl = document.getElementById('userRoleText');
+            if (roleTextEl) {
+              roleTextEl.textContent = App.currentUser.role;
+            } else {
+              document.getElementById('userRoleDisplay').textContent = App.currentUser.role;
+            }
             const sideAvatar = document.getElementById('avatarName');
             if (App.currentUser.avatarUrl) {
               sideAvatar.innerHTML = `<img src="${toDirectDriveLink(App.currentUser.avatarUrl)}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;

@@ -30,7 +30,8 @@ service cloud.firestore {
       allow read: if isSignedIn();
       // Allow self-registration or admin editing
       allow create: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow update, delete: if isAdmin();
+      allow update: if isSignedIn();
+      allow delete: if isAdmin();
     }
 
     // Rules for Parties
