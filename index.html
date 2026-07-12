@@ -4776,23 +4776,47 @@
       console.warn("Failed to load cached company profile:", e);
     }
 
-    // Listen to Firebase auth state changes to fetch and cache the latest company profile
+    // Fetch latest company profile via Firestore REST API or fallback to SDK
+    function fetchCompanyProfileForLogin() {
+      const url = "https://firestore.googleapis.com/v1/projects/gas-agency-mr/databases/(default)/documents/companyProfile/main";
+      fetch(url)
+        .then(response => {
+          if (!response.ok) throw new Error("REST API response not ok");
+          return response.json();
+        })
+        .then(data => {
+          if (data && data.fields) {
+            const profile = {
+              companyName: data.fields.companyName?.stringValue || 'Mr.Rahul ERP',
+              companyLogo: data.fields.companyLogo?.stringValue || ''
+            };
+            updateLoginCompanyProfile(profile);
+            localStorage.setItem('cachedCompanyProfile', JSON.stringify(profile));
+          }
+        })
+        .catch(err => {
+          console.warn("Failed to fetch company profile via REST API, trying SDK:", err);
+          try {
+            db.collection('companyProfile').doc('main').get().then(doc => {
+              if (doc.exists) {
+                const profile = doc.data();
+                updateLoginCompanyProfile(profile);
+                localStorage.setItem('cachedCompanyProfile', JSON.stringify(profile));
+              }
+            }).catch(sdkErr => {
+              console.warn("Firestore SDK fetch fallback failed:", sdkErr);
+            });
+          } catch(sdkExc) {
+            console.warn("Firestore SDK exception during fallback:", sdkExc);
+          }
+        });
+    }
+
+    // Execute immediately on script load
     try {
-      firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
-          db.collection('companyProfile').doc('main').get().then(doc => {
-            if (doc.exists) {
-              const profile = doc.data();
-              updateLoginCompanyProfile(profile);
-              localStorage.setItem('cachedCompanyProfile', JSON.stringify(profile));
-            }
-          }).catch(err => {
-            console.warn("Failed to fetch company profile for login page:", err);
-          });
-        }
-      });
+      fetchCompanyProfileForLogin();
     } catch(e) {
-      console.warn("Firebase Auth state listener setup failed:", e);
+      console.warn("Failed to trigger company profile fetch:", e);
     }
 
     function handleBackendSetupSubmit(e) {
