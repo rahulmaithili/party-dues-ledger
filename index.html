@@ -5285,14 +5285,14 @@
 
       const fallbackToDataUrl = () => {
         const mimeType = payload.proofMimeType || payload.avatarMimeType;
-        if (base64Str.length < 266666) {
+        if (base64Str.length < 1500000) {
           const dataUrl = base64Str.startsWith('data:') ? base64Str : `data:${mimeType};base64,${base64Str}`;
           cleanPayload();
           return dataUrl;
         } else {
           cleanPayload();
           setTimeout(() => {
-            showToast('Document/Photo size is too large (>200KB) and Firebase Storage is unconfigured or offline. Saved details without document.', 'warning');
+            showToast('Document/Photo size is too large (>1.1MB) and Firebase Storage is unconfigured or offline. Saved details without document.', 'warning');
           }, 50);
           return null;
         }
@@ -5328,7 +5328,7 @@
         };
         
         const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error("Firebase Storage upload timed out")), 5000)
+          setTimeout(() => reject(new Error("Firebase Storage upload timed out")), 30000)
         );
         
         const url = await Promise.race([uploadAndGetUrl(), timeoutPromise]);
@@ -7102,8 +7102,8 @@
     function handleProfilePhotoChange(e) {
       const file = e.target.files[0];
       if (!file) return;
-      if (file.size < 200 * 1024 || file.size > 5 * 1024 * 1024) {
-        showToast('Profile photo size must be between 200 KB and 5 MB', 'error');
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Profile photo size must be less than 5 MB', 'error');
         e.target.value = '';
         return;
       }
@@ -8345,8 +8345,8 @@
 
       if (fileInput.files.length > 0) {
         const file = fileInput.files[0];
-        if (file.size < 200 * 1024 || file.size > 5 * 1024 * 1024) {
-          showToast('Party document size must be between 200 KB and 5 MB', 'error');
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('Party document size must be less than 5 MB', 'error');
           return;
         }
         const reader = new FileReader();
@@ -10232,8 +10232,8 @@
 
       if (fileInput.files && fileInput.files[0]) {
         const file = fileInput.files[0];
-        if (file.size < 200 * 1024 || file.size > 5 * 1024 * 1024) {
-          showToast('Payment proof size must be between 200 KB and 5 MB', 'error');
+        if (file.size > 5 * 1024 * 1024) {
+          showToast('Payment proof size must be less than 5 MB', 'error');
           return;
         }
         showLoading(true, 'Uploading payment proof...');
@@ -14402,8 +14402,8 @@
     function handleUserPhotoChange(e) {
       const file = e.target.files[0];
       if (!file) return;
-      if (file.size < 200 * 1024 || file.size > 5 * 1024 * 1024) {
-        showToast('User photo size must be between 200 KB and 5 MB', 'error');
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('User photo size must be less than 5 MB', 'error');
         e.target.value = '';
         return;
       }
