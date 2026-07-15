@@ -2244,11 +2244,37 @@
           </div>
 
           <div class="dashboard-card" style="margin-bottom: 20px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px;">
-              <input type="text" id="salesSearch" class="light-form-control" placeholder="Search by Invoice No, Customer, Amount..." oninput="renderSales()" style="flex: 1; margin-bottom: 0;">
-              <button class="btn admin-only" id="btnBulkDeleteSales" onclick="bulkDeleteSales()" style="display: none; background: var(--dan); color: white; border: none; font-weight: 700; height: 38px; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; border-radius: var(--r); cursor: pointer; white-space: nowrap;">
-                <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selectedSalesCount">0</span>)
-              </button>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+              <!-- Top Row: Search and Bulk Delete -->
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <input type="text" id="salesSearch" class="light-form-control" placeholder="Search by Invoice No, Customer, Amount..." oninput="renderSales()" style="flex: 1; margin-bottom: 0; min-width: 250px;">
+                <button class="btn admin-only" id="btnBulkDeleteSales" onclick="bulkDeleteSales()" style="display: none; background: var(--dan); color: white; border: none; font-weight: 700; height: 38px; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; border-radius: var(--r); cursor: pointer; white-space: nowrap;">
+                  <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selectedSalesCount">0</span>)
+                </button>
+              </div>
+              
+              <!-- Bottom Row: Date Filters -->
+              <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 13px; font-weight: 600; color: var(--txt2); white-space: nowrap;"><i class="fa-regular fa-calendar-days"></i> Date Range:</span>
+                  <select id="salesDateRangePreset" class="light-form-control" onchange="handleDateRangePresetChange('sales')" style="width: 160px; margin-bottom: 0; height: 38px; padding: 0 10px;">
+                    <option value="All">All Time</option>
+                    <option value="Today">Today</option>
+                    <option value="Yesterday">Yesterday</option>
+                    <option value="ThisWeek">This Week</option>
+                    <option value="ThisMonth">This Month</option>
+                    <option value="Last7Days">Last 7 Days</option>
+                    <option value="Last30Days">Last 30 Days</option>
+                    <option value="Custom">Custom Range</option>
+                  </select>
+                </div>
+                
+                <div id="salesCustomDateContainer" style="display: none; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <input type="date" id="salesFromDate" class="light-form-control" onchange="renderSales()" style="width: 140px; margin-bottom: 0; height: 38px;">
+                  <span style="font-size: 13px; color: var(--txt3);">to</span>
+                  <input type="date" id="salesToDate" class="light-form-control" onchange="renderSales()" style="width: 140px; margin-bottom: 0; height: 38px;">
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2318,13 +2344,39 @@
           </div>
 
           <div class="dashboard-card" style="margin-bottom: 20px;">
-            <div class="grid-2">
-              <input type="text" id="receiptSearch" class="light-form-control" placeholder="Search receipts/payments by voucher, party..." oninput="renderReceipts()">
-              <select id="receiptFilterType" class="light-form-control" onchange="renderReceipts()">
-                <option value="All">All Transactions</option>
-                <option value="Receipt">Only Receipts (In)</option>
-                <option value="Payment">Only Payments (Out)</option>
-              </select>
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+              <!-- Top Row: Search and Type Filter -->
+              <div class="grid-2">
+                <input type="text" id="receiptSearch" class="light-form-control" placeholder="Search receipts/payments by voucher, party..." oninput="renderReceipts()" style="margin-bottom: 0;">
+                <select id="receiptFilterType" class="light-form-control" onchange="renderReceipts()" style="margin-bottom: 0;">
+                  <option value="All">All Transactions</option>
+                  <option value="Receipt">Only Receipts (In)</option>
+                  <option value="Payment">Only Payments (Out)</option>
+                </select>
+              </div>
+              
+              <!-- Bottom Row: Date Filters -->
+              <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 13px; font-weight: 600; color: var(--txt2); white-space: nowrap;"><i class="fa-regular fa-calendar-days"></i> Date Range:</span>
+                  <select id="receiptsDateRangePreset" class="light-form-control" onchange="handleDateRangePresetChange('receipts')" style="width: 160px; margin-bottom: 0; height: 38px; padding: 0 10px;">
+                    <option value="All">All Time</option>
+                    <option value="Today">Today</option>
+                    <option value="Yesterday">Yesterday</option>
+                    <option value="ThisWeek">This Week</option>
+                    <option value="ThisMonth">This Month</option>
+                    <option value="Last7Days">Last 7 Days</option>
+                    <option value="Last30Days">Last 30 Days</option>
+                    <option value="Custom">Custom Range</option>
+                  </select>
+                </div>
+                
+                <div id="receiptsCustomDateContainer" style="display: none; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <input type="date" id="receiptsFromDate" class="light-form-control" onchange="renderReceipts()" style="width: 140px; margin-bottom: 0; height: 38px;">
+                  <span style="font-size: 13px; color: var(--txt3);">to</span>
+                  <input type="date" id="receiptsToDate" class="light-form-control" onchange="renderReceipts()" style="width: 140px; margin-bottom: 0; height: 38px;">
+                </div>
+              </div>
             </div>
           </div>
 
@@ -2547,7 +2599,33 @@
           </div>
 
           <div class="dashboard-card" style="margin-bottom: 20px;">
-            <input type="text" id="returnSearch" class="light-form-control" placeholder="Search returns..." oninput="renderReturns()">
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+              <!-- Top Row: Search -->
+              <input type="text" id="returnSearch" class="light-form-control" placeholder="Search returns..." oninput="renderReturns()" style="margin-bottom: 0;">
+              
+              <!-- Bottom Row: Date Filters -->
+              <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 13px; font-weight: 600; color: var(--txt2); white-space: nowrap;"><i class="fa-regular fa-calendar-days"></i> Date Range:</span>
+                  <select id="returnsDateRangePreset" class="light-form-control" onchange="handleDateRangePresetChange('returns')" style="width: 160px; margin-bottom: 0; height: 38px; padding: 0 10px;">
+                    <option value="All">All Time</option>
+                    <option value="Today">Today</option>
+                    <option value="Yesterday">Yesterday</option>
+                    <option value="ThisWeek">This Week</option>
+                    <option value="ThisMonth">This Month</option>
+                    <option value="Last7Days">Last 7 Days</option>
+                    <option value="Last30Days">Last 30 Days</option>
+                    <option value="Custom">Custom Range</option>
+                  </select>
+                </div>
+                
+                <div id="returnsCustomDateContainer" style="display: none; align-items: center; gap: 8px; flex-wrap: wrap;">
+                  <input type="date" id="returnsFromDate" class="light-form-control" onchange="renderReturns()" style="width: 140px; margin-bottom: 0; height: 38px;">
+                  <span style="font-size: 13px; color: var(--txt3);">to</span>
+                  <input type="date" id="returnsToDate" class="light-form-control" onchange="renderReturns()" style="width: 140px; margin-bottom: 0; height: 38px;">
+                </div>
+              </div>
+            </div>
           </div>
 
           <div class="table-container">
@@ -4632,6 +4710,115 @@
       } catch(e) {
         return dateStr;
       }
+    }
+
+    function parseInputDate(dateStr) {
+      if (!dateStr) return null;
+      const parts = dateStr.split('-');
+      if (parts.length === 3) {
+        // YYYY-MM-DD
+        return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+      }
+      return null;
+    }
+
+    function formatDateForInput(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function handleDateRangePresetChange(module) {
+      const preset = document.getElementById(`${module}DateRangePreset`).value;
+      const container = document.getElementById(`${module}CustomDateContainer`);
+      const fromInput = document.getElementById(`${module}FromDate`);
+      const toInput = document.getElementById(`${module}ToDate`);
+      
+      if (preset === 'Custom') {
+        container.style.display = 'flex';
+      } else {
+        container.style.display = 'none';
+      }
+
+      const now = new Date();
+      let fromDateVal = '';
+      let toDateVal = '';
+
+      if (preset === 'Today') {
+        fromDateVal = formatDateForInput(now);
+        toDateVal = formatDateForInput(now);
+      } else if (preset === 'Yesterday') {
+        const yesterday = new Date();
+        yesterday.setDate(now.getDate() - 1);
+        fromDateVal = formatDateForInput(yesterday);
+        toDateVal = formatDateForInput(yesterday);
+      } else if (preset === 'ThisWeek') {
+        const startOfWeek = new Date();
+        const day = startOfWeek.getDay();
+        const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // Monday
+        startOfWeek.setDate(diff);
+        fromDateVal = formatDateForInput(startOfWeek);
+        toDateVal = formatDateForInput(now);
+      } else if (preset === 'ThisMonth') {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        fromDateVal = formatDateForInput(startOfMonth);
+        toDateVal = formatDateForInput(now);
+      } else if (preset === 'Last7Days') {
+        const last7 = new Date();
+        last7.setDate(now.getDate() - 6);
+        fromDateVal = formatDateForInput(last7);
+        toDateVal = formatDateForInput(now);
+      } else if (preset === 'Last30Days') {
+        const last30 = new Date();
+        last30.setDate(now.getDate() - 29);
+        fromDateVal = formatDateForInput(last30);
+        toDateVal = formatDateForInput(now);
+      }
+
+      if (preset !== 'Custom') {
+        fromInput.value = fromDateVal;
+        toInput.value = toDateVal;
+      }
+
+      if (module === 'sales') {
+        renderSales();
+      } else if (module === 'receipts') {
+        renderReceipts();
+      } else if (module === 'returns') {
+        renderReturns();
+      }
+    }
+
+    function isTransactionInDateRange(t, fromId, toId, presetId) {
+      const preset = document.getElementById(presetId).value;
+      if (preset === 'All') return true;
+
+      const fromVal = document.getElementById(fromId).value;
+      const toVal = document.getElementById(toId).value;
+
+      if (!t.date) return false;
+
+      const tDate = parseDate(t.date);
+      tDate.setHours(0, 0, 0, 0);
+      const tTime = tDate.getTime();
+
+      if (fromVal) {
+        const fromDate = parseInputDate(fromVal);
+        if (fromDate) {
+          fromDate.setHours(0, 0, 0, 0);
+          if (tTime < fromDate.getTime()) return false;
+        }
+      }
+      if (toVal) {
+        const toDate = parseInputDate(toVal);
+        if (toDate) {
+          toDate.setHours(0, 0, 0, 0);
+          if (tTime > toDate.getTime()) return false;
+        }
+      }
+
+      return true;
     }
 
     function showLoading(show, msg) {
@@ -9318,7 +9505,11 @@
       const body = document.getElementById('salesTableBody');
       body.innerHTML = '';
 
-      const list = App.data.transactions.filter(t => t.txnType === 'Sale' && (String(t.voucherNo || '').toLowerCase().includes(search) || String(t.partyName || '').toLowerCase().includes(search)));
+      const list = App.data.transactions.filter(t => {
+        const matchesSearch = t.txnType === 'Sale' && (String(t.voucherNo || '').toLowerCase().includes(search) || String(t.partyName || '').toLowerCase().includes(search));
+        if (!matchesSearch) return false;
+        return isTransactionInDateRange(t, 'salesFromDate', 'salesToDate', 'salesDateRangePreset');
+      });
 
       if (list.length === 0) {
         body.innerHTML = '<tr><td colspan="9" class="text-center">No sales invoices recorded.</td></tr>';
@@ -9849,7 +10040,8 @@
       const list = App.data.transactions.filter(t => {
         const matchesSearch = String(t.voucherNo || '').toLowerCase().includes(search) || String(t.partyName || '').toLowerCase().includes(search);
         const matchesType = filter === 'All' ? (t.txnType === 'Receipt' || t.txnType === 'Payment') : t.txnType === filter;
-        return matchesSearch && matchesType;
+        if (!(matchesSearch && matchesType)) return false;
+        return isTransactionInDateRange(t, 'receiptsFromDate', 'receiptsToDate', 'receiptsDateRangePreset');
       });
 
       if (list.length === 0) {
@@ -10652,7 +10844,11 @@
       const search = document.getElementById('returnSearch').value.toLowerCase();
       const body = document.getElementById('returnsTableBody');
       body.innerHTML = '';
-      const list = App.data.transactions.filter(t => t.txnType === 'Return' && (String(t.voucherNo || '').toLowerCase().includes(search) || String(t.partyName || '').toLowerCase().includes(search)));
+      const list = App.data.transactions.filter(t => {
+        const matchesSearch = t.txnType === 'Return' && (String(t.voucherNo || '').toLowerCase().includes(search) || String(t.partyName || '').toLowerCase().includes(search));
+        if (!matchesSearch) return false;
+        return isTransactionInDateRange(t, 'returnsFromDate', 'returnsToDate', 'returnsDateRangePreset');
+      });
 
       if (list.length === 0) {
         body.innerHTML = '<tr><td colspan="6" class="text-center">No return entries recorded.</td></tr>';
