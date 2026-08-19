@@ -1248,11 +1248,14 @@
       .mobile-toggle {
         display: block;
       }
-      .grid-3, .grid-4 {
+      .grid-2, .grid-3, .grid-4 {
         grid-template-columns: 1fr;
       }
       .dashboard-grid {
         grid-template-columns: 1fr;
+      }
+      .flex-gap {
+        flex-wrap: wrap;
       }
     }
     body.not-admin .admin-only {
@@ -7835,6 +7838,22 @@
       const gridContainer = document.getElementById('partiesGridContainer');
       
       const viewMode = App.partiesViewMode || 'list';
+      const btnList = document.getElementById('btnPartiesList');
+      const btnGrid = document.getElementById('btnPartiesGrid');
+      if (btnList && btnGrid) {
+        if (viewMode === 'list') {
+          btnList.classList.add('btn-primary');
+          btnList.classList.remove('btn-secondary');
+          btnGrid.classList.add('btn-secondary');
+          btnGrid.classList.remove('btn-primary');
+        } else {
+          btnGrid.classList.add('btn-primary');
+          btnGrid.classList.remove('btn-secondary');
+          btnList.classList.add('btn-secondary');
+          btnList.classList.remove('btn-primary');
+        }
+      }
+
       if (viewMode === 'list') {
         tableContainer.style.display = 'block';
         gridContainer.style.display = 'none';
@@ -8880,6 +8899,22 @@
       const gridContainer = document.getElementById('productsGridContainer');
       
       const viewMode = App.productsViewMode || 'list';
+      const btnList = document.getElementById('btnProductsList');
+      const btnGrid = document.getElementById('btnProductsGrid');
+      if (btnList && btnGrid) {
+        if (viewMode === 'list') {
+          btnList.classList.add('btn-primary');
+          btnList.classList.remove('btn-secondary');
+          btnGrid.classList.add('btn-secondary');
+          btnGrid.classList.remove('btn-primary');
+        } else {
+          btnGrid.classList.add('btn-primary');
+          btnGrid.classList.remove('btn-secondary');
+          btnList.classList.add('btn-secondary');
+          btnList.classList.remove('btn-primary');
+        }
+      }
+
       if (viewMode === 'list') {
         tableContainer.style.display = 'block';
         gridContainer.style.display = 'none';
@@ -15828,8 +15863,8 @@
     }
 
     // ==================== ERP/CRM & PARTY VIEW MODES ====================
-    App.partiesViewMode = 'list';
-    App.productsViewMode = 'list';
+    App.partiesViewMode = window.innerWidth <= 768 ? 'grid' : 'list';
+    App.productsViewMode = window.innerWidth <= 768 ? 'grid' : 'list';
 
     function togglePartiesViewMode(mode) {
       App.partiesViewMode = mode;
