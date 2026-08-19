@@ -1605,6 +1605,95 @@
       width: 180px;
       border-top: 1.5px solid #CBD5E1;
     }
+
+    /* Mobile Bottom Shortcuts Bar */
+    .mobile-bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: var(--card);
+      border-top: 1.5px solid var(--brd);
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      z-index: 999999;
+      box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+    }
+    .mobile-nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--txt2);
+      font-size: 10px;
+      text-decoration: none;
+      cursor: pointer;
+      flex: 1;
+      height: 100%;
+      transition: color 0.2s;
+    }
+    .mobile-nav-item i {
+      font-size: 18px;
+      margin-bottom: 4px;
+    }
+    .mobile-nav-item.active, .mobile-nav-item:hover {
+      color: var(--pri);
+    }
+    .mobile-nav-item.main-action {
+      background: var(--pri);
+      color: white;
+      border-radius: 50%;
+      width: 52px;
+      height: 52px;
+      flex: none;
+      margin-top: -24px;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+      justify-content: center;
+      border: 3px solid var(--card);
+    }
+    .mobile-nav-item.main-action i {
+      font-size: 20px;
+      margin-bottom: 0;
+    }
+    .mobile-nav-item.main-action span {
+      font-size: 8px;
+      margin-top: 1px;
+    }
+
+    @media (max-width: 768px) {
+      body {
+        padding-bottom: 60px !important;
+      }
+      .hide-on-mobile {
+        display: none !important;
+      }
+      
+      /* Make modal footers stack full-width on mobile */
+      .modal-footer {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 8px !important;
+      }
+      .modal-footer > div {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        gap: 8px !important;
+      }
+      .modal-footer button, .modal-footer .btn {
+        width: 100% !important;
+        justify-content: center !important;
+      }
+    }
+    @media (min-width: 769px) {
+      .hide-on-desktop {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -6928,6 +7017,16 @@
       document.getElementById(pageId).classList.add('active');
       const menuItem = document.querySelector(`.menu-item[data-page="${pageId}"]`);
       if (menuItem) menuItem.classList.add('active');
+
+      // Highlight mobile bottom bar items
+      document.querySelectorAll('.mobile-nav-item').forEach(el => el.classList.remove('active'));
+      if (pageId === 'dashboard') {
+        const homeNav = document.getElementById('mobileNavHome');
+        if (homeNav) homeNav.classList.add('active');
+      } else if (pageId === 'parties') {
+        const partiesNav = document.getElementById('mobileNavParties');
+        if (partiesNav) partiesNav.classList.add('active');
+      }
 
       document.getElementById('currentLocationName').textContent = menuItem ? menuItem.textContent.trim() : 'System';
       App.currentPage = pageId;
@@ -16256,5 +16355,29 @@
       });
     }
   </script>
+
+  <!-- MOBILE BOTTOM SHORTCUTS BAR -->
+  <div class="mobile-bottom-bar hide-on-desktop">
+    <a onclick="navigateTo('dashboard')" class="mobile-nav-item" id="mobileNavHome">
+      <i class="fa-solid fa-chart-simple"></i>
+      <span>Home</span>
+    </a>
+    <a onclick="navigateTo('parties')" class="mobile-nav-item" id="mobileNavParties">
+      <i class="fa-solid fa-users"></i>
+      <span>Parties</span>
+    </a>
+    <a onclick="openInvoiceModal('Sale')" class="mobile-nav-item main-action">
+      <i class="fa-solid fa-plus"></i>
+      <span>+ Sale</span>
+    </a>
+    <a onclick="openReceiptModal('Receipt')" class="mobile-nav-item">
+      <i class="fa-solid fa-indian-rupee-sign"></i>
+      <span>+ Receipt</span>
+    </a>
+    <a onclick="openEmptyCylinderReturnModal()" class="mobile-nav-item">
+      <i class="fa-solid fa-rotate-left"></i>
+      <span>Return</span>
+    </a>
+  </div>
 </body>
 </html>
