@@ -1694,6 +1694,103 @@
         display: none !important;
       }
     }
+
+    /* Multi-color Sidebar Icons */
+    .menu-item[data-page="dashboard"] i { color: #3B82F6 !important; }
+    .menu-item[data-page="parties"] i { color: #10B981 !important; }
+    .menu-item[data-page="products"] i { color: #F59E0B !important; }
+    .menu-item[data-page="priceHistory"] i { color: #8B5CF6 !important; }
+    .menu-item[data-page="sales"] i { color: #EC4899 !important; }
+    .menu-item[data-page="receipts"] i { color: #06B6D4 !important; }
+    .menu-item[data-page="returns"] i { color: #EF4444 !important; }
+    .menu-item[data-page="cylinderSecurity"] i { color: #14B8A6 !important; }
+    .menu-item[data-page="paymentRequests"] i { color: #F59E0B !important; }
+    .menu-item[data-page="banking"] i { color: #3B82F6 !important; }
+    .menu-item[data-page="quotations"] i { color: #6366F1 !important; }
+    .menu-item[data-page="deliveryChallans"] i { color: #F43F5E !important; }
+    .menu-item[data-page="reports"] i { color: #8B5CF6 !important; }
+    .menu-item[data-page="users"] i { color: #14B8A6 !important; }
+    .menu-item[data-page="settings"] i { color: #64748B !important; }
+
+    /* Premium KPI Cards Styling */
+    .kpi-card {
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.2s, box-shadow 0.2s;
+      border: 1px solid var(--brd);
+      border-radius: var(--r);
+      background: var(--card);
+    }
+    .kpi-card:hover {
+      transform: translateY(-4px);
+    }
+    
+    .kpi-card.kpi-sales {
+      border-left: 5px solid #3B82F6;
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.08);
+    }
+    .kpi-card.kpi-sales:hover {
+      box-shadow: 0 8px 30px rgba(59, 130, 246, 0.15);
+    }
+    .kpi-card.kpi-sales .kpi-icon {
+      background: rgba(59, 130, 246, 0.1) !important;
+      color: #3B82F6 !important;
+    }
+    .kpi-card.kpi-sales h3 {
+      color: #3B82F6;
+      font-weight: 600;
+    }
+    
+    .kpi-card.kpi-cash {
+      border-left: 5px solid #10B981;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.08);
+    }
+    .kpi-card.kpi-cash:hover {
+      box-shadow: 0 8px 30px rgba(16, 185, 129, 0.15);
+    }
+    .kpi-card.kpi-cash .kpi-icon {
+      background: rgba(16, 185, 129, 0.1) !important;
+      color: #10B981 !important;
+    }
+    .kpi-card.kpi-cash h3 {
+      color: #10B981;
+      font-weight: 600;
+    }
+    
+    .kpi-card.kpi-bank {
+      border-left: 5px solid #8B5CF6;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.08);
+    }
+    .kpi-card.kpi-bank:hover {
+      box-shadow: 0 8px 30px rgba(139, 92, 246, 0.15);
+    }
+    .kpi-card.kpi-bank .kpi-icon {
+      background: rgba(139, 92, 246, 0.1) !important;
+      color: #8B5CF6 !important;
+    }
+    .kpi-card.kpi-bank h3 {
+      color: #8B5CF6;
+      font-weight: 600;
+    }
+    
+    /* Hero Card styling */
+    .kpi-hero-card {
+      background: linear-gradient(135deg, #0F172A, #1E1B4B) !important; /* Premium Dark Navy to Indigo gradient */
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      box-shadow: 0 10px 25px rgba(30, 27, 75, 0.35) !important;
+      position: relative;
+      overflow: hidden;
+    }
+    .kpi-hero-card::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -20%;
+      width: 250px;
+      height: 250px;
+      background: radial-gradient(circle, rgba(229, 193, 88, 0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -1921,26 +2018,26 @@
             </div>
 
             <div class="kpi-grid">
-              <div class="kpi-card">
+              <div class="kpi-card kpi-sales">
                 <div class="kpi-details">
                   <h3>Sales (This Month)</h3>
                   <p id="kpiSales">₹0.00</p>
                 </div>
-                <div class="kpi-icon blue"><i class="fa-solid fa-arrow-up-right-dots"></i></div>
+                <div class="kpi-icon"><i class="fa-solid fa-arrow-up-right-dots"></i></div>
               </div>
-              <div class="kpi-card">
+              <div class="kpi-card kpi-cash">
                 <div class="kpi-details">
                   <h3>Cash In Hand</h3>
                   <p id="kpiCash">₹0.00</p>
                 </div>
-                <div class="kpi-icon green"><i class="fa-solid fa-wallet"></i></div>
+                <div class="kpi-icon"><i class="fa-solid fa-wallet"></i></div>
               </div>
-              <div class="kpi-card">
+              <div class="kpi-card kpi-bank">
                 <div class="kpi-details">
                   <h3>Bank Balance</h3>
                   <p id="kpiBank">₹0.00</p>
                 </div>
-                <div class="kpi-icon blue"><i class="fa-solid fa-building-columns"></i></div>
+                <div class="kpi-icon"><i class="fa-solid fa-building-columns"></i></div>
               </div>
             </div>
 
