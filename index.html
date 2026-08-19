@@ -1628,12 +1628,15 @@
       align-items: center;
       justify-content: center;
       color: var(--txt2);
-      font-size: 10px;
+      font-size: 9px;
       text-decoration: none;
       cursor: pointer;
       flex: 1;
       height: 100%;
       transition: color 0.2s;
+      white-space: nowrap;
+      min-width: 0;
+      padding: 0 2px;
     }
     .mobile-nav-item i {
       font-size: 18px;
@@ -1664,9 +1667,25 @@
     }
 
     @media (max-width: 768px) {
-      body {
-        padding-bottom: 60px !important;
+      /* Lock mobile viewport to prevent body scrolling and address bar jumps */
+      html, body {
+        overflow: hidden !important;
+        height: 100% !important;
+        position: fixed !important;
+        width: 100% !important;
       }
+      #app {
+        height: 100% !important;
+        width: 100% !important;
+        overflow: hidden !important;
+      }
+      #main-content {
+        height: 100% !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 74px !important; /* Space for the bottom shortcuts bar */
+      }
+      
       .hide-on-mobile {
         display: none !important;
       }
@@ -16654,11 +16673,11 @@
     </a>
     <a onclick="openInvoiceModal('Sale')" class="mobile-nav-item main-action">
       <i class="fa-solid fa-plus"></i>
-      <span>+ Sale</span>
+      <span>Sale</span>
     </a>
     <a onclick="openReceiptModal('Receipt')" class="mobile-nav-item">
       <i class="fa-solid fa-wallet"></i>
-      <span>+ Receipt</span>
+      <span>Receipt</span>
     </a>
     <a onclick="openEmptyCylinderReturnModal()" class="mobile-nav-item">
       <i class="fa-solid fa-arrow-rotate-left"></i>
