@@ -1867,6 +1867,64 @@
       left: -30px;
       pointer-events: none;
     }
+
+    /* Multi-color User Management KPIs */
+    .kpi-card.kpi-users-total {
+      background: linear-gradient(135deg, #3B82F6, #1D4ED8) !important;
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2) !important;
+    }
+    .kpi-card.kpi-users-total:hover {
+      box-shadow: 0 15px 30px rgba(59, 130, 246, 0.3) !important;
+    }
+
+    .kpi-card.kpi-users-online {
+      background: linear-gradient(135deg, #10B981, #059669) !important;
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2) !important;
+    }
+    .kpi-card.kpi-users-online:hover {
+      box-shadow: 0 15px 30px rgba(16, 185, 129, 0.3) !important;
+    }
+
+    /* Dynamic Bank account card gradients */
+    .kpi-card.kpi-bank-0 {
+      background: linear-gradient(135deg, #10B981, #059669) !important; /* Green */
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.2) !important;
+    }
+    .kpi-card.kpi-bank-0:hover { box-shadow: 0 15px 30px rgba(16, 185, 129, 0.3) !important; }
+
+    .kpi-card.kpi-bank-1 {
+      background: linear-gradient(135deg, #3B82F6, #1D4ED8) !important; /* Blue */
+      box-shadow: 0 10px 20px rgba(59, 130, 246, 0.2) !important;
+    }
+    .kpi-card.kpi-bank-1:hover { box-shadow: 0 15px 30px rgba(59, 130, 246, 0.3) !important; }
+
+    .kpi-card.kpi-bank-2 {
+      background: linear-gradient(135deg, #8B5CF6, #6D28D9) !important; /* Purple */
+      box-shadow: 0 10px 20px rgba(139, 92, 246, 0.2) !important;
+    }
+    .kpi-card.kpi-bank-2:hover { box-shadow: 0 15px 30px rgba(139, 92, 246, 0.3) !important; }
+
+    .kpi-card.kpi-bank-3 {
+      background: linear-gradient(135deg, #F59E0B, #D97706) !important; /* Orange */
+      box-shadow: 0 10px 20px rgba(245, 158, 11, 0.2) !important;
+    }
+    .kpi-card.kpi-bank-3:hover { box-shadow: 0 15px 30px rgba(245, 158, 11, 0.3) !important; }
+
+    .kpi-card.kpi-bank-4 {
+      background: linear-gradient(135deg, #0D9488, #0F766E) !important; /* Teal */
+      box-shadow: 0 10px 20px rgba(13, 148, 136, 0.2) !important;
+    }
+    .kpi-card.kpi-bank-4:hover { box-shadow: 0 15px 30px rgba(13, 148, 136, 0.3) !important; }
+
+    /* Multi-color icons in Reports Menu */
+    .report-menu-item i.fa-calendar-day { color: #F59E0B !important; }
+    .report-menu-item i.fa-chart-pie { color: #10B981 !important; }
+    .report-menu-item i.fa-boxes-stacked { color: #3B82F6 !important; }
+    .report-menu-item i.fa-address-book { color: #8B5CF6 !important; }
+    .report-menu-item i.fa-wallet { color: #EF4444 !important; }
+    .report-menu-item i.fa-file-invoice-dollar { color: #06B6D4 !important; }
+    .report-menu-item i.fa-cart-flatbed { color: #EC4899 !important; }
+    .report-menu-item i.fa-file-invoice { color: #64748B !important; }
   </style>
 </head>
 <body>
@@ -3116,19 +3174,32 @@
 
           <!-- Online/Total Users Summary Cards -->
           <div class="kpi-grid" style="margin-bottom: 20px;">
-            <div class="kpi-card">
-              <div class="kpi-details">
-                <h3>Total Registered Users</h3>
-                <p id="totalUsersCount" style="color: var(--txt); font-size: 20px; font-weight: 700; margin-top: 4px;">0</p>
+            <!-- Total Registered Users -->
+            <div class="kpi-card kpi-users-total">
+              <div class="kpi-header-row">
+                <span class="kpi-title"><i class="fa-solid fa-users"></i> TOTAL USERS</span>
+                <div class="kpi-icon-wrapper"><i class="fa-solid fa-users"></i></div>
               </div>
-              <div class="kpi-icon blue"><i class="fa-solid fa-users"></i></div>
+              <div class="kpi-value-row">
+                <h2 id="totalUsersCount">0</h2>
+              </div>
+              <div class="kpi-footer-row">
+                <span>Registered system accounts</span>
+              </div>
             </div>
-            <div class="kpi-card">
-              <div class="kpi-details">
-                <h3>Online Now (Live)</h3>
-                <p id="onlineUsersCount" style="color: #10B981; font-size: 20px; font-weight: 700; margin-top: 4px;">0</p>
+            
+            <!-- Online Now -->
+            <div class="kpi-card kpi-users-online">
+              <div class="kpi-header-row">
+                <span class="kpi-title"><i class="fa-solid fa-signal"></i> ONLINE NOW</span>
+                <div class="kpi-icon-wrapper"><i class="fa-solid fa-signal"></i></div>
               </div>
-              <div class="kpi-icon green" style="background: rgba(16, 185, 129, 0.15); color: #10B981;"><i class="fa-solid fa-signal"></i></div>
+              <div class="kpi-value-row">
+                <h2 id="onlineUsersCount">0</h2>
+              </div>
+              <div class="kpi-footer-row">
+                <span>Live active sessions</span>
+              </div>
             </div>
           </div>
 
@@ -12192,15 +12263,22 @@
       const grid = document.getElementById('bankAccountsGrid');
       grid.innerHTML = '';
 
-      App.data.bankAccounts.forEach(b => {
+      App.data.bankAccounts.forEach((b, idx) => {
+        const gradientClass = `kpi-bank-${idx % 5}`;
         grid.innerHTML += `
-          <div class="kpi-card">
-            <div class="kpi-details">
-              <h3>${b.accountName} (${b.bankName})</h3>
-              <p>${formatCurrency(b.balance)}</p>
-              <span style="font-size:11px; color:var(--txt2)">A/C No: ${b.accountNo}</span>
+          <div class="kpi-card ${gradientClass}">
+            <div class="kpi-header-row">
+              <span class="kpi-title"><i class="fa-solid fa-building-columns"></i> ${b.accountName}</span>
+              <div class="kpi-icon-wrapper" onclick="editBankAccount('${b.id}')">
+                <i class="fa-solid fa-pen-to-square pointer"></i>
+              </div>
             </div>
-            <div class="kpi-icon blue" onclick="editBankAccount('${b.id}')"><i class="fa-solid fa-pen-to-square pointer"></i></div>
+            <div class="kpi-value-row">
+              <h2>${formatCurrency(b.balance)}</h2>
+            </div>
+            <div class="kpi-footer-row">
+              <span>A/C No: ${b.accountNo || '--'} (${b.bankName || 'Cash'})</span>
+            </div>
           </div>
         `;
       });
