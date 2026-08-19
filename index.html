@@ -1667,19 +1667,19 @@
     }
 
     @media (max-width: 768px) {
-      /* Lock mobile viewport to prevent body scrolling and address bar jumps */
-      html, body {
+      /* Lock mobile viewport ONLY when logged in to prevent body scrolling and address bar jumps */
+      body.logged-in, body.logged-in html {
         overflow: hidden !important;
         height: 100% !important;
         position: fixed !important;
         width: 100% !important;
       }
-      #app {
+      body.logged-in #app {
         height: 100% !important;
         width: 100% !important;
         overflow: hidden !important;
       }
-      #main-content {
+      body.logged-in #main-content {
         height: 100% !important;
         overflow-y: auto !important;
         -webkit-overflow-scrolling: touch !important;
@@ -5011,9 +5011,13 @@
   <script>
     // Theme initialization
     (function() {
-      const theme = localStorage.getItem('theme');
-      if (theme === 'dark') {
-        document.body.classList.add('dark-theme');
+      try {
+        const theme = localStorage.getItem('theme');
+        if (theme === 'dark') {
+          document.body.classList.add('dark-theme');
+        }
+      } catch (e) {
+        console.warn("Theme storage access failed:", e);
       }
     })();
 
@@ -7459,6 +7463,7 @@
         document.body.classList.remove('role-party');
       }
 
+      document.body.classList.add('logged-in');
       document.getElementById('loginPage').style.display = 'none';
       document.getElementById('app').style.display = 'flex';
       
@@ -7483,6 +7488,7 @@
       
       App.currentUser = null;
       App.data = { parties:[], products:[], transactions:[], bankAccounts:[], users:[], notifications:[], companyProfile:{}, expenses:[], quotations:[], purchaseOrders:[], deliveryChallans:[], activityLog:[], crmFollowups:[], cylinderSecurity:[], partyTypes:[] };
+      document.body.classList.remove('logged-in');
       document.body.classList.remove('not-admin');
       document.body.classList.remove('role-party');
       document.getElementById('loginForm').reset();
@@ -7619,10 +7625,10 @@
       if (icon) {
         if (isDark) {
           icon.className = 'fa-solid fa-sun';
-          localStorage.setItem('theme', 'dark');
+          SafeStorage.setItem('theme', 'dark');
         } else {
           icon.className = 'fa-solid fa-moon';
-          localStorage.setItem('theme', 'light');
+          SafeStorage.setItem('theme', 'light');
         }
       }
       if (App.currentPage === 'dashboard') {
