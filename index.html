@@ -2347,11 +2347,14 @@
           <div class="topbar-action" onclick="toggleTheme()" title="Toggle Theme" style="margin-right: 8px;">
             <i class="fa-solid fa-moon" id="themeIcon"></i>
           </div>
-          <div class="topbar-action" onclick="toggleNotifications()">
+          <div class="topbar-action" onclick="toggleNotifications()" style="margin-right: 8px;">
             <i class="fa-solid fa-bell"></i>
             <span class="badge-dot" id="notifBadge" style="display:none;"></span>
           </div>
-          <div style="font-size: 13px; color: var(--txt2); font-weight: 500;" id="currentDateDisplay"></div>
+          <div class="topbar-action" onclick="logout()" title="Logout" style="margin-right: 8px;">
+            <i class="fa-solid fa-right-from-bracket" style="color: #EF4444;"></i>
+          </div>
+          <div style="font-size: 13px; color: var(--txt2); font-weight: 500;" id="currentDateDisplay" class="hide-on-mobile"></div>
         </div>
       </header>
 
