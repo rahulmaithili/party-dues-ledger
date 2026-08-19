@@ -2107,6 +2107,7 @@
     .report-menu-item i.fa-cart-flatbed { color: #EC4899 !important; }
     .report-menu-item i.fa-file-invoice { color: #64748B !important; }
   </style>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
 <body>
 
@@ -3502,8 +3503,26 @@
                   </div>
                 </div>
                 <div class="form-group">
-                  <label style="color:var(--txt)">Google Script Web App URL (for sending Emails & OTPs)</label>
+                  <label style="color:var(--txt)">Google Script Web App URL (Option 1 - Custom Backend URL)</label>
                   <input type="url" id="setGoogleScriptUrl" class="light-form-control" placeholder="https://script.google.com/macros/s/.../exec">
+                </div>
+                <div style="border-top: 1px dashed var(--brd); margin: 15px 0; padding-top: 15px;">
+                  <h4 style="margin-bottom: 10px; color: var(--txt2); font-size: 13.5px;"><i class="fa-solid fa-envelope-open-text" style="margin-right:6px; color:var(--acc);"></i> EmailJS Integration (Option 2 - Serverless Direct Gmail Dispatch)</h4>
+                  <div class="grid-3">
+                    <div class="form-group">
+                      <label style="color:var(--txt)">EmailJS Service ID</label>
+                      <input type="text" id="setEmailjsServiceId" class="light-form-control" placeholder="service_xxxxxx">
+                    </div>
+                    <div class="form-group">
+                      <label style="color:var(--txt)">EmailJS Template ID</label>
+                      <input type="text" id="setEmailjsTemplateId" class="light-form-control" placeholder="template_xxxxxx">
+                    </div>
+                    <div class="form-group">
+                      <label style="color:var(--txt)">EmailJS Public Key</label>
+                      <input type="text" id="setEmailjsPublicKey" class="light-form-control" placeholder="user_xxxxxxxxxxxxxx">
+                    </div>
+                  </div>
+                  <span style="font-size: 11.5px; color: var(--txt2); display: block; margin-top: -6px;">For free email sending: create an account on <a href="https://www.emailjs.com/" target="_blank" style="color: var(--acc); text-decoration: underline;">emailjs.com</a> and setup Gmail templates.</span>
                 </div>
                 <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
                   <input type="checkbox" id="setEnableGst" style="width: 18px; height: 18px; cursor: pointer; border-radius: 4px; border: 1px solid var(--brd);">
@@ -6832,15 +6851,20 @@
           const otp = Math.floor(100000 + Math.random() * 900000).toString();
           await db.collection('passwordResets').add({ email: payload.email.trim().toLowerCase(), otp, createdAt: new Date().toISOString(), used: false });
           
-          const scriptUrl = App.data.companyProfile && App.data.companyProfile.googleScriptUrl;
+          const cp = App.data.companyProfile || {};
+          const scriptUrl = cp.googleScriptUrl;
+          const serviceId = cp.emailjsServiceId;
+          const templateId = cp.emailjsTemplateId;
+          const publicKey = cp.emailjsPublicKey;
+
           if (scriptUrl) {
             const emailPayload = {
               action: 'sendOtpEmail',
               email: payload.email.trim().toLowerCase(),
               otp: otp,
               userName: userName,
-              companyName: App.data.companyProfile.companyName || 'Mr.Rahul ERP',
-              companyLogo: App.data.companyProfile.companyLogo || ''
+              companyName: cp.companyName || 'Mr.Rahul ERP',
+              companyLogo: cp.companyLogo || ''
             };
             
             fetch(scriptUrl, {
@@ -6860,10 +6884,29 @@
               });
             
             success({ success: true, message: 'A 6-digit OTP code has been sent to your Gmail address.' });
+          } else if (serviceId && templateId && publicKey && window.emailjs) {
+            emailjs.init({ publicKey: publicKey });
+            
+            const templateParams = {
+              to_name: userName,
+              to_email: payload.email.trim().toLowerCase(),
+              otp: otp,
+              company_name: cp.companyName || 'Mr.Rahul ERP'
+            };
+
+            emailjs.send(serviceId, templateId, templateParams)
+              .then(() => {
+                console.log("OTP email sent successfully via EmailJS.");
+              })
+              .catch(err => {
+                console.error("Failed to send email via EmailJS:", err);
+              });
+            
+            success({ success: true, message: 'A 6-digit OTP code has been sent to your Gmail address via EmailJS.' });
           } else {
-            // Fallback if Apps Script is not configured
-            showToast('OTP generated: ' + otp + ' (Configure Google Script URL in App Settings for email delivery)', 'warning');
-            success({ success: true, message: 'OTP generated. (Apps Script URL not set: OTP is ' + otp + ')', dummyOtp: otp });
+            // Fallback if no email service is configured
+            showToast('OTP generated: ' + otp + ' (Configure Email settings in App Settings for email delivery)', 'warning');
+            success({ success: true, message: 'OTP generated. (Email settings not configured: OTP is ' + otp + ')', dummyOtp: otp });
           }
           return;
         }
@@ -15543,6 +15586,9 @@
       document.getElementById('setEnableGst').checked = (cp.enableGst !== false && cp.enableGst !== 'false');
       document.getElementById('setGeminiApiKey').value = cp.geminiApiKey || '';
       document.getElementById('setGoogleScriptUrl').value = cp.googleScriptUrl || '';
+      document.getElementById('setEmailjsServiceId').value = cp.emailjsServiceId || '';
+      document.getElementById('setEmailjsTemplateId').value = cp.emailjsTemplateId || '';
+      document.getElementById('setEmailjsPublicKey').value = cp.emailjsPublicKey || '';
 
       // Update Logo Preview UI
       if (cp.companyLogo) {
@@ -16171,9 +16217,11 @@
         companyQrCode: document.getElementById('setCompanyQrCode').value || '',
         companyUpiId: document.getElementById('setCompanyUpiId').value.trim() || '',
         termsAndConditions: document.getElementById('setCompanyTerms').value,
-        enableGst: document.getElementById('setEnableGst').checked,
         geminiApiKey: document.getElementById('setGeminiApiKey').value.trim() || '',
-        googleScriptUrl: document.getElementById('setGoogleScriptUrl').value.trim() || ''
+        googleScriptUrl: document.getElementById('setGoogleScriptUrl').value.trim() || '',
+        emailjsServiceId: document.getElementById('setEmailjsServiceId').value.trim() || '',
+        emailjsTemplateId: document.getElementById('setEmailjsTemplateId').value.trim() || '',
+        emailjsPublicKey: document.getElementById('setEmailjsPublicKey').value.trim() || ''
       };
 
       callServer('saveSettings', payload, function() {
