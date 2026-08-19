@@ -8345,35 +8345,46 @@
             </tr>
           `;
         } else {
+          const partyBaseType = getPartyBaseType(p);
+          const borderTopColor = partyBaseType === 'Customer' ? '#3B82F6' : (partyBaseType === 'Vendor' ? '#F59E0B' : '#10B981');
+          const idBg = partyBaseType === 'Customer' ? 'rgba(59, 130, 246, 0.1)' : (partyBaseType === 'Vendor' ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)');
+          const idColor = partyBaseType === 'Customer' ? '#3B82F6' : (partyBaseType === 'Vendor' ? '#F59E0B' : '#10B981');
+
           gridContainer.innerHTML += `
-            <div class="card" style="background: var(--card); border: 1px solid var(--brd); border-radius: var(--r); padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; position: relative;">
+            <div class="card party-grid-card" style="background: var(--card); border: 1px solid var(--brd); border-top: 4px solid ${borderTopColor}; border-radius: var(--r); padding: 20px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: space-between; position: relative; transition: transform 0.2s, box-shadow 0.2s;" onmouseenter="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 10px 15px -3px rgba(0,0,0,0.1)';" onmouseleave="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.05)';">
               <input type="checkbox" class="party-select-checkbox admin-only" data-id="${p.id}" onchange="updateSelectedPartiesCount()" style="position: absolute; top: 15px; left: 15px; width: 18px; height: 18px; cursor: pointer; z-index: 10;">
               <div style="margin-left: 20px;">
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;">
-                  <span style="font-size: 11px; font-weight: 700; color: var(--txt2); background: var(--bg); padding: 4px 8px; border-radius: 4px;">${p.id}</span>
+                  <span style="font-size: 11px; font-weight: 700; color: ${idColor}; background: ${idBg}; padding: 4px 8px; border-radius: 4px;">${p.id}</span>
                   <span class="badge ${getPartyBaseType(p) === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span>
                 </div>
                 <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--txt);">${p.name}${riskBadge}</h3>
                 ${duesHtml}
-                <p style="font-size: 13px; color: var(--txt2); margin-top: 8px; margin-bottom: 4px;"><i class="fa-solid fa-phone" style="margin-right: 6px; width: 14px;"></i>${p.mobile}</p>
-                <p style="font-size: 13px; color: var(--txt2); margin-bottom: 12px;"><i class="fa-solid fa-receipt" style="margin-right: 6px; width: 14px;"></i>${p.gstin || '--'}</p>
+                <p style="font-size: 13px; color: var(--txt2); margin-top: 8px; margin-bottom: 4px;"><i class="fa-solid fa-phone" style="color: #3B82F6; margin-right: 8px; width: 14px;"></i>${p.mobile || '--'}</p>
+                <p style="font-size: 13px; color: var(--txt2); margin-bottom: 12px;"><i class="fa-solid fa-receipt" style="color: #6366F1; margin-right: 8px; width: 14px;"></i>${p.gstin || '--'}</p>
               </div>
               <div style="border-top: 1px solid var(--brd); padding-top: 12px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; margin-left: 20px;">
                 <div>
                   <span style="font-size: 11px; font-weight: 600; color: var(--txt2); display: block; text-transform: uppercase;">Balance Due</span>
                   <span style="font-size: 15px; font-weight: 700; color: ${color};">${displayBal}${wsapBtn}</span>
                 </div>
-                <div class="flex-gap" style="gap: 4px; align-items: center;">
-                  <button class="btn btn-icon" onclick="viewPartyLedger('${p.id}')" title="View Ledger"><i class="fa-solid fa-file-invoice"></i></button>
-                  <button class="btn btn-secondary btn-sm" onclick="openEmptyCylinderReturnModal('${p.id}')" style="font-size:11px; padding: 4px 8px; border-radius: 4px;">Return</button>
-                  ${p.gpsLocation ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(p.gpsLocation)}" target="_blank" class="btn btn-icon" title="View GPS Location" style="color:var(--acc);"><i class="fa-solid fa-map-location-dot"></i></a>` : ''}
-                  ${p.documents ? `<button class="btn btn-icon" onclick="openPartyDocViewer('${p.id}')" title="View Document / KYC Proof" style="color:var(--acc); background: none; border: none; cursor: pointer;"><i class="fa-solid fa-paperclip"></i></button>` : ''}
-                  <button class="btn btn-icon" onclick="editParty('${p.id}')" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
-                  <button class="btn btn-icon admin-only" onclick="deleteParty('${p.id}')" style="color:var(--dan);" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                <div class="flex-gap" style="gap: 6px; align-items: center;">
+                  <button class="btn" onclick="viewPartyLedger('${p.id}')" title="View Ledger" style="background: rgba(99, 102, 241, 0.1); color: #6366F1; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; transition: background 0.2s, transform 0.1s;" onmouseenter="this.style.background='rgba(99,102,241,0.2)'; this.style.transform='scale(1.08)';" onmouseleave="this.style.background='rgba(99,102,241,0.1)'; this.style.transform='scale(1)';"><i class="fa-solid fa-file-invoice" style="font-size: 14px;"></i></button>
+                  
+                  <button class="btn" onclick="openEmptyCylinderReturnModal('${p.id}')" title="Record Return" style="background: #10B981; color: white; border: none; border-radius: 20px; font-size: 11px; font-weight: 700; padding: 6px 12px; cursor: pointer; transition: background 0.2s, transform 0.1s; box-shadow: 0 4px 6px rgba(16, 185, 129, 0.15); display: flex; align-items: center; gap: 4px;" onmouseenter="this.style.background='#059669'; this.style.transform='scale(1.05)';" onmouseleave="this.style.background='#10B981'; this.style.transform='scale(1)';"><i class="fa-solid fa-rotate-left" style="font-size: 10px;"></i> Return</button>
+                  
+                  ${p.gpsLocation ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(p.gpsLocation)}" target="_blank" class="btn" title="View GPS Location" style="background: rgba(6, 182, 212, 0.1); color: #06B6D4; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; text-decoration: none; transition: background 0.2s, transform 0.1s;" onmouseenter="this.style.background='rgba(6,182,212,0.2)'; this.style.transform='scale(1.08)';" onmouseleave="this.style.background='rgba(6,182,212,0.1)'; this.style.transform='scale(1)';"><i class="fa-solid fa-map-location-dot" style="font-size: 14px;"></i></a>` : ''}
+                  
+                  ${p.documents ? `<button class="btn" onclick="openPartyDocViewer('${p.id}')" title="View Documents" style="background: rgba(139, 92, 246, 0.1); color: #8B5CF6; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; transition: background 0.2s, transform 0.1s;" onmouseenter="this.style.background='rgba(139,92,246,0.2)'; this.style.transform='scale(1.08)';" onmouseleave="this.style.background='rgba(139,92,246,0.1)'; this.style.transform='scale(1)';"><i class="fa-solid fa-paperclip" style="font-size: 14px;"></i></button>` : ''}
+                  
+                  <button class="btn" onclick="editParty('${p.id}')" title="Edit" style="background: rgba(245, 158, 11, 0.1); color: #F59E0B; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; transition: background 0.2s, transform 0.1s;" onmouseenter="this.style.background='rgba(245,158,11,0.2)'; this.style.transform='scale(1.08)';" onmouseleave="this.style.background='rgba(245,158,11,0.1)'; this.style.transform='scale(1)';"><i class="fa-solid fa-pen-to-square" style="font-size: 14px;"></i></button>
+                  
+                  <button class="btn admin-only" onclick="deleteParty('${p.id}')" title="Delete" style="background: rgba(239, 68, 68, 0.1); color: #EF4444; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; transition: background 0.2s, transform 0.1s;" onmouseenter="this.style.background='rgba(239,68,68,0.2)'; this.style.transform='scale(1.08)';" onmouseleave="this.style.background='rgba(239,68,68,0.1)'; this.style.transform='scale(1)';"><i class="fa-solid fa-trash" style="font-size: 14px;"></i></button>
                 </div>
               </div>
             </div>
           `;
+        }
         }
       });
 
