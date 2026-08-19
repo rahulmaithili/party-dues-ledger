@@ -16,6 +16,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
   <script>
     // ===== FIREBASE INITIALIZATION =====
     const FIREBASE_CONFIG = {
@@ -16438,44 +16439,48 @@
       const originalText = btn.textContent;
 
       if (App.forgotPasswordStep === 1) {
+        if (!email) {
+          showToast('Please enter your email address.', 'error');
+          return;
+        }
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending OTP...';
         
-        callServer('requestPasswordReset', { email: email }, function(res) {
-          btn.disabled = false;
-          btn.textContent = 'Reset Password';
-          if (res.success) {
-            showToast(res.message, 'success');
-            document.getElementById('forgotPasswordEmail').disabled = true;
-            document.getElementById('forgotPassStep1').style.display = 'none';
-            document.getElementById('forgotPassStep2').style.display = 'block';
-            App.forgotPasswordStep = 2;
-            
-            // Auto-fill OTP if it's a dummy email or email delivery failed
-            if (res.dummyOtp) {
-              document.getElementById('forgotPasswordOtp').value = res.dummyOtp;
-              showToast('Security Alert: OTP auto-filled to ' + res.dummyOtp, 'warning');
+        // Call Firebase Cloud Function
+        const requestReset = firebase.functions().httpsCallable('requestPasswordReset');
+        requestReset({ email })
+          .then((result) => {
+            btn.disabled = false;
+            btn.textContent = 'Verify OTP & Reset';
+            if (result.data && result.data.success) {
+              showToast(result.data.message, 'success');
+              document.getElementById('forgotPasswordEmail').disabled = true;
+              document.getElementById('forgotPassStep1').style.display = 'none';
+              document.getElementById('forgotPassStep2').style.display = 'block';
+              App.forgotPasswordStep = 2;
+            } else {
+              btn.textContent = originalText;
+              showToast(result.data.message || 'Failed to send OTP', 'error');
             }
-          } else {
+          })
+          .catch((err) => {
+            btn.disabled = false;
             btn.textContent = originalText;
-            showToast(res.message || 'Failed to request OTP', 'error');
-          }
-        }, function(err) {
-          btn.disabled = false;
-          btn.textContent = originalText;
-          showToast(err.message || 'Failed to request OTP', 'error');
-        });
+            const msg = err.message || 'Failed to send OTP. Please try again.';
+            showToast(msg, 'error');
+          });
+
       } else if (App.forgotPasswordStep === 2) {
         const otp = document.getElementById('forgotPasswordOtp').value.trim();
         const newPass = document.getElementById('forgotPasswordNewPass').value;
         const confirmPass = document.getElementById('forgotPasswordConfirmPass').value;
         
         if (!otp || otp.length !== 6) {
-          showToast('Please enter a valid 6-digit OTP code.', 'error');
+          showToast('Please enter the 6-digit OTP from your email.', 'error');
           return;
         }
-        if (!newPass) {
-          showToast('Please enter a new password.', 'error');
+        if (!newPass || newPass.length < 6) {
+          showToast('New password must be at least 6 characters.', 'error');
           return;
         }
         if (newPass !== confirmPass) {
@@ -16483,24 +16488,28 @@
           return;
         }
 
-        const newPasswordHash = simpleHash(newPass);
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Resetting...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Resetting Password...';
 
-        callServer('resetPasswordWithOtp', { email, otp, newPasswordHash }, function(res) {
-          btn.disabled = false;
-          btn.textContent = 'Reset Password';
-          if (res.success) {
-            showToast(res.message, 'success');
-            closeModal('forgotPasswordModal');
-          } else {
-            showToast(res.message || 'Failed to reset password', 'error');
-          }
-        }, function(err) {
-          btn.disabled = false;
-          btn.textContent = 'Reset Password';
-          showToast(err.message || 'Failed to reset password', 'error');
-        });
+        // Call Firebase Cloud Function
+        const resetPass = firebase.functions().httpsCallable('resetPasswordWithOtp');
+        resetPass({ email, otp, newPassword: newPass })
+          .then((result) => {
+            btn.disabled = false;
+            btn.textContent = 'Reset Password';
+            if (result.data && result.data.success) {
+              showToast(result.data.message, 'success');
+              closeModal('forgotPasswordModal');
+            } else {
+              showToast(result.data.message || 'Failed to reset password', 'error');
+            }
+          })
+          .catch((err) => {
+            btn.disabled = false;
+            btn.textContent = 'Reset Password';
+            const msg = err.message || 'Failed to reset password. Please try again.';
+            showToast(msg, 'error');
+          });
       }
     }
 

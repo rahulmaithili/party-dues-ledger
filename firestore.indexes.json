@@ -1,0 +1,15 @@
+﻿{
+  "indexes": [
+    {
+      "collectionGroup": "passwordResets",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "email", "order": "ASCENDING" },
+        { "fieldPath": "otp", "order": "ASCENDING" },
+        { "fieldPath": "used", "order": "ASCENDING" },
+        { "fieldPath": "expiresAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

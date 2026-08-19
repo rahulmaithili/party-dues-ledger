@@ -85,6 +85,12 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // Rules for passwordResets - Cloud Function (Admin SDK) only writes here
+    // Clients have NO direct read/write access for security
+    match /passwordResets/{resetId} {
+      allow read, write: if false;
+    }
+
     // Default rules for all other collections (Quotations, PurchaseOrders, CRM, etc.)
     match /{document=**} {
       allow read: if isStaff() || (isParty() && resource.data.partyId == getUserDoc().partyId);
