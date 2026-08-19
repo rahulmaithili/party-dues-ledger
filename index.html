@@ -3501,6 +3501,10 @@
                     <input type="text" id="setInvoicePrefix" class="light-form-control">
                   </div>
                 </div>
+                <div class="form-group">
+                  <label style="color:var(--txt)">Google Script Web App URL (for sending Emails & OTPs)</label>
+                  <input type="url" id="setGoogleScriptUrl" class="light-form-control" placeholder="https://script.google.com/macros/s/.../exec">
+                </div>
                 <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
                   <input type="checkbox" id="setEnableGst" style="width: 18px; height: 18px; cursor: pointer; border-radius: 4px; border: 1px solid var(--brd);">
                   <label for="setEnableGst" style="color:var(--txt); font-weight: 600; cursor: pointer; margin-bottom: 0; user-select: none;">Enable GST Billing & Features (GST बिलिंग और फीचर्स चालू करें)</label>
@@ -6817,10 +6821,50 @@
 
         // ---- AUTH: requestPasswordReset ----
         if (action === 'requestPasswordReset') {
+          const userSnap = await db.collection('users').where('email', '==', payload.email.trim().toLowerCase()).get();
+          if (userSnap.empty) {
+            success({ success: false, message: 'Email address not found in system.' });
+            return;
+          }
+          const user = userSnap.docs[0].data();
+          const userName = user.name || 'User';
+
           const otp = Math.floor(100000 + Math.random() * 900000).toString();
-          await db.collection('passwordResets').add({ email: payload.email, otp, createdAt: new Date().toISOString(), used: false });
-          showToast('OTP generated: ' + otp + ' (check with admin)', 'info');
-          success({ success: true, message: 'OTP sent to admin. Contact admin for OTP.' });
+          await db.collection('passwordResets').add({ email: payload.email.trim().toLowerCase(), otp, createdAt: new Date().toISOString(), used: false });
+          
+          const scriptUrl = App.data.companyProfile && App.data.companyProfile.googleScriptUrl;
+          if (scriptUrl) {
+            const emailPayload = {
+              action: 'sendOtpEmail',
+              email: payload.email.trim().toLowerCase(),
+              otp: otp,
+              userName: userName,
+              companyName: App.data.companyProfile.companyName || 'Mr.Rahul ERP',
+              companyLogo: App.data.companyProfile.companyLogo || ''
+            };
+            
+            fetch(scriptUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify(emailPayload)
+            }).then(response => response.json())
+              .then(data => {
+                if (data.success) {
+                  console.log("OTP email sent successfully via Google Apps Script.");
+                } else {
+                  console.error("Google Apps Script email error:", data.message);
+                }
+              })
+              .catch(err => {
+                console.error("Failed to send email via Google Apps Script:", err);
+              });
+            
+            success({ success: true, message: 'A 6-digit OTP code has been sent to your Gmail address.' });
+          } else {
+            // Fallback if Apps Script is not configured
+            showToast('OTP generated: ' + otp + ' (Configure Google Script URL in App Settings for email delivery)', 'warning');
+            success({ success: true, message: 'OTP generated. (Apps Script URL not set: OTP is ' + otp + ')', dummyOtp: otp });
+          }
           return;
         }
 
@@ -15498,6 +15542,7 @@
       document.getElementById('setCompanyUpiId').value = cp.companyUpiId || '';
       document.getElementById('setEnableGst').checked = (cp.enableGst !== false && cp.enableGst !== 'false');
       document.getElementById('setGeminiApiKey').value = cp.geminiApiKey || '';
+      document.getElementById('setGoogleScriptUrl').value = cp.googleScriptUrl || '';
 
       // Update Logo Preview UI
       if (cp.companyLogo) {
@@ -16127,7 +16172,8 @@
         companyUpiId: document.getElementById('setCompanyUpiId').value.trim() || '',
         termsAndConditions: document.getElementById('setCompanyTerms').value,
         enableGst: document.getElementById('setEnableGst').checked,
-        geminiApiKey: document.getElementById('setGeminiApiKey').value.trim() || ''
+        geminiApiKey: document.getElementById('setGeminiApiKey').value.trim() || '',
+        googleScriptUrl: document.getElementById('setGoogleScriptUrl').value.trim() || ''
       };
 
       callServer('saveSettings', payload, function() {

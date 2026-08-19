@@ -291,6 +291,26 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({ success: false, message: "Email address not found in system." })).setMimeType(ContentService.MimeType.JSON);
     }
 
+    if (action === "sendOtpEmail") {
+      var to = payload.email;
+      var otp = payload.otp;
+      var userName = payload.userName || "User";
+      var companyName = payload.companyName || "Mr.Rahul ERP";
+      var companyLogo = payload.companyLogo || "";
+      
+      var emailSubject = "Password Reset OTP - " + companyName;
+      var emailBody = getOtpEmailTemplate(userName, otp, companyName, companyLogo);
+      
+      try {
+        GmailApp.sendEmail(to, emailSubject, "", {
+          htmlBody: emailBody
+        });
+        return ContentService.createTextOutput(JSON.stringify({ success: true, message: "Email sent successfully." })).setMimeType(ContentService.MimeType.JSON);
+      } catch (err) {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
     if (action === "resetPasswordWithOtp") {
       var email = payload.email;
       var otp = payload.otp;
