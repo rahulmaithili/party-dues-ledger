@@ -2109,6 +2109,7 @@
                   <th>Type</th>
                   <th>Mobile</th>
                   <th class="gst-only">GSTIN</th>
+                  <th>Cylinder Dues</th>
                   <th class="text-right">Balance Due</th>
                   <th class="text-center">Actions</th>
                 </tr>
@@ -7809,18 +7810,14 @@
     function getPartyCylinderDuesHtml(partyId) {
       const holding = getPartyCylinderHolding(partyId);
       const keys = Object.keys(holding);
-      if (keys.length === 0) return '';
+      if (keys.length === 0) return '--';
 
       const parts = [];
       keys.forEach(name => {
         parts.push(`<strong>${holding[name]}</strong> (${name})`);
       });
 
-      return `
-        <div class="cylinder-dues-tag" style="font-size: 11px; color: var(--dan); margin-top: 4px; font-weight: 500;">
-          Cylinder Dues: ${parts.join(', ')}
-        </div>
-      `;
+      return parts.join(', ');
     }
 
     function renderParties(isLoadMore) {
@@ -7875,7 +7872,7 @@
       });
 
       if (list.length === 0) {
-        body.innerHTML = '<tr><td colspan="7" class="text-center">No parties matching filters.</td></tr>';
+        body.innerHTML = '<tr><td colspan="9" class="text-center">No parties matching filters.</td></tr>';
         gridContainer.innerHTML = '<div style="grid-column: 1/-1;" class="text-center text-secondary">No parties matching filters.</div>';
         return;
       }
@@ -7901,15 +7898,23 @@
 
         const wsapBtn = balance > 0 ? `<button class="btn btn-icon text-success" onclick="sendWhatsAppReminder('${p.id}')" title="Send WhatsApp Reminder" style="margin-left:6px; color:#25D366 !important; background:none; border:none; padding:0; cursor:pointer;"><i class="fa-brands fa-whatsapp" style="font-size:16px;"></i></button>` : '';
 
+        const duesText = getPartyCylinderDuesHtml(p.id);
+        const duesHtml = duesText !== '--' ? `
+          <div style="font-size: 11px; color: var(--dan); margin-top: 4px; font-weight: 500;">
+            Cylinder Dues: ${duesText}
+          </div>
+        ` : '';
+
         if (viewMode === 'list') {
           body.innerHTML += `
             <tr>
               <td class="admin-only" style="text-align: center;"><input type="checkbox" class="party-select-checkbox" data-id="${p.id}" onchange="updateSelectedPartiesCount()" style="width: 16px; height: 16px; cursor: pointer;"></td>
               <td><strong>${p.id}</strong></td>
-              <td><strong>${p.name}</strong>${riskBadge}${getPartyCylinderDuesHtml(p.id)}</td>
+              <td><strong>${p.name}</strong>${riskBadge}</td>
               <td><span class="badge ${getPartyBaseType(p) === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span></td>
               <td>${p.mobile}</td>
               <td class="gst-only">${p.gstin || '--'}</td>
+              <td>${duesText}</td>
               <td class="text-right" style="font-weight: 700; color: ${color};">${displayBal}${wsapBtn}</td>
               <td class="text-center">
                 <div class="flex-gap" style="justify-content: center;">
@@ -7933,7 +7938,7 @@
                   <span class="badge ${getPartyBaseType(p) === 'Customer' ? 'badge-primary' : 'badge-warning'}">${p.type}</span>
                 </div>
                 <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 8px; color: var(--txt);">${p.name}${riskBadge}</h3>
-                ${getPartyCylinderDuesHtml(p.id)}
+                ${duesHtml}
                 <p style="font-size: 13px; color: var(--txt2); margin-top: 8px; margin-bottom: 4px;"><i class="fa-solid fa-phone" style="margin-right: 6px; width: 14px;"></i>${p.mobile}</p>
                 <p style="font-size: 13px; color: var(--txt2); margin-bottom: 12px;"><i class="fa-solid fa-receipt" style="margin-right: 6px; width: 14px;"></i>${p.gstin || '--'}</p>
               </div>
@@ -13084,6 +13089,7 @@
             <td><span class="badge badge-type">${p.type || '--'}</span></td>
             <td>${p.mobile || '--'}</td>
             <td>${p.gstin || '--'}</td>
+            <td>${getPartyCylinderDuesHtml(p.id)}</td>
             <td class="text-right text-bold" style="color: ${balColor};">${displayBal}</td>
           </tr>
         `;
@@ -13237,10 +13243,11 @@
                 <tr>
                   <th style="width: 5%; text-align: center;">S.No</th>
                   <th>Party Name</th>
-                  <th style="width: 15%;">Type</th>
+                  <th style="width: 12%;">Type</th>
                   <th style="width: 15%;">Mobile No</th>
-                  <th style="width: 18%;">GSTIN</th>
-                  <th class="text-right" style="width: 20%;">Current Balance</th>
+                  <th style="width: 15%;">GSTIN</th>
+                  <th style="width: 23%;">Cylinder Dues</th>
+                  <th class="text-right" style="width: 15%;">Current Balance</th>
                 </tr>
               </thead>
               <tbody>
