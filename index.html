@@ -2076,6 +2076,7 @@
                 </div>
               </div>
               <button class="btn btn-secondary" onclick="printPartyList()" style="margin-right: 8px;"><i class="fa-solid fa-print"></i> Print Party List</button>
+              <button class="btn btn-secondary" onclick="openEmptyCylinderReturnModal()" style="margin-right: 8px;">Record Empty Return</button>
               <button class="btn btn-accent" onclick="openPartyModal()"><i class="fa-solid fa-user-plus"></i> Add New Party</button>
             </div>
           </div>
@@ -4227,6 +4228,46 @@
     </div>
   </div>
 
+  <!-- EMPTY CYLINDER RETURN MODAL -->
+  <div class="modal-backdrop" id="emptyCylinderReturnModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Record Empty Cylinder Return</h3>
+        <i class="fa-solid fa-xmark pointer" onclick="closeModal('emptyCylinderReturnModal')"></i>
+      </div>
+      <form id="emptyCylinderReturnForm" onsubmit="saveEmptyCylinderReturnForm(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Customer Name *</label>
+            <select id="emptyReturnPartyId" class="light-form-control" required style="width:100%;"></select>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label>Date *</label>
+              <input type="date" id="emptyReturnDate" class="light-form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Cylinder Product *</label>
+              <select id="emptyReturnProductId" class="light-form-control" required></select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Quantity Returned *</label>
+            <input type="number" id="emptyReturnQuantity" class="light-form-control" min="1" required>
+          </div>
+          <div class="form-group">
+            <label>Notes / Description</label>
+            <input type="text" id="emptyReturnDescription" class="light-form-control" placeholder="e.g. Empty cylinders returned by client">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('emptyCylinderReturnModal')">Cancel</button>
+          <button type="submit" class="btn btn-accent">Record Return</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <!-- BANK TRANSFER MODAL -->
   <div class="modal-backdrop" id="bankingTxnModal">
     <div class="modal-card">
@@ -5970,7 +6011,22 @@
         // ---- SAVE: saveReturn ----
         if (action === 'saveReturn') {
           const id = payload.id || ('RET_' + _fbId());
-          await db.collection('transactions').doc(id).set(Object.assign({}, payload, { id }), { merge: true });
+          const batch = db.batch();
+          const txnRef = db.collection('transactions').doc(id);
+          
+          const updates = {};
+          const isEdit = !!(payload.id && App.data.transactions.find(t => t.id === payload.id));
+          if (isEdit) {
+            rollbackLocalBalances(payload.id, updates);
+          }
+          
+          const revMode = payload.returnType === 'Sales' ? 'purchase' : 'sale';
+          adjustLocalStock(payload.items, revMode, updates);
+          
+          _applyCalculatedUpdates(updates, batch);
+          batch.set(txnRef, Object.assign({}, payload, { id }), { merge: true });
+          
+          await batch.commit();
           _logActivity('SAVE', 'Returns', `Saved return: ${payload.voucherNo}`);
           success({ success: true });
           return;
@@ -7681,20 +7737,83 @@
 
     // ==================== PARTIES CRUD ====================
 
-    function getPartyCylinderDuesHtml(partyId) {
-      if (!App.data.cylinderSecurity) return '';
-      const partyCylinders = App.data.cylinderSecurity.filter(s => s.partyId === partyId && parseFloat(s.pending || 0) > 0);
-      if (partyCylinders.length === 0) return '';
+    function getPartyCylinderHolding(partyId) {
+      const holding = {};
+      const partyTxns = App.data.transactions ? App.data.transactions.filter(t => t.partyId === partyId) : [];
+      
+      const cylinderProducts = new Set();
+      if (App.data.products) {
+        App.data.products.forEach(p => {
+          if (p.isCylinder || p.isCylinder === 'true' || String(p.category || '').toLowerCase().includes('cylinder')) {
+            cylinderProducts.add(p.name);
+          }
+        });
+      }
 
-      const cylTotals = {};
-      partyCylinders.forEach(s => {
-        const type = s.cylinderType || 'Cylinder';
-        cylTotals[type] = (cylTotals[type] || 0) + parseFloat(s.pending || 0);
+      partyTxns.forEach(t => {
+        // If it's a Sale transaction
+        if (t.txnType === 'Sale') {
+          const items = Array.isArray(t.items) ? t.items : (typeof t.items === 'string' ? JSON.parse(t.items) : []);
+          const cylItems = items.filter(item => cylinderProducts.has(item.productName));
+          
+          cylItems.forEach(item => {
+            holding[item.productName] = (holding[item.productName] || 0) + parseFloat(item.quantity || 0);
+          });
+
+          // Subtract cylinderIn (returned at same time)
+          const cylIn = parseFloat(t.cylinderIn || 0);
+          if (cylIn > 0 && cylItems.length > 0) {
+            let remainingSub = cylIn;
+            for (let item of cylItems) {
+              const qty = parseFloat(item.quantity || 0);
+              const sub = Math.min(qty, remainingSub);
+              holding[item.productName] -= sub;
+              remainingSub -= sub;
+              if (remainingSub <= 0) break;
+            }
+          }
+        }
+        
+        // If it's an empty return transaction or returns
+        if (t.txnType === 'CylinderReturn' || (t.txnType === 'Return' && t.returnType === 'Sales')) {
+          const items = Array.isArray(t.items) ? t.items : (typeof t.items === 'string' ? JSON.parse(t.items) : []);
+          items.forEach(item => {
+            if (cylinderProducts.has(item.productName)) {
+              holding[item.productName] = (holding[item.productName] || 0) - parseFloat(item.quantity || 0);
+            }
+          });
+        }
+        
+        // Let's also include CylinderSecurity returns/deposits if they exist!
+        if (t.txnType === 'SecurityDeposit') {
+          const type = t.cylinderType || 'Cylinder';
+          holding[type] = (holding[type] || 0) + parseFloat(t.cylinderOut || 0);
+          holding[type] = (holding[type] || 0) - parseFloat(t.cylinderIn || 0);
+        }
+        if (t.txnType === 'SecurityRefund') {
+          const type = t.cylinderType || 'Cylinder';
+          holding[type] = (holding[type] || 0) - parseFloat(t.cylinderIn || 0);
+        }
       });
 
+      // Filter out zero/negative holdings
+      const result = {};
+      Object.keys(holding).forEach(k => {
+        if (holding[k] > 0) {
+          result[k] = holding[k];
+        }
+      });
+      return result;
+    }
+
+    function getPartyCylinderDuesHtml(partyId) {
+      const holding = getPartyCylinderHolding(partyId);
+      const keys = Object.keys(holding);
+      if (keys.length === 0) return '';
+
       const parts = [];
-      Object.keys(cylTotals).forEach(type => {
-        parts.push(`<strong>${cylTotals[type]}</strong> (${type})`);
+      keys.forEach(name => {
+        parts.push(`<strong>${holding[name]}</strong> (${name})`);
       });
 
       return `
@@ -7795,6 +7914,7 @@
               <td class="text-center">
                 <div class="flex-gap" style="justify-content: center;">
                   <button class="btn btn-secondary btn-sm" onclick="viewPartyLedger('${p.id}')"><i class="fa-solid fa-file-invoice"></i> Ledger</button>
+                  <button class="btn btn-secondary btn-sm" onclick="openEmptyCylinderReturnModal('${p.id}')">Return</button>
                   ${p.gpsLocation ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(p.gpsLocation)}" target="_blank" class="btn btn-icon" title="View GPS Location" style="color:var(--acc);"><i class="fa-solid fa-map-location-dot"></i></a>` : ''}
                   ${p.documents ? `<button class="btn btn-icon" onclick="openPartyDocViewer('${p.id}')" title="View Document / KYC Proof" style="color: var(--acc); background: none; border: none; cursor: pointer;"><i class="fa-solid fa-paperclip"></i></button>` : ''}
                   <button class="btn btn-icon" onclick="editParty('${p.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
@@ -7822,8 +7942,9 @@
                   <span style="font-size: 11px; font-weight: 600; color: var(--txt2); display: block; text-transform: uppercase;">Balance Due</span>
                   <span style="font-size: 15px; font-weight: 700; color: ${color};">${displayBal}${wsapBtn}</span>
                 </div>
-                <div class="flex-gap" style="gap: 4px;">
+                <div class="flex-gap" style="gap: 4px; align-items: center;">
                   <button class="btn btn-icon" onclick="viewPartyLedger('${p.id}')" title="View Ledger"><i class="fa-solid fa-file-invoice"></i></button>
+                  <button class="btn btn-secondary btn-sm" onclick="openEmptyCylinderReturnModal('${p.id}')" style="font-size:11px; padding: 4px 8px; border-radius: 4px;">Return</button>
                   ${p.gpsLocation ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(p.gpsLocation)}" target="_blank" class="btn btn-icon" title="View GPS Location" style="color:var(--acc);"><i class="fa-solid fa-map-location-dot"></i></a>` : ''}
                   ${p.documents ? `<button class="btn btn-icon" onclick="openPartyDocViewer('${p.id}')" title="View Document / KYC Proof" style="color:var(--acc); background: none; border: none; cursor: pointer;"><i class="fa-solid fa-paperclip"></i></button>` : ''}
                   <button class="btn btn-icon" onclick="editParty('${p.id}')" title="Edit"><i class="fa-solid fa-pen-to-square"></i></button>
@@ -11047,6 +11168,93 @@
       });
     }
 
+    function openEmptyCylinderReturnModal(partyId) {
+      document.getElementById('emptyCylinderReturnForm').reset();
+      document.getElementById('emptyReturnDate').value = new Date().toISOString().split('T')[0];
+      
+      const pSelect = document.getElementById('emptyReturnPartyId');
+      pSelect.innerHTML = '<option value="">-- Choose Party --</option>';
+      const sortedParties = [...App.data.parties].sort((a, b) => a.name.localeCompare(b.name));
+      sortedParties.forEach(p => {
+        pSelect.innerHTML += `<option value="${p.id}">${p.name} (${p.type})</option>`;
+      });
+      if (partyId) {
+        pSelect.value = partyId;
+      }
+      initSearchableDropdown('emptyReturnPartyId');
+
+      const prodSelect = document.getElementById('emptyReturnProductId');
+      prodSelect.innerHTML = '<option value="">-- Choose Cylinder --</option>';
+      App.data.products.filter(p => p.isCylinder || p.isCylinder === 'true' || String(p.category || '').toLowerCase().includes('cylinder')).forEach(p => {
+        prodSelect.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+      });
+
+      openModal('emptyCylinderReturnModal');
+    }
+
+    function saveEmptyCylinderReturnForm(e) {
+      e.preventDefault();
+      const partyId = document.getElementById('emptyReturnPartyId').value;
+      const productId = document.getElementById('emptyReturnProductId').value;
+      const date = document.getElementById('emptyReturnDate').value;
+      const quantity = parseFloat(document.getElementById('emptyReturnQuantity').value || 0);
+      const description = document.getElementById('emptyReturnDescription').value;
+
+      if (!partyId) {
+        showToast('Please select a party', 'warning');
+        return;
+      }
+      if (!productId) {
+        showToast('Please select a cylinder product', 'warning');
+        return;
+      }
+      if (quantity <= 0) {
+        showToast('Please enter a valid quantity', 'warning');
+        return;
+      }
+
+      const party = App.data.parties.find(p => p.id === partyId);
+      const prod = App.data.products.find(p => p.id === productId);
+
+      const count = App.data.transactions.filter(t => t.txnType === 'Return').length + 1;
+      const voucherNo = `CYR-${new Date().getFullYear()}-${count.toString().padStart(3, '0')}`;
+
+      const payload = {
+        id: 'TXN' + Date.now(),
+        date: date,
+        voucherNo: voucherNo,
+        partyId: partyId,
+        partyName: party ? party.name : '',
+        description: description || `Empty Cylinder Return: ${prod ? prod.name : 'Cylinder'}`,
+        txnType: 'Return',
+        returnType: 'Sales',
+        debit: 0,
+        credit: 0,
+        cylinderIn: quantity,
+        cylinderOut: 0,
+        items: [
+          {
+            productId: productId,
+            productName: prod ? prod.name : 'Cylinder',
+            quantity: quantity,
+            rate: 0,
+            amount: 0
+          }
+        ],
+        totals: { grandTotal: 0 },
+        enteredBy: App.currentUser.id,
+        enteredOn: new Date().toISOString()
+      };
+
+      callServer('saveReturn', payload, function() {
+        closeModal('emptyCylinderReturnModal');
+        showToast('Empty cylinder return recorded successfully', 'success');
+        syncAllData(function() {
+          renderParties();
+        }, ["Transactions", "Products", "ActivityLog"]);
+      });
+    }
+
     // ==================== CYLINDER & PRODUCT SECURITY DEPOSITS ====================
 
     function renderSecurityDeposits() {
@@ -12227,10 +12435,13 @@
 
       // Calculate cylinders holding
       let cylindersHolding = 0;
-      ledger.forEach(t => {
-        cylindersHolding += parseFloat(t.cylinderOut || 0) - parseFloat(t.cylinderIn || 0);
+      const holding = getPartyCylinderHolding(p.id);
+      const parts = [];
+      Object.keys(holding).forEach(k => {
+        parts.push(`<strong>${holding[k]}</strong> (${k})`);
+        cylindersHolding += holding[k];
       });
-      document.getElementById('ledgerCylindersHolding').textContent = cylindersHolding;
+      document.getElementById('ledgerCylindersHolding').innerHTML = `${cylindersHolding} ${parts.length > 0 ? ': ' + parts.join(', ') : ''}`;
       
       // Update the add sale / add payment buttons dynamically
       const isCustomer = getPartyBaseType(p) === 'Customer';
