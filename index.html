@@ -3890,46 +3890,59 @@
 
   <!-- FORGOT PASSWORD MODAL -->
   <div class="modal-backdrop" id="forgotPasswordModal">
-    <div class="modal-card" style="max-width: 420px;">
+    <div class="modal-card" style="max-width: 440px;">
       <div class="modal-header">
-        <h3><i class="fa-solid fa-lock-open" style="color:#10B981;margin-right:8px;"></i>Password Reset</h3>
+        <h3><i class="fa-solid fa-shield-halved" style="color:#10B981;margin-right:8px;"></i>Password Reset</h3>
         <i class="fa-solid fa-xmark pointer" onclick="closeModal('forgotPasswordModal')"></i>
       </div>
       <form id="forgotPasswordForm" onsubmit="submitForgotPasswordRequest(event)">
         <div class="modal-body">
-          <!-- Step 1: Email Input -->
+
+          <!-- Step 1: Email -->
           <div id="forgotPassStep1">
-            <div style="text-align:center;margin-bottom:20px;">
-              <div style="width:64px;height:64px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
-                <i class="fa-solid fa-envelope" style="color:white;font-size:26px;"></i>
+            <div style="text-align:center;margin-bottom:22px;">
+              <div style="width:68px;height:68px;background:linear-gradient(135deg,#6366F1,#8B5CF6);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;box-shadow:0 8px 20px rgba(99,102,241,0.35);">
+                <i class="fa-solid fa-key" style="color:white;font-size:26px;"></i>
               </div>
-              <p style="font-size:13.5px;color:var(--txt2);line-height:1.6;margin:0;">
-                Apna registered email daalein. Firebase aapke Gmail par ek <strong style="color:var(--txt);">secure reset link</strong> bhejega — ek click mein naya password set karein.
+              <h4 style="color:var(--txt);font-weight:700;margin-bottom:6px;font-size:15px;">Forgot your password?</h4>
+              <p style="font-size:13px;color:var(--txt2);line-height:1.6;margin:0;">
+                Koi baat nahi! Apna registered email daalein — hum aapke Gmail par ek <strong style="color:var(--txt);">6-digit OTP</strong> bhejenge.
               </p>
             </div>
             <div class="form-group" style="margin-bottom:0;">
-              <label>Registered Email *</label>
+              <label><i class="fa-solid fa-envelope" style="margin-right:5px;color:#6366F1;"></i>Registered Email *</label>
               <input type="email" id="forgotPasswordEmail" class="light-form-control" required placeholder="aapka@gmail.com" autocomplete="email">
             </div>
           </div>
 
-          <!-- Step 2: Success State -->
-          <div id="forgotPassStep2" style="display:none;text-align:center;padding:10px 0;">
-            <div style="width:64px;height:64px;background:linear-gradient(135deg,#10B981,#059669);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-              <i class="fa-solid fa-check" style="color:white;font-size:28px;"></i>
+          <!-- Step 2: OTP + New Password -->
+          <div id="forgotPassStep2" style="display:none;">
+            <div style="background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.2);border-radius:10px;padding:12px 16px;margin-bottom:18px;display:flex;align-items:flex-start;gap:10px;">
+              <i class="fa-solid fa-circle-check" style="color:#10B981;font-size:18px;margin-top:2px;flex-shrink:0;"></i>
+              <div>
+                <p style="font-size:13px;color:var(--txt);font-weight:600;margin:0 0 2px;">OTP Gmail par bheja gaya!</p>
+                <p style="font-size:12px;color:var(--txt2);margin:0;">Inbox check karein aur neeche OTP daalein.</p>
+              </div>
             </div>
-            <h4 style="color:var(--txt);font-size:16px;font-weight:700;margin-bottom:8px;">Email Bhej Diya Gaya! ✅</h4>
-            <p style="font-size:13.5px;color:var(--txt2);line-height:1.7;margin:0;">
-              Aapke Gmail par ek <strong style="color:#10B981;">Password Reset Link</strong> bheja gaya hai.<br><br>
-              📌 <strong>Inbox check karein</strong> — agar nahi mila toh <strong>Spam/Junk folder</strong> bhi dekhein.<br><br>
-              Link par click karke naya password set karein.
-            </p>
+            <div class="form-group">
+              <label><i class="fa-solid fa-hashtag" style="margin-right:5px;color:#6366F1;"></i>6-Digit OTP Code *</label>
+              <input type="text" id="forgotPasswordOtp" class="light-form-control" placeholder="• • • • • •" pattern="\d{6}" maxlength="6" style="font-size:22px;letter-spacing:8px;text-align:center;font-weight:700;">
+            </div>
+            <div class="form-group">
+              <label><i class="fa-solid fa-lock" style="margin-right:5px;color:#6366F1;"></i>New Password *</label>
+              <input type="password" id="forgotPasswordNewPass" class="light-form-control" placeholder="••••••••">
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label><i class="fa-solid fa-lock-open" style="margin-right:5px;color:#6366F1;"></i>Confirm New Password *</label>
+              <input type="password" id="forgotPasswordConfirmPass" class="light-form-control" placeholder="••••••••">
+            </div>
           </div>
+
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('forgotPasswordModal')">Close</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal('forgotPasswordModal')">Cancel</button>
           <button type="submit" id="forgotPasswordSubmitBtn" class="btn btn-accent" style="min-width:140px;">
-            <i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i>Send Reset Link
+            <i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i>Send OTP
           </button>
         </div>
       </form>
@@ -16429,46 +16442,102 @@
       document.getElementById('forgotPassStep2').style.display = 'none';
       const btn = document.getElementById('forgotPasswordSubmitBtn');
       btn.disabled = false;
-      btn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i>Send Reset Link';
+      btn.style.display = '';
+      btn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i>Send OTP';
+      App.forgotPasswordStep = 1;
+      App._resetEmail = null;
       openModal('forgotPasswordModal');
     }
 
     function submitForgotPasswordRequest(e) {
       if (e) e.preventDefault();
 
-      const email = document.getElementById('forgotPasswordEmail').value.trim();
+      const email = document.getElementById('forgotPasswordEmail').value.trim().toLowerCase();
       const btn = document.getElementById('forgotPasswordSubmitBtn');
 
-      if (!email) {
-        showToast('Apna registered email daalein.', 'error');
-        return;
+      // ---- STEP 1: Send OTP via Firebase Cloud Function ----
+      if (App.forgotPasswordStep === 1) {
+        if (!email) {
+          showToast('Apna registered email daalein.', 'error');
+          return;
+        }
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending OTP...';
+
+        const requestReset = firebase.functions().httpsCallable('requestPasswordReset');
+        requestReset({ email })
+          .then((result) => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right:6px;"></i>Verify & Reset';
+            if (result.data && result.data.success) {
+              showToast('✅ ' + result.data.message, 'success');
+              document.getElementById('forgotPasswordEmail').disabled = true;
+              document.getElementById('forgotPassStep1').style.display = 'none';
+              document.getElementById('forgotPassStep2').style.display = 'block';
+              App.forgotPasswordStep = 2;
+              App._resetEmail = email;
+              // Focus OTP input
+              setTimeout(() => {
+                const otpField = document.getElementById('forgotPasswordOtp');
+                if (otpField) otpField.focus();
+              }, 200);
+            } else {
+              btn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i>Send OTP';
+              showToast(result.data.message || 'OTP send karne mein error.', 'error');
+            }
+          })
+          .catch((err) => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i>Send OTP';
+            let msg = err.message || 'OTP send karne mein error. Dobara try karein.';
+            if (err.code === 'functions/not-found') msg = 'Yeh email system mein registered nahi hai.';
+            if (err.code === 'functions/unavailable') msg = 'Server unavailable. Thodi der baad try karein.';
+            showToast(msg, 'error');
+          });
+
+      // ---- STEP 2: Verify OTP + Reset Password ----
+      } else if (App.forgotPasswordStep === 2) {
+        const otp = document.getElementById('forgotPasswordOtp').value.trim();
+        const newPass = document.getElementById('forgotPasswordNewPass').value;
+        const confirmPass = document.getElementById('forgotPasswordConfirmPass').value;
+
+        if (!otp || otp.length !== 6) {
+          showToast('Gmail se aaya 6-digit OTP daalein.', 'error');
+          return;
+        }
+        if (!newPass || newPass.length < 6) {
+          showToast('Naya password kam se kam 6 characters ka hona chahiye.', 'error');
+          return;
+        }
+        if (newPass !== confirmPass) {
+          showToast('Dono passwords match nahi kar rahe!', 'error');
+          return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Resetting...';
+
+        const resetPass = firebase.functions().httpsCallable('resetPasswordWithOtp');
+        resetPass({ email: App._resetEmail, otp, newPassword: newPass })
+          .then((result) => {
+            btn.disabled = false;
+            if (result.data && result.data.success) {
+              showToast('✅ ' + result.data.message, 'success');
+              closeModal('forgotPasswordModal');
+            } else {
+              btn.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right:6px;"></i>Verify & Reset';
+              showToast(result.data.message || 'Password reset mein error.', 'error');
+            }
+          })
+          .catch((err) => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right:6px;"></i>Verify & Reset';
+            let msg = err.message || 'Password reset mein error.';
+            if (err.code === 'functions/invalid-argument') msg = 'Galat OTP! Dobara check karein.';
+            if (err.code === 'functions/deadline-exceeded') msg = 'OTP expire ho gaya. Naya OTP request karein.';
+            showToast(msg, 'error');
+          });
       }
-
-      btn.disabled = true;
-      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending...';
-
-      // Firebase Auth Direct — sends professional reset link to Gmail
-      firebase.auth().sendPasswordResetEmail(email)
-        .then(() => {
-          // Show success state
-          document.getElementById('forgotPassStep1').style.display = 'none';
-          document.getElementById('forgotPassStep2').style.display = 'block';
-          btn.style.display = 'none';
-          showToast('✅ Reset link aapke Gmail par bhej diya gaya!', 'success');
-        })
-        .catch((error) => {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-paper-plane" style="margin-right:6px;"></i>Send Reset Link';
-          let msg = 'Kuch error aaya. Dobara try karein.';
-          if (error.code === 'auth/user-not-found') {
-            msg = 'Yeh email Firebase mein registered nahi hai.';
-          } else if (error.code === 'auth/invalid-email') {
-            msg = 'Email address galat format mein hai.';
-          } else if (error.code === 'auth/too-many-requests') {
-            msg = 'Bahut zyada requests. Thodi der baad try karein.';
-          }
-          showToast(msg, 'error');
-        });
     }
 
 
