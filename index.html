@@ -16490,35 +16490,32 @@
             App._resetEmail = email;
             App._resetOtp = otp; // fallback only
 
-            // 5. Try sending email via EmailJS (if configured)
+            // 5. Send email via Netlify Function (Gmail + Nodemailer)
             const cp = App.data && App.data.companyProfile ? App.data.companyProfile : {};
-            const ejsServiceId = cp.emailjsServiceId;
-            const ejsTemplateId = cp.emailjsTemplateId;
-            const ejsPublicKey = cp.emailjsPublicKey;
             const companyName = cp.companyName || 'Shiv Shakti Gas ERP';
             const userData = snap.docs[0].data();
             const userName = userData.name || 'User';
 
-            if (ejsServiceId && ejsTemplateId && ejsPublicKey && typeof emailjs !== 'undefined') {
-              // Send via EmailJS
-              emailjs.init({ publicKey: ejsPublicKey });
-              emailjs.send(ejsServiceId, ejsTemplateId, {
-                to_name: userName,
-                to_email: email,
-                otp: otp,
-                company_name: companyName
-              }).then(() => {
+            // Call Netlify Function to send OTP email
+            fetch('/.netlify/functions/sendOtpEmail', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ to_email: email, to_name: userName, otp, company_name: companyName })
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
                 showToast('✅ OTP aapke Gmail inbox mein bhej diya gaya!', 'success');
-              }).catch(() => {
-                showToast('⚠️ OTP: ' + otp + ' (Email failed — yeh OTP note kar lo)', 'warning');
-              });
-            } else {
-              // No email service configured — show OTP on screen
-              // Large visible toast with OTP
-              showToast('🔐 Aapka OTP hai: ' + otp + ' (10 min valid)', 'warning');
-              // Also log in console for reference
+              } else {
+                showToast('🔐 OTP: ' + otp + ' (Email error — yeh OTP note karo)', 'warning');
+                console.log('%c OTP: ' + otp, 'background:#10B981;color:white;font-size:24px;padding:8px;border-radius:4px;');
+              }
+            })
+            .catch(() => {
+              // Fallback: show OTP on screen
+              showToast('🔐 Aapka OTP: ' + otp + ' (10 min valid)', 'warning');
               console.log('%c OTP: ' + otp, 'background:#10B981;color:white;font-size:24px;padding:8px;border-radius:4px;');
-            }
+            });
 
             // 6. Move to Step 2
             btn.disabled = false;
