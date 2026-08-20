@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
@@ -9,13 +9,11 @@ const db = admin.firestore();
 
 // =============================================
 // NODEMAILER TRANSPORTER
-// Gmail App Password use karo (2FA on karo pehle)
-// firebase functions:config:set mail.user="yourapp@gmail.com" mail.pass="app-password"
+// Gmail credentials from .env file (MAIL_USER, MAIL_PASS)
 // =============================================
 function createTransporter() {
-  const config = functions.config().mail || {};
-  const user = config.user || "yourapp@gmail.com";
-  const pass = config.pass || "";
+  const user = process.env.MAIL_USER || "";
+  const pass = process.env.MAIL_PASS || "";
   return nodemailer.createTransport({
     service: "gmail",
     auth: { user, pass }
@@ -135,8 +133,7 @@ exports.requestPasswordReset = functions.https.onCall(async (data, context) => {
 
   // Send email
   const transporter = createTransporter();
-  const mailConfig = functions.config().mail || {};
-  const fromEmail = mailConfig.user || "yourapp@gmail.com";
+  const fromEmail = process.env.MAIL_USER || "noreply@example.com";
 
   await transporter.sendMail({
     from: `"${companyName}" <${fromEmail}>`,
