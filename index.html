@@ -16433,82 +16433,169 @@
 
     function submitForgotPasswordRequest(e) {
       if (e) e.preventDefault();
-      
-      const email = document.getElementById('forgotPasswordEmail').value.trim();
+
+      const email = document.getElementById('forgotPasswordEmail').value.trim().toLowerCase();
       const btn = document.getElementById('forgotPasswordSubmitBtn');
       const originalText = btn.textContent;
 
+      // ---- STEP 1: Generate OTP and send via EmailJS ----
       if (App.forgotPasswordStep === 1) {
         if (!email) {
-          showToast('Please enter your email address.', 'error');
+          showToast('Apna email address enter karein.', 'error');
           return;
         }
+
         btn.disabled = true;
         btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending OTP...';
-        
-        // Call Firebase Cloud Function
-        const requestReset = firebase.functions().httpsCallable('requestPasswordReset');
-        requestReset({ email })
-          .then((result) => {
-            btn.disabled = false;
-            btn.textContent = 'Verify OTP & Reset';
-            if (result.data && result.data.success) {
-              showToast(result.data.message, 'success');
+
+        // Check user exists in Firestore
+        db.collection('users').where('email', '==', email).get()
+          .then(async (snap) => {
+            if (snap.empty) {
+              btn.disabled = false;
+              btn.textContent = originalText;
+              showToast('Yeh email system mein registered nahi hai.', 'error');
+              return;
+            }
+
+            const userData = snap.docs[0].data();
+            const userName = userData.name || 'User';
+
+            // Generate 6-digit OTP
+            const otp = Math.floor(100000 + Math.random() * 900000).toString();
+            const expiresAt = Date.now() + (10 * 60 * 1000); // 10 minutes
+
+            // Save OTP to Firestore
+            await db.collection('passwordResets').add({
+              email, otp, expiresAt, used: false,
+              createdAt: new Date().toISOString()
+            });
+
+            // Store locally for step 2
+            App._resetEmail = email;
+
+            // Get EmailJS config from company profile
+            const cp = App.data.companyProfile || {};
+            const serviceId = cp.emailjsServiceId;
+            const templateId = cp.emailjsTemplateId;
+            const publicKey = cp.emailjsPublicKey;
+            const companyName = cp.companyName || 'Mr.Rahul ERP';
+
+            if (!serviceId || !templateId || !publicKey) {
+              // EmailJS not configured — show OTP on screen as fallback
+              btn.disabled = false;
+              btn.textContent = 'Verify OTP & Reset';
+              showToast('EmailJS configure nahi hai. OTP: ' + otp + ' (App Settings mein EmailJS setup karein)', 'warning');
+              document.getElementById('forgotPasswordOtp').value = otp;
               document.getElementById('forgotPasswordEmail').disabled = true;
               document.getElementById('forgotPassStep1').style.display = 'none';
               document.getElementById('forgotPassStep2').style.display = 'block';
               App.forgotPasswordStep = 2;
-            } else {
-              btn.textContent = originalText;
-              showToast(result.data.message || 'Failed to send OTP', 'error');
+              return;
             }
+
+            // Initialize EmailJS and send
+            emailjs.init({ publicKey });
+
+            const templateParams = {
+              to_name: userName,
+              to_email: email,
+              otp: otp,
+              company_name: companyName
+            };
+
+            emailjs.send(serviceId, templateId, templateParams)
+              .then(() => {
+                btn.disabled = false;
+                btn.textContent = 'Verify OTP & Reset';
+                showToast('✅ OTP aapke Gmail par bhej diya gaya hai! (Check inbox & spam)', 'success');
+                document.getElementById('forgotPasswordEmail').disabled = true;
+                document.getElementById('forgotPassStep1').style.display = 'none';
+                document.getElementById('forgotPassStep2').style.display = 'block';
+                App.forgotPasswordStep = 2;
+              })
+              .catch((err) => {
+                console.error('EmailJS error:', err);
+                btn.disabled = false;
+                btn.textContent = originalText;
+                showToast('Email bhejne mein error. EmailJS settings check karein. Error: ' + JSON.stringify(err), 'error');
+              });
           })
           .catch((err) => {
             btn.disabled = false;
             btn.textContent = originalText;
-            const msg = err.message || 'Failed to send OTP. Please try again.';
-            showToast(msg, 'error');
+            showToast('Error: ' + err.message, 'error');
           });
 
+      // ---- STEP 2: Verify OTP and reset password in Firestore ----
       } else if (App.forgotPasswordStep === 2) {
         const otp = document.getElementById('forgotPasswordOtp').value.trim();
         const newPass = document.getElementById('forgotPasswordNewPass').value;
         const confirmPass = document.getElementById('forgotPasswordConfirmPass').value;
-        
+
         if (!otp || otp.length !== 6) {
-          showToast('Please enter the 6-digit OTP from your email.', 'error');
+          showToast('6-digit OTP enter karein jo email par aaya hai.', 'error');
           return;
         }
         if (!newPass || newPass.length < 6) {
-          showToast('New password must be at least 6 characters.', 'error');
+          showToast('Naya password kam se kam 6 characters ka hona chahiye.', 'error');
           return;
         }
         if (newPass !== confirmPass) {
-          showToast('Passwords do not match!', 'error');
+          showToast('Dono passwords match nahi kar rahe!', 'error');
           return;
         }
 
         btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Resetting Password...';
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying & Resetting...';
 
-        // Call Firebase Cloud Function
-        const resetPass = firebase.functions().httpsCallable('resetPasswordWithOtp');
-        resetPass({ email, otp, newPassword: newPass })
-          .then((result) => {
+        const resetEmail = App._resetEmail || email;
+
+        // Find OTP in Firestore
+        db.collection('passwordResets')
+          .where('email', '==', resetEmail)
+          .where('otp', '==', otp)
+          .where('used', '==', false)
+          .get()
+          .then(async (snap) => {
+            if (snap.empty) {
+              btn.disabled = false;
+              btn.textContent = 'Reset Password';
+              showToast('Galat OTP! Please check karein aur dobara try karein.', 'error');
+              return;
+            }
+
+            const record = snap.docs[0];
+            const recordData = record.data();
+
+            if (Date.now() > recordData.expiresAt) {
+              await record.ref.update({ used: true });
+              btn.disabled = false;
+              btn.textContent = 'Reset Password';
+              showToast('OTP expire ho gaya. Naya OTP request karein.', 'error');
+              return;
+            }
+
+            // OTP valid — update password hash in Firestore users collection
+            const newPasswordHash = simpleHash(newPass);
+            const userSnap = await db.collection('users').where('email', '==', resetEmail).get();
+
+            if (!userSnap.empty) {
+              await userSnap.docs[0].ref.update({ passwordHash: newPasswordHash });
+            }
+
+            // Mark OTP as used
+            await record.ref.update({ used: true });
+
             btn.disabled = false;
             btn.textContent = 'Reset Password';
-            if (result.data && result.data.success) {
-              showToast(result.data.message, 'success');
-              closeModal('forgotPasswordModal');
-            } else {
-              showToast(result.data.message || 'Failed to reset password', 'error');
-            }
+            showToast('✅ Password successfully reset ho gaya! Ab login karein.', 'success');
+            closeModal('forgotPasswordModal');
           })
           .catch((err) => {
             btn.disabled = false;
             btn.textContent = 'Reset Password';
-            const msg = err.message || 'Failed to reset password. Please try again.';
-            showToast(msg, 'error');
+            showToast('Error: ' + err.message, 'error');
           });
       }
     }

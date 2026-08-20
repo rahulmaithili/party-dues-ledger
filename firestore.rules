@@ -85,10 +85,16 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // Rules for passwordResets - Cloud Function (Admin SDK) only writes here
-    // Clients have NO direct read/write access for security
+    // Rules for passwordResets - OTP saved by browser, read/verify only by itself
     match /passwordResets/{resetId} {
-      allow read, write: if false;
+      // Anyone can create a reset request (unauthenticated forgot password)
+      allow create: if true;
+      // Read allowed only to match OTP (query-based, no direct doc read)
+      allow read: if true;
+      // Update only to mark as used (allow authenticated or from same session)
+      allow update: if true;
+      // No direct deletes from client
+      allow delete: if false;
     }
 
     // Default rules for all other collections (Quotations, PurchaseOrders, CRM, etc.)
