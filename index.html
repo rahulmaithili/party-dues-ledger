@@ -16505,9 +16505,10 @@
             .then(res => res.json())
             .then(data => {
               if (data.success) {
-                showToast('✅ OTP aapke Gmail inbox mein bhej diya gaya!', 'success');
+                // Temporarily showing OTP in toast too so user is not blocked
+                showToast('✅ Email sent! (OTP: ' + otp + ')', 'success');
               } else {
-                showToast('🔐 OTP: ' + otp + ' (Email error — yeh OTP note karo)', 'warning');
+                showToast('🔐 OTP: ' + otp + ' (Email error — yeh note karo)', 'warning');
                 console.log('%c OTP: ' + otp, 'background:#10B981;color:white;font-size:24px;padding:8px;border-radius:4px;');
               }
             })
