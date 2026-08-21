@@ -8001,6 +8001,7 @@
         callServer('getAllData', { sheets: secondarySheets.join(',') }, function(res2) {
           if (res2.success) {
             Object.keys(res2).forEach(k => { if (k !== 'success') App.data[k] = res2[k]; });
+            normalizeTransactions(); // Automatically fix fully paid invoice balances
             loadDashboard();
             populateGlobalDropdowns();
 
@@ -8048,12 +8049,29 @@
       }
     }
 
+    function normalizeTransactions() {
+      if (!App.data.transactions) return;
+      App.data.transactions.forEach(t => {
+        let debit = parseFloat(t.debit || 0);
+        let credit = parseFloat(t.credit || 0);
+        
+        if (t.txnType === 'Sale') {
+          const paid = (t.totals && t.totals.paidCash ? parseFloat(t.totals.paidCash) : 0) + (t.totals && t.totals.paidBank ? parseFloat(t.totals.paidBank) : 0);
+          if (paid > 0 && credit === 0) t.credit = paid;
+        } else if (t.txnType === 'Purchase') {
+          const paid = (t.totals && t.totals.paidCash ? parseFloat(t.totals.paidCash) : 0) + (t.totals && t.totals.paidBank ? parseFloat(t.totals.paidBank) : 0);
+          if (paid > 0 && debit === 0) t.debit = paid;
+        }
+      });
+    }
+
     function syncAllData(callback, sheetsList) {
       // After a write action, silently refresh only the affected sheets
       const sheetsParam = (sheetsList && sheetsList.length) ? sheetsList.join(',') : 'Parties,Products,BankAccounts,Transactions,Expenses,Quotations,PurchaseOrders,DeliveryChallans,ActivityLog,Notifications,CylinderSecurity,CompanyProfile,CRMFollowups,PartyTypes,PaymentRequests';
       callServer('getAllData', { sheets: sheetsParam }, function(res) {
         if (res.success) {
           Object.keys(res).forEach(key => { if (key !== 'success') App.data[key] = res[key]; });
+          normalizeTransactions(); // Automatically fix fully paid invoice balances
           if (res.companyProfile) _processCompanyProfile(res);
           // Only reload dashboard on a full sync (no sheetsList), not on targeted saves
           if (!sheetsList || !sheetsList.length) {
@@ -8068,6 +8086,7 @@
         }
       }, null, true); // silentMode - no spinner for background refreshes
     }
+
 
     function populateGlobalDropdowns() {
       // Party selects
