@@ -1771,6 +1771,9 @@
     }
 
     /* Mobile Bottom Shortcuts Bar */
+    body:not(.logged-in) .mobile-bottom-bar {
+      display: none !important;
+    }
     .mobile-bottom-bar {
       position: fixed;
       bottom: 0;
@@ -17114,25 +17117,46 @@
 
   <!-- MOBILE BOTTOM SHORTCUTS BAR -->
   <div class="mobile-bottom-bar hide-on-desktop">
+    <!-- Home / Dashboard (Available to All) -->
     <a onclick="navigateTo('dashboard')" class="mobile-nav-item" id="mobileNavHome">
       <i class="fa-solid fa-house"></i>
       <span>Home</span>
     </a>
-    <a onclick="navigateTo('parties')" class="mobile-nav-item" id="mobileNavParties">
+
+    <!-- Admin / Staff Only Shortcuts -->
+    <a onclick="navigateTo('parties')" class="mobile-nav-item hide-for-party" id="mobileNavParties">
       <i class="fa-solid fa-users"></i>
       <span>Parties</span>
     </a>
-    <a onclick="openInvoiceModal('Sale')" class="mobile-nav-item main-action">
+    <a onclick="openInvoiceModal('Sale')" class="mobile-nav-item main-action hide-for-party">
       <i class="fa-solid fa-plus"></i>
       <span>Sale</span>
     </a>
-    <a onclick="openReceiptModal('Receipt')" class="mobile-nav-item">
+    <a onclick="openReceiptModal('Receipt')" class="mobile-nav-item hide-for-party">
       <i class="fa-solid fa-wallet"></i>
       <span>Receipt</span>
     </a>
-    <a onclick="openEmptyCylinderReturnModal()" class="mobile-nav-item">
+    <a onclick="openEmptyCylinderReturnModal()" class="mobile-nav-item hide-for-party">
       <i class="fa-solid fa-arrow-rotate-left"></i>
       <span>Return</span>
+    </a>
+
+    <!-- Party Only Shortcuts -->
+    <a onclick="openMyLedgerView()" class="mobile-nav-item party-only" id="mobileNavStatement">
+      <i class="fa-solid fa-file-invoice"></i>
+      <span>Statement</span>
+    </a>
+    <a onclick="openPaymentQrModal()" class="mobile-nav-item main-action party-only" id="mobileNavPay" style="background: linear-gradient(135deg, #059669, #10B981); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);">
+      <i class="fa-solid fa-qrcode"></i>
+      <span>Pay</span>
+    </a>
+    <a onclick="openMyTransactionsView()" class="mobile-nav-item party-only" id="mobileNavInvoices">
+      <i class="fa-solid fa-receipt"></i>
+      <span>Invoices</span>
+    </a>
+    <a onclick="openMyProfileModal()" class="mobile-nav-item party-only" id="mobileNavProfile">
+      <i class="fa-solid fa-user"></i>
+      <span>Profile</span>
     </a>
   </div>
 </body>
