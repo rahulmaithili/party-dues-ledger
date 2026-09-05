@@ -10,6 +10,8 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS (XLSX) for Excel Export & Import -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- ===== FIREBASE SDK ===== -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -2112,10 +2114,28 @@
         overflow-x: visible !important;
       }
     }
-    @media (min-width: 769px) {
+    @media (min-width: 993px) {
       .hide-on-desktop {
         display: none !important;
       }
+    }
+    @media (max-width: 992px) {
+      body.logged-in #main-content {
+        padding-bottom: 74px !important;
+      }
+      .modal-card {
+        width: 94% !important;
+      }
+      .modal-card.large {
+        width: 96% !important;
+      }
+    }
+    /* Better Touch & Responsiveness across Mobile, Tablet, and Desktop */
+    button, .btn, .menu-item, .mobile-nav-item, select, input {
+      touch-action: manipulation;
+    }
+    .table-container {
+      -webkit-overflow-scrolling: touch;
     }
 
     /* Multi-color Sidebar Icons */
@@ -3146,6 +3166,7 @@
                   </div>
                 </div>
               </div>
+              <button class="btn btn-success" onclick="exportAllPartiesExcel()" style="margin-right: 8px;"><i class="fa-solid fa-file-excel"></i> Export Parties Excel</button>
               <button class="btn btn-secondary" onclick="printPartyList()" style="margin-right: 8px;"><i class="fa-solid fa-print"></i> Print Party List</button>
               <button class="btn btn-secondary" onclick="openEmptyCylinderReturnModal()" style="margin-right: 8px;">Record Empty Return</button>
               <button class="btn btn-accent" onclick="openPartyModal()"><i class="fa-solid fa-user-plus"></i> Add New Party</button>
@@ -3861,9 +3882,12 @@
           </div>
 
           <div class="dashboard-card" id="reportResultCard" style="display:none;">
-            <div class="card-header">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
               <h3 id="reportTitleText">Report Results</h3>
-              <button class="btn btn-secondary" onclick="printReport()"><i class="fa-solid fa-print"></i> Print Statement</button>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-success" onclick="exportCurrentReportExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
+                <button class="btn btn-secondary" onclick="printReport()"><i class="fa-solid fa-print"></i> Print Statement</button>
+              </div>
             </div>
             <div class="table-container" id="reportResultTableContainer">
               <!-- Report Data Table -->
@@ -4520,6 +4544,7 @@
         </div>
       </div>
       <div class="modal-footer">
+        <button type="button" class="btn btn-success" onclick="exportMyTransactionsExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
         <button type="button" class="btn btn-secondary" onclick="closeModal('myTransactionsModal')">Close</button>
       </div>
     </div>
@@ -5769,6 +5794,7 @@
           <button class="btn btn-success hide-for-party" id="ledgerAddPaymentBtn"><i class="fa-solid fa-wallet"></i> Add Receipt</button>
         </div>
         <div style="display: flex; gap: 8px; margin-left: auto;">
+          <button class="btn btn-success" onclick="exportPartyLedgerExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
           <button class="btn btn-primary" onclick="printPartyLedger()"><i class="fa-solid fa-print"></i> Print Statement</button>
           <button class="btn btn-info hide-for-party" id="ledgerNoDuesBtn" onclick="printNoDuesLetter()"><i class="fa-solid fa-file-invoice"></i> No Dues Certificate</button>
           <button class="btn btn-accent hide-for-party" id="ledgerNocBtn" onclick="printNocLetter()"><i class="fa-solid fa-shield-halved"></i> NOC Certificate</button>
@@ -14733,6 +14759,423 @@
         </html>
       `);
       w.document.close();
+    }
+
+    // ==================== EXCEL & CSV DATA EXPORT ENGINE ====================
+
+    function exportToExcelOrCsv(filename, sheetName, rowsData, columnWidths) {
+      if (!rowsData || rowsData.length === 0) {
+        showToast('No data available to export', 'warning');
+        return;
+      }
+
+      const cleanFilename = (filename || 'export').replace(/[^a-zA-Z0-9_\u0900-\u097F-]/g, '_');
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const fullFilename = `${cleanFilename}_${timestamp}`;
+
+      try {
+        // Method 1: Use SheetJS if available (Native .xlsx with column widths)
+        if (typeof XLSX !== 'undefined' && XLSX.utils && XLSX.writeFile) {
+          const wb = XLSX.utils.book_new();
+          const ws = XLSX.utils.aoa_to_sheet(rowsData);
+
+          if (columnWidths && Array.isArray(columnWidths)) {
+            ws['!cols'] = columnWidths.map(w => ({ wch: w }));
+          } else {
+            const colWidths = [];
+            rowsData.forEach(row => {
+              (row || []).forEach((val, colIdx) => {
+                const len = String(val !== undefined && val !== null ? val : '').length;
+                colWidths[colIdx] = Math.max(colWidths[colIdx] || 10, len + 2);
+              });
+            });
+            ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w, 50) }));
+          }
+
+          XLSX.utils.book_append_sheet(wb, ws, (sheetName || 'Sheet1').slice(0, 31));
+          XLSX.writeFile(wb, `${fullFilename}.xlsx`);
+          showToast(`Exported ${fullFilename}.xlsx successfully!`, 'success');
+          return;
+        }
+      } catch (err) {
+        console.warn('XLSX export fallback to CSV:', err);
+      }
+
+      // Method 2: CSV with UTF-8 BOM (\uFEFF) for Excel compatibility with Hindi & special chars
+      try {
+        let csvContent = '\uFEFF';
+        rowsData.forEach(row => {
+          const formattedRow = (row || []).map(val => {
+            if (val === null || val === undefined) return '""';
+            let str = String(val).replace(/"/g, '""');
+            return `"${str}"`;
+          });
+          csvContent += formattedRow.join(',') + '\r\n';
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `${fullFilename}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showToast(`Exported ${fullFilename}.csv successfully!`, 'success');
+      } catch (e) {
+        console.error('Export error:', e);
+        showToast('Export failed: ' + e.message, 'error');
+      }
+    }
+
+    function exportAllPartiesExcel() {
+      if (!App.data.parties || App.data.parties.length === 0) {
+        showToast('No party records found to export', 'warning');
+        return;
+      }
+
+      const search = (document.getElementById('partySearch') ? document.getElementById('partySearch').value : '').toLowerCase();
+      const filter = document.getElementById('partyFilterType') ? document.getElementById('partyFilterType').value : 'All';
+
+      const partyBalance = {};
+      App.data.parties.forEach(p => {
+        partyBalance[p.id] = parseFloat(p.openingBalance || 0);
+      });
+      (App.data.transactions || []).forEach(t => {
+        if (partyBalance[t.partyId] !== undefined) {
+          partyBalance[t.partyId] += parseFloat(t.debit || 0) - parseFloat(t.credit || 0);
+        }
+      });
+
+      let list = App.data.parties.filter(p => {
+        const matchesSearch = String(p.name || '').toLowerCase().includes(search) || 
+                              String(p.mobile || '').includes(search) || 
+                              String(p.gstin || '').toLowerCase().includes(search);
+        let matchesType = true;
+        if (filter === 'Customer' || filter === 'Supplier') {
+          matchesType = getPartyBaseType(p) === filter;
+        } else if (filter !== 'All') {
+          matchesType = p.type === filter;
+        }
+        return matchesSearch && matchesType;
+      });
+
+      if (list.length === 0) {
+        showToast('No parties match your current search/filter', 'warning');
+        return;
+      }
+
+      list.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+      const company = App.data.companyProfile || {};
+      const companyTitle = company.companyName || 'Mr.Rahul ERP';
+
+      const rows = [];
+      rows.push([companyTitle]);
+      rows.push(['ALL PARTIES & LEDGER DIRECTORY EXPORT']);
+      rows.push([`Generated On: ${formatDate(new Date())}`, `Total Parties: ${list.length}`, `Filter: ${filter}`]);
+      rows.push([]);
+
+      rows.push([
+        'S.No',
+        'Party ID',
+        'Party Name',
+        'Party Type',
+        'Mobile Number',
+        'Email Address',
+        'GSTIN',
+        'Full Address',
+        'Opening Balance (₹)',
+        'Current Balance Due (₹)',
+        'Balance Status',
+        'Cylinders Holding',
+        'Security Deposit (₹)',
+        'Credit Limit (₹)'
+      ]);
+
+      let totalDues = 0;
+      let totalAdvance = 0;
+      let totalCylinders = 0;
+
+      list.forEach((p, idx) => {
+        const bal = partyBalance[p.id] !== undefined ? partyBalance[p.id] : parseFloat(p.openingBalance || 0);
+        let status = 'Settled (Nil)';
+        if (bal > 0) {
+          status = 'Receivable (Due)';
+          totalDues += bal;
+        } else if (bal < 0) {
+          status = 'Payable (Advance)';
+          totalAdvance += Math.abs(bal);
+        }
+
+        let cylCount = 0;
+        let cylDesc = '0';
+        try {
+          const holding = getPartyCylinderHolding(p.id);
+          const parts = [];
+          Object.keys(holding).forEach(k => {
+            if (holding[k] > 0) {
+              parts.push(`${k}: ${holding[k]}`);
+              cylCount += holding[k];
+            }
+          });
+          if (parts.length > 0) {
+            cylDesc = `${cylCount} (${parts.join(', ')})`;
+          }
+        } catch (e) {}
+        totalCylinders += cylCount;
+
+        rows.push([
+          idx + 1,
+          p.id || '',
+          p.name || '',
+          p.type || 'Customer',
+          p.mobile || '',
+          p.email || '',
+          p.gstin || '',
+          p.address || '',
+          parseFloat(p.openingBalance || 0),
+          bal,
+          status,
+          cylDesc,
+          parseFloat(p.securityDeposit || 0),
+          parseFloat(p.creditLimit || 0)
+        ]);
+      });
+
+      rows.push([]);
+      rows.push([
+        'TOTAL',
+        '',
+        `Total Parties: ${list.length}`,
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        totalDues - totalAdvance,
+        `Total Dues: ₹${totalDues.toFixed(2)} | Advance: ₹${totalAdvance.toFixed(2)}`,
+        `Total Cylinders: ${totalCylinders}`,
+        '',
+        ''
+      ]);
+
+      const colWidths = [8, 14, 28, 16, 16, 24, 18, 30, 18, 20, 18, 25, 18, 16];
+      exportToExcelOrCsv('Parties_List_Export', 'Parties List', rows, colWidths);
+    }
+
+    function exportPartyLedgerExcel(partyId) {
+      const pid = partyId || (document.getElementById('followupPartyId') ? document.getElementById('followupPartyId').value : null) || reopenLedgerPartyId;
+      if (!pid) {
+        showToast('No party selected for ledger export', 'error');
+        return;
+      }
+
+      const p = App.data.parties.find(x => x.id === pid);
+      if (!p) {
+        showToast('Party record not found', 'error');
+        return;
+      }
+
+      const company = App.data.companyProfile || {};
+      const companyTitle = company.companyName || 'Mr.Rahul ERP';
+
+      const ledger = (App.data.transactions || []).filter(t => t.partyId === p.id);
+      const openingBal = parseFloat(p.openingBalance || 0);
+      let runningBal = openingBal;
+      
+      const sortedLedger = [...ledger].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const rows = [];
+      rows.push([companyTitle]);
+      rows.push(['ACCOUNT STATEMENT / LEDGER']);
+      rows.push([`Party Name: ${p.name}`, `Mobile: ${p.mobile || '--'}`, `GSTIN: ${p.gstin || '--'}`, `Type: ${p.type}`]);
+      rows.push([`Address: ${p.address || '--'}`, `Opening Balance: ₹${openingBal.toFixed(2)}`, `Generated On: ${formatDate(new Date())}`]);
+      rows.push([]);
+
+      rows.push([
+        'S.No',
+        'Date',
+        'Voucher No',
+        'Type',
+        'Description / Items',
+        'Payment Mode',
+        'Cyl Out',
+        'Cyl In',
+        'Debit / Dr (₹)',
+        'Credit / Cr (₹)',
+        'Running Balance (₹)'
+      ]);
+
+      rows.push([
+        1,
+        formatDate(p.createdAt || new Date()),
+        'OPENING-BAL',
+        'Opening Balance',
+        'Opening Balance Brought Forward',
+        '--',
+        0,
+        0,
+        openingBal > 0 ? openingBal : 0,
+        openingBal < 0 ? Math.abs(openingBal) : 0,
+        openingBal
+      ]);
+
+      let totalDebit = openingBal > 0 ? openingBal : 0;
+      let totalCredit = openingBal < 0 ? Math.abs(openingBal) : 0;
+      let totalCylOut = 0;
+      let totalCylIn = 0;
+
+      sortedLedger.forEach((t, idx) => {
+        const debit = parseFloat(t.debit || 0);
+        const credit = parseFloat(t.credit || 0);
+        runningBal += debit - credit;
+        totalDebit += debit;
+        totalCredit += credit;
+
+        const cylOut = parseInt(t.cylinderOut || 0, 10);
+        const cylIn = parseInt(t.cylinderIn || 0, 10);
+        totalCylOut += cylOut;
+        totalCylIn += cylIn;
+
+        let itemDetails = t.description || '';
+        if (t.items && Array.isArray(t.items) && t.items.length > 0) {
+          const itemsStr = t.items.map(x => `${x.productName} (Qty: ${x.quantity}${x.unit ? ' ' + x.unit : ''})`).join('; ');
+          itemDetails = itemDetails ? `${itemDetails} | ${itemsStr}` : itemsStr;
+        }
+
+        rows.push([
+          idx + 2,
+          formatDate(t.date),
+          t.voucherNo || t.id,
+          t.txnType || 'Txn',
+          itemDetails,
+          t.paymentMode || 'Cash',
+          cylOut,
+          cylIn,
+          debit > 0 ? debit : 0,
+          credit > 0 ? credit : 0,
+          runningBal
+        ]);
+      });
+
+      rows.push([]);
+      rows.push([
+        'TOTAL',
+        '',
+        `Total Entries: ${sortedLedger.length + 1}`,
+        '',
+        '',
+        '',
+        totalCylOut,
+        totalCylIn,
+        totalDebit,
+        totalCredit,
+        runningBal
+      ]);
+      rows.push(['CLOSING OUTSTANDING BALANCE:', '', '', '', '', '', '', '', '', '', runningBal]);
+
+      const colWidths = [8, 14, 18, 14, 35, 14, 10, 10, 16, 16, 18];
+      const filename = `${p.name}_Ledger_Statement`;
+      exportToExcelOrCsv(filename, 'Statement', rows, colWidths);
+    }
+
+    function exportMyTransactionsExcel() {
+      if (!App.currentUser || !App.currentUser.partyId) {
+        showToast('No party account linked to this user profile', 'error');
+        return;
+      }
+      const pid = App.currentUser.partyId;
+      const p = App.data.parties.find(x => x.id === pid) || { name: App.currentUser.name || 'My Account' };
+      const list = (App.data.transactions || []).filter(t => t.partyId === pid);
+
+      if (list.length === 0) {
+        showToast('No transactions recorded to export', 'warning');
+        return;
+      }
+
+      list.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const rows = [];
+      rows.push([`${p.name} - Invoices & Transactions`]);
+      rows.push([`Exported on: ${formatDate(new Date())}`]);
+      rows.push([]);
+      rows.push([
+        'S.No',
+        'Date',
+        'Voucher No',
+        'Type',
+        'Debit / Billed (₹)',
+        'Credit / Paid (₹)',
+        'Payment Mode',
+        'Remarks / Items'
+      ]);
+
+      let totalDebit = 0;
+      let totalCredit = 0;
+
+      list.forEach((t, idx) => {
+        const debit = parseFloat(t.debit || 0);
+        const credit = parseFloat(t.credit || 0);
+        totalDebit += debit;
+        totalCredit += credit;
+
+        let itemsStr = t.description || '';
+        if (t.items && Array.isArray(t.items) && t.items.length > 0) {
+          const itemText = t.items.map(x => `${x.productName} (x${x.quantity})`).join(', ');
+          itemsStr = itemsStr ? `${itemsStr} [${itemText}]` : itemText;
+        }
+
+        rows.push([
+          idx + 1,
+          formatDate(t.date),
+          t.voucherNo || t.id,
+          t.txnType,
+          debit > 0 ? debit : 0,
+          credit > 0 ? credit : 0,
+          t.paymentMode || 'Cash',
+          itemsStr
+        ]);
+      });
+
+      rows.push([]);
+      rows.push(['TOTAL', '', '', '', totalDebit, totalCredit, '', '']);
+      rows.push(['NET OUTSTANDING:', '', '', '', totalDebit - totalCredit, '', '', '']);
+
+      const colWidths = [8, 14, 18, 14, 16, 16, 14, 35];
+      exportToExcelOrCsv(`${p.name}_My_Transactions`, 'Transactions', rows, colWidths);
+    }
+
+    function exportCurrentReportExcel() {
+      const container = document.getElementById('reportResultTableContainer');
+      const table = container ? container.querySelector('table') : null;
+      if (!table) {
+        showToast('Please generate a report first before exporting', 'warning');
+        return;
+      }
+
+      const reportTitle = (document.getElementById('reportTitleText') ? document.getElementById('reportTitleText').textContent : 'Report').trim();
+      
+      const rows = [];
+      const trs = table.querySelectorAll('tr');
+      trs.forEach(tr => {
+        const row = [];
+        const cells = tr.querySelectorAll('th, td');
+        cells.forEach(cell => {
+          row.push(cell.innerText.trim());
+        });
+        if (row.length > 0) rows.push(row);
+      });
+
+      if (rows.length === 0) {
+        showToast('No report rows found to export', 'warning');
+        return;
+      }
+
+      exportToExcelOrCsv(reportTitle, 'Report', rows);
     }
 
     function printPartyList() {
