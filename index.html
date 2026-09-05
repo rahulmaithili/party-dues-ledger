@@ -195,9 +195,12 @@
       border: 1px solid rgba(255,255,255,0.1);
     }
 
-    body.dark-theme .kpi-card {
+    body.dark-theme .kpi-card:not([class*="kpi-"]) {
       background: #151F32 !important;
       border-color: #1E293B !important;
+    }
+    body.dark-theme .kpi-card {
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
     }
 
     body.dark-theme .page-content {
@@ -2148,7 +2151,137 @@
     .report-menu-item i.fa-wallet { color: #EF4444 !important; }
     .report-menu-item i.fa-file-invoice-dollar { color: #06B6D4 !important; }
     .report-menu-item i.fa-cart-flatbed { color: #EC4899 !important; }
-    .report-menu-item i.fa-file-invoice { color: #64748B !important; }
+    .kpi-card.kpi-party-balance.kpi-cleared,
+    body.dark-theme .kpi-card.kpi-party-balance.kpi-cleared {
+      background: linear-gradient(135deg, #10B981, #059669) !important;
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.25) !important;
+    }
+
+    /* ===== THEME PICKER POPOVER & SWITCH STYLING (Matching Reference Designs) ===== */
+    .theme-dropdown-panel {
+      position: fixed;
+      top: 65px;
+      right: 20px;
+      width: 320px;
+      max-width: 92vw;
+      background: var(--card);
+      border: 1px solid var(--brd);
+      border-radius: 16px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.3);
+      z-index: 100000;
+      padding: 18px 20px;
+      display: none;
+      color: var(--txt);
+      animation: themePopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .theme-dropdown-panel.show {
+      display: block;
+    }
+    @keyframes themePopIn {
+      from { opacity: 0; transform: translateY(-10px) scale(0.96); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    
+    .theme-toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--brd);
+      margin-bottom: 14px;
+    }
+    .theme-switch {
+      position: relative;
+      display: inline-block;
+      width: 46px;
+      height: 24px;
+      margin: 0;
+    }
+    .theme-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .theme-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #94A3B8;
+      transition: 0.25s;
+      border-radius: 24px;
+    }
+    .theme-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.25s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    input:checked + .theme-slider {
+      background-color: var(--pri);
+    }
+    input:checked + .theme-slider:before {
+      transform: translateX(22px);
+    }
+
+    .theme-swatches-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .theme-swatch-item {
+      position: relative;
+      height: 42px;
+      border-radius: 8px;
+      cursor: pointer;
+      overflow: hidden;
+      border: 2.5px solid transparent;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.12);
+      display: flex;
+      flex-direction: row;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .theme-swatch-item:hover {
+      transform: scale(1.08);
+      z-index: 2;
+    }
+    .theme-swatch-item.active {
+      border-color: #FFFFFF !important;
+      outline: 2.5px solid var(--pri);
+      transform: scale(1.04);
+    }
+    .theme-swatch-item .swatch-bar {
+      flex: 1;
+      height: 100%;
+    }
+    .theme-swatch-check {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #FFFFFF;
+      font-size: 13px;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.8));
+      display: none;
+    }
+    .theme-swatch-item.active .theme-swatch-check {
+      display: block;
+    }
+    
+    .theme-btn-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      margin-top: 14px;
+      border-top: 1px solid var(--brd);
+      padding-top: 14px;
+    }
   </style>
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -2385,10 +2518,14 @@
           <i class="fa-solid fa-wand-magic-sparkles" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--acc); cursor: pointer;" onclick="runAiCommandCenter()"></i>
         </div>
         <div class="topbar-right">
+          <!-- Theme & Palette Button (Available to all users: Admin, Staff, Party) -->
+          <div class="topbar-action" id="themePaletteBtn" onclick="toggleThemePanel(event)" title="App Theme & Color Palette" style="margin-right: 8px; position: relative;">
+            <i class="fa-solid fa-palette" style="color: var(--pri);"></i>
+          </div>
           <div class="topbar-action" onclick="openMyProfileModal()" title="Change Password / Profile" style="margin-right: 8px;">
             <i class="fa-solid fa-key" style="color: var(--acc);"></i>
           </div>
-          <div class="topbar-action" onclick="toggleTheme()" title="Toggle Theme" style="margin-right: 8px;">
+          <div class="topbar-action" onclick="toggleTheme()" title="Toggle Dark/Light Mode" style="margin-right: 8px;">
             <i class="fa-solid fa-moon" id="themeIcon"></i>
           </div>
           <div class="topbar-action" onclick="toggleNotifications()" style="margin-right: 8px;">
@@ -2401,6 +2538,41 @@
           <div style="font-size: 13px; color: var(--txt2); font-weight: 500;" id="currentDateDisplay" class="hide-on-mobile"></div>
         </div>
       </header>
+
+      <!-- FLOATING THEME PICKER PANEL (Accessible across all logins: Admin, Staff, Party) -->
+      <div id="themePickerDropdown" class="theme-dropdown-panel" onclick="event.stopPropagation()">
+        <div class="theme-toggle-row">
+          <span style="font-size: 13.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; color: var(--txt);">
+            <i class="fa-solid fa-circle-half-stroke" style="color: var(--pri);"></i> Dark Mode
+          </span>
+          <label class="theme-switch" title="Toggle Dark/Light Mode">
+            <input type="checkbox" id="themeModeToggle" onchange="toggleThemeFromSwitch(this.checked)">
+            <span class="theme-slider"></span>
+          </label>
+        </div>
+
+        <div style="font-size: 11px; font-weight: 700; color: var(--txt2); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+          <span>Color Palette</span>
+          <span id="activeThemeNameBadge" style="font-size: 10.5px; color: var(--pri); font-weight: 700;">Charcoal & Soft Gold</span>
+        </div>
+
+        <div class="theme-swatches-grid" id="themeSwatchesContainer">
+          <!-- 15 Swatches dynamically rendered -->
+        </div>
+
+        <p style="font-size: 11px; color: var(--txt2); margin: 6px 0 0; line-height: 1.4;">
+          Previews live across the whole app — hit Apply to keep it.
+        </p>
+
+        <div class="theme-btn-row">
+          <button type="button" class="btn btn-secondary" onclick="resetThemePalette()" style="flex: 1; font-size: 12px; padding: 8px 12px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <i class="fa-solid fa-rotate-left"></i> Reset
+          </button>
+          <button type="button" class="btn btn-primary" onclick="saveThemePalette()" style="flex: 1.2; font-size: 12px; padding: 8px 12px; display: flex; align-items: center; justify-content: center; gap: 6px; background: #10B981; border-color: #10B981; color: white;">
+            <i class="fa-solid fa-check"></i> Apply
+          </button>
+        </div>
+      </div>
 
       <!-- CONTENT ROUTER CONTAINER -->
       <main class="container">
@@ -3549,6 +3721,50 @@
             <div class="page-title">
               <h2>App Settings</h2>
               <p>Update company registration headers, logo formats and run backups</p>
+            </div>
+          </div>
+
+          <!-- THEME CUSTOMIZER (Matching Reference Design) -->
+          <div class="dashboard-card" style="margin-bottom: 24px;">
+            <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <h3 style="font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                  <i class="fa-solid fa-palette" style="color: var(--pri);"></i> Theme & Color Palettes
+                </h3>
+                <p style="font-size: 12.5px; color: var(--txt2); margin-top: 2px;">
+                  Tap a palette to preview it live — nothing changes permanently until you hit Set Now.
+                </p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <label class="theme-switch" title="Toggle Dark/Light Mode">
+                  <input type="checkbox" id="settingsThemeModeToggle" onchange="toggleThemeFromSwitch(this.checked)">
+                  <span class="theme-slider"></span>
+                </label>
+                <span style="font-size: 12.5px; font-weight: 600;">Dark Mode</span>
+              </div>
+            </div>
+
+            <div style="padding: 20px;">
+              <div class="settings-theme-grid" id="settingsThemeGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px;">
+                <!-- 15 Theme Palette Cards -->
+              </div>
+
+              <!-- Live Preview Strip -->
+              <div id="settingsThemePreviewStrip" style="margin-top: 20px; padding: 16px 20px; border-radius: 12px; background: var(--bg2); border: 1px solid var(--brd); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                  <i class="fa-solid fa-circle-dot" style="color: var(--pri);"></i>
+                  <span style="font-size: 14px; font-weight: 700;" id="themePreviewName">Charcoal & Soft Gold</span>
+                  <span class="badge badge-primary" id="themePreviewTag">Selected</span>
+                </div>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                  <button type="button" class="btn btn-secondary" onclick="resetThemePalette()">
+                    <i class="fa-solid fa-rotate-left"></i> Reset
+                  </button>
+                  <button type="button" class="btn btn-primary" onclick="saveThemePalette()" style="background:#10B981; border-color:#10B981; color:white;">
+                    <i class="fa-solid fa-check"></i> Set Now
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -5679,6 +5895,9 @@
     };
 
     function initBackend() {
+      // Initialize saved color theme and mode early
+      if (typeof initThemeSystem === 'function') initThemeSystem();
+
       // Firebase is already initialized — skip Google Script URL setup
       document.getElementById('backendSetupPage').style.display = 'none';
 
@@ -7757,7 +7976,10 @@
         initSearchableDropdown('reportPartySelect');
       }
       if (pageId === 'users') renderUsers();
-      if (pageId === 'settings') loadSettings();
+      if (pageId === 'settings') {
+        loadSettings();
+        renderSettingsThemeGrid();
+      }
     }
 
     // Handle hash change globally for link/tab/forward/back actions
@@ -8022,29 +8244,364 @@
       }
     }
 
-    function toggleTheme() {
-      const isDark = document.body.classList.toggle('dark-theme');
-      const icon = document.getElementById('themeIcon');
-      if (icon) {
-        if (isDark) {
-          icon.className = 'fa-solid fa-sun';
-          SafeStorage.setItem('theme', 'dark');
-        } else {
-          icon.className = 'fa-solid fa-moon';
-          SafeStorage.setItem('theme', 'light');
-        }
+    // ==================== APP THEME & COLOR PALETTE SYSTEM ====================
+    const APP_THEMES = {
+      enterprise_navy: {
+        id: 'enterprise_navy',
+        name: 'Enterprise Navy',
+        primary: '#2563EB',
+        accent: '#3B82F6',
+        sidebar: '#0B111E',
+        sidebarActive: '#1E293B',
+        swatch: ['#0B111E', '#2563EB', '#60A5FA']
+      },
+      graphite_cyan: {
+        id: 'graphite_cyan',
+        name: 'Graphite & Cyan',
+        primary: '#06B6D4',
+        accent: '#22D3EE',
+        sidebar: '#0F172A',
+        sidebarActive: '#1E293B',
+        swatch: ['#1E293B', '#06B6D4', '#22D3EE']
+      },
+      forest_executive: {
+        id: 'forest_executive',
+        name: 'Forest Executive',
+        primary: '#16A34A',
+        accent: '#4ADE80',
+        sidebar: '#052E16',
+        sidebarActive: '#14532D',
+        swatch: ['#052E16', '#16A34A', '#86EFAC']
+      },
+      emerald_corporate: {
+        id: 'emerald_corporate',
+        name: 'Emerald Corporate',
+        primary: '#10B981',
+        accent: '#34D399',
+        sidebar: '#064E3B',
+        sidebarActive: '#065F46',
+        swatch: ['#064E3B', '#10B981', '#6EE7B7']
+      },
+      walnut_sand: {
+        id: 'walnut_sand',
+        name: 'Walnut & Sand',
+        primary: '#D97706',
+        accent: '#FBBF24',
+        sidebar: '#451A03',
+        sidebarActive: '#78350F',
+        swatch: ['#451A03', '#D97706', '#FDE68A']
+      },
+      mocha_executive: {
+        id: 'mocha_executive',
+        name: 'Mocha Executive',
+        primary: '#9A6B48',
+        accent: '#D4B996',
+        sidebar: '#2A1810',
+        sidebarActive: '#4E2F1D',
+        swatch: ['#2A1810', '#9A6B48', '#E8D5C4']
+      },
+      charcoal_gold: {
+        id: 'charcoal_gold',
+        name: 'Charcoal & Soft Gold',
+        primary: '#E5C158',
+        accent: '#FCD34D',
+        sidebar: '#111827',
+        sidebarActive: '#1F2937',
+        swatch: ['#111827', '#E5C158', '#FDE68A']
+      },
+      zinc_sky: {
+        id: 'zinc_sky',
+        name: 'Zinc & Sky',
+        primary: '#0284C7',
+        accent: '#38BDF8',
+        sidebar: '#18181B',
+        sidebarActive: '#27272A',
+        swatch: ['#18181B', '#0284C7', '#7DD3FC']
+      },
+      ink_violet: {
+        id: 'ink_violet',
+        name: 'Ink & Violet',
+        primary: '#7C3AED',
+        accent: '#A78BFA',
+        sidebar: '#1E1B4B',
+        sidebarActive: '#2E1065',
+        swatch: ['#1E1B4B', '#7C3AED', '#C4B5FD']
+      },
+      slate_rose: {
+        id: 'slate_rose',
+        name: 'Slate & Rose',
+        primary: '#F43F5E',
+        accent: '#FB7185',
+        sidebar: '#1E293B',
+        sidebarActive: '#334155',
+        swatch: ['#1E293B', '#F43F5E', '#FECDD3']
+      },
+      stone_amber: {
+        id: 'stone_amber',
+        name: 'Stone & Amber',
+        primary: '#EA580C',
+        accent: '#F97316',
+        sidebar: '#1C1917',
+        sidebarActive: '#292524',
+        swatch: ['#1C1917', '#EA580C', '#FED7AA']
+      },
+      mineral_teal: {
+        id: 'mineral_teal',
+        name: 'Mineral Teal',
+        primary: '#14B8A6',
+        accent: '#2DD4BF',
+        sidebar: '#042F2E',
+        sidebarActive: '#134E4A',
+        swatch: ['#042F2E', '#14B8A6', '#99F6E4']
+      },
+      paper_copper: {
+        id: 'paper_copper',
+        name: 'Paper & Copper',
+        primary: '#C2410C',
+        accent: '#FB923C',
+        sidebar: '#3B1B0E',
+        sidebarActive: '#5B2A16',
+        swatch: ['#3B1B0E', '#C2410C', '#FFEDD5']
+      },
+      obsidian_mint: {
+        id: 'obsidian_mint',
+        name: 'Obsidian & Mint',
+        primary: '#10B981',
+        accent: '#6EE7B7',
+        sidebar: '#09090B',
+        sidebarActive: '#18181B',
+        swatch: ['#09090B', '#10B981', '#A7F3D0']
+      },
+      cloud_indigo: {
+        id: 'cloud_indigo',
+        name: 'Cloud & Indigo Soft',
+        primary: '#6366F1',
+        accent: '#818CF8',
+        sidebar: '#1E1B4B',
+        sidebarActive: '#312E81',
+        swatch: ['#1E1B4B', '#6366F1', '#C7D2FE']
       }
+    };
+
+    let _activeThemeKey = SafeStorage.getItem('theme_palette') || 'charcoal_gold';
+    let _previewThemeKey = _activeThemeKey;
+
+    function applyThemePalette(key, isPreview) {
+      const theme = APP_THEMES[key];
+      if (!theme) return;
+      
+      const root = document.documentElement;
+      root.style.setProperty('--pri', theme.primary);
+      root.style.setProperty('--acc', theme.accent);
+      root.style.setProperty('--sba', theme.accent);
+      root.style.setProperty('--sb', theme.sidebar);
+      root.style.setProperty('--sbh', theme.sidebarActive);
+
+      _previewThemeKey = key;
+      if (!isPreview) {
+        _activeThemeKey = key;
+        SafeStorage.setItem('theme_palette', key);
+      }
+
+      // Update badge and active class in UI
+      const badge = document.getElementById('activeThemeNameBadge');
+      if (badge) badge.textContent = theme.name;
+
+      document.querySelectorAll('.theme-swatch-item').forEach(el => {
+        if (el.getAttribute('data-theme') === key) el.classList.add('active');
+        else el.classList.remove('active');
+      });
+      
+      if (typeof updateSettingsThemePreview === 'function') {
+        updateSettingsThemePreview(key);
+      }
+    }
+
+    function toggleThemePanel(e) {
+      if (e) e.stopPropagation();
+      const panel = document.getElementById('themePickerDropdown');
+      if (!panel) return;
+      const isVisible = panel.classList.contains('show');
+      if (isVisible) {
+        panel.classList.remove('show');
+        applyThemePalette(_activeThemeKey, false);
+      } else {
+        panel.classList.add('show');
+        renderThemeSwatches();
+        const isDark = document.body.classList.contains('dark-theme');
+        const switchEl = document.getElementById('themeModeToggle');
+        if (switchEl) switchEl.checked = isDark;
+      }
+    }
+
+    function renderThemeSwatches() {
+      const container = document.getElementById('themeSwatchesContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      Object.keys(APP_THEMES).forEach(k => {
+        const t = APP_THEMES[k];
+        const isActive = (k === _previewThemeKey);
+        const div = document.createElement('div');
+        div.className = `theme-swatch-item ${isActive ? 'active' : ''}`;
+        div.setAttribute('data-theme', k);
+        div.title = t.name;
+        div.onclick = () => applyThemePalette(k, true);
+        div.innerHTML = `
+          <div class="swatch-bar" style="background: ${t.swatch[0]};"></div>
+          <div class="swatch-bar" style="background: ${t.swatch[1]};"></div>
+          <div class="swatch-bar" style="background: ${t.swatch[2]};"></div>
+          <i class="fa-solid fa-check theme-swatch-check"></i>
+        `;
+        container.appendChild(div);
+      });
+      const badge = document.getElementById('activeThemeNameBadge');
+      if (badge && APP_THEMES[_previewThemeKey]) {
+        badge.textContent = APP_THEMES[_previewThemeKey].name;
+      }
+    }
+
+    function saveThemePalette() {
+      applyThemePalette(_previewThemeKey, false);
+      const panel = document.getElementById('themePickerDropdown');
+      if (panel) panel.classList.remove('show');
+      showToast('Theme applied successfully!', 'success');
+    }
+
+    function resetThemePalette() {
+      applyThemePalette('charcoal_gold', false);
+      toggleThemeFromSwitch(false);
+      showToast('Theme reset to default', 'info');
+    }
+
+    function toggleThemeFromSwitch(checked) {
+      if (checked) {
+        document.body.classList.add('dark-theme');
+        SafeStorage.setItem('theme', 'dark');
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.className = 'fa-solid fa-sun';
+      } else {
+        document.body.classList.remove('dark-theme');
+        SafeStorage.setItem('theme', 'light');
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.className = 'fa-solid fa-moon';
+      }
+      const topSwitch = document.getElementById('themeModeToggle');
+      if (topSwitch) topSwitch.checked = checked;
+      const setSwitch = document.getElementById('settingsThemeModeToggle');
+      if (setSwitch) setSwitch.checked = checked;
+
       if (App.currentPage === 'dashboard') {
         loadChartsData();
       }
     }
 
-    function initializeApp() {
-      document.getElementById('currentDateDisplay').textContent = formatDate(new Date().toISOString().split('T')[0]);
-
-      const isDark = document.body.classList.contains('dark-theme');
+    function toggleTheme() {
+      const isDark = document.body.classList.toggle('dark-theme');
+      SafeStorage.setItem('theme', isDark ? 'dark' : 'light');
       const icon = document.getElementById('themeIcon');
       if (icon) icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+      const switchEl = document.getElementById('themeModeToggle');
+      if (switchEl) switchEl.checked = isDark;
+      const setSwitch = document.getElementById('settingsThemeModeToggle');
+      if (setSwitch) setSwitch.checked = isDark;
+
+      if (App.currentPage === 'dashboard') {
+        loadChartsData();
+      }
+    }
+
+    function renderSettingsThemeGrid() {
+      const grid = document.getElementById('settingsThemeGrid');
+      if (!grid) return;
+      grid.innerHTML = '';
+      
+      const isDark = document.body.classList.contains('dark-theme');
+      const switchEl = document.getElementById('settingsThemeModeToggle');
+      if (switchEl) switchEl.checked = isDark;
+
+      Object.keys(APP_THEMES).forEach((k, idx) => {
+        const t = APP_THEMES[k];
+        const isActive = (k === _previewThemeKey);
+        const card = document.createElement('div');
+        card.className = `settings-theme-card ${isActive ? 'active' : ''}`;
+        card.setAttribute('data-theme', k);
+        card.style.cssText = `
+          border: 2px solid ${isActive ? 'var(--pri)' : 'var(--brd)'};
+          border-radius: 12px;
+          background: var(--card);
+          padding: 12px;
+          cursor: pointer;
+          transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+          position: relative;
+          box-shadow: ${isActive ? '0 8px 16px rgba(0,0,0,0.1)' : '0 2px 4px rgba(0,0,0,0.03)'};
+        `;
+        card.onclick = () => {
+          applyThemePalette(k, true);
+          renderSettingsThemeGrid();
+        };
+
+        card.innerHTML = `
+          <div style="display: flex; height: 32px; border-radius: 6px; overflow: hidden; margin-bottom: 10px; border: 1px solid rgba(0,0,0,0.08);">
+            <div style="flex: 1; background: ${t.swatch[0]};"></div>
+            <div style="flex: 1; background: ${t.swatch[1]};"></div>
+            <div style="flex: 1; background: ${t.swatch[2]};"></div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div>
+              <div style="font-size: 13px; font-weight: 700; color: var(--txt); line-height: 1.2;">${t.name}</div>
+              <div style="font-size: 10.5px; color: var(--txt2); margin-top: 2px;">UI ${idx + 1}</div>
+            </div>
+            ${isActive ? '<i class="fa-solid fa-circle-check" style="color: var(--pri); font-size: 15px;"></i>' : ''}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+
+      updateSettingsThemePreview(_previewThemeKey);
+    }
+
+    function updateSettingsThemePreview(key) {
+      const t = APP_THEMES[key];
+      if (!t) return;
+      const nameEl = document.getElementById('themePreviewName');
+      if (nameEl) nameEl.textContent = t.name;
+      const tagEl = document.getElementById('themePreviewTag');
+      if (tagEl) {
+        tagEl.textContent = (key === _activeThemeKey) ? 'Active' : 'Previewing';
+        tagEl.className = `badge ${key === _activeThemeKey ? 'badge-success' : 'badge-primary'}`;
+      }
+    }
+
+    function initThemeSystem() {
+      const savedTheme = SafeStorage.getItem('theme_palette') || 'charcoal_gold';
+      applyThemePalette(savedTheme, false);
+      const savedMode = SafeStorage.getItem('theme');
+      if (savedMode === 'dark') {
+        document.body.classList.add('dark-theme');
+        const icon = document.getElementById('themeIcon');
+        if (icon) icon.className = 'fa-solid fa-sun';
+        const switchEl = document.getElementById('themeModeToggle');
+        if (switchEl) switchEl.checked = true;
+        const setSwitch = document.getElementById('settingsThemeModeToggle');
+        if (setSwitch) setSwitch.checked = true;
+      }
+    }
+
+    // Auto-close on click outside
+    document.addEventListener('click', function(e) {
+      const panel = document.getElementById('themePickerDropdown');
+      const btn = document.getElementById('themePaletteBtn');
+      if (panel && panel.classList.contains('show')) {
+        if (!panel.contains(e.target) && (!btn || !btn.contains(e.target))) {
+          panel.classList.remove('show');
+          applyThemePalette(_activeThemeKey, false);
+        }
+      }
+    });
+
+    function initializeApp() {
+      document.getElementById('currentDateDisplay').textContent = formatDate(new Date().toISOString().split('T')[0]);
+      initThemeSystem();
 
       // Auto-setup: If Firestore has no users, create default admin on first run
       db.collection('users').limit(1).get().then(snap => {
@@ -8238,14 +8795,17 @@
         if (balEl) balEl.style.color = '#FFFFFF';
         
         if (runningBal > 0) {
-          if (balCard) balCard.style.background = 'linear-gradient(135deg, #E11D48, #BE123C)'; // Rose/Crimson when dues pending
+          if (balCard) {
+            balCard.classList.remove('kpi-cleared');
+            balCard.style.removeProperty('background');
+          }
           if (balStatus) balStatus.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Outstanding dues to pay';
-        } else if (runningBal < 0) {
-          if (balCard) balCard.style.background = 'linear-gradient(135deg, #059669, #10B981)'; // Emerald when advance/overpaid
-          if (balStatus) balStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> Advance balance in account';
         } else {
-          if (balCard) balCard.style.background = 'linear-gradient(135deg, #059669, #10B981)'; // Emerald when zero
-          if (balStatus) balStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> All dues cleared';
+          if (balCard) {
+            balCard.classList.add('kpi-cleared');
+            balCard.style.removeProperty('background');
+          }
+          if (balStatus) balStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> ' + (runningBal < 0 ? 'Advance balance in account' : 'All dues cleared');
         }
         
         document.getElementById('partyKpiInvoiced').textContent = formatCurrency(totalInvoiced);
