@@ -2114,6 +2114,13 @@
         overflow-x: visible !important;
       }
     }
+    #ledgerModal .modal-card {
+      max-width: 1140px !important;
+      width: 92% !important;
+    }
+    #viewVoucherModal {
+      z-index: 100010 !important;
+    }
     @media (min-width: 993px) {
       .hide-on-desktop {
         display: none !important;
@@ -5112,7 +5119,7 @@
   </div>
 
   <!-- VIEW VOUCHER MODAL -->
-  <div class="modal-backdrop" id="viewVoucherModal">
+  <div class="modal-backdrop" id="viewVoucherModal" style="z-index: 100010;">
     <div class="modal-card" style="max-width: 850px; width: 90%;">
       <div class="modal-header">
         <h3 id="viewVoucherModalTitle">Voucher Details</h3>
@@ -5698,7 +5705,7 @@
 
   <!-- PARTY LEDGER HISTORY MODAL -->
   <div class="modal-backdrop" id="ledgerModal">
-    <div class="modal-card large" style="max-width: 1350px; width: 95%;">
+    <div class="modal-card large" style="max-width: 1140px; width: 92%;">
       <div class="modal-header">
         <h3 id="ledgerModalTitle">Party Statement Ledger</h3>
         <i class="fa-solid fa-xmark pointer" onclick="closeModal('ledgerModal')"></i>
@@ -5727,12 +5734,12 @@
               <thead>
                 <tr>
                   <th style="width: 100px;">Date</th>
-                  <th style="width: 140px; word-break: break-all;">Voucher No</th>
+                  <th style="width: 130px; word-break: break-all;">Voucher No</th>
                   <th>Description</th>
-                  <th style="width: 80px;">Type</th>
-                  <th class="text-right" style="width: 110px;">Debit (₹)</th>
-                  <th class="text-right" style="width: 110px;">Credit (₹)</th>
-                  <th class="text-right" style="width: 130px;">Running Balance (₹)</th>
+                  <th class="text-center" style="width: 75px;">Type</th>
+                  <th class="text-right" style="width: 105px;">Debit (₹)</th>
+                  <th class="text-right" style="width: 105px;">Credit (₹)</th>
+                  <th class="text-right" style="width: 125px;">Running Balance (₹)</th>
                   <th class="text-center" style="width: 110px;">Action</th>
                 </tr>
               </thead>
@@ -14148,7 +14155,7 @@
             <td data-label="Date">${formatDate(t.date)}</td>
             <td data-label="Voucher No" style="word-break: break-all;"><strong>${voucherLink}</strong></td>
             <td data-label="Description">${descHTML}</td>
-            <td data-label="Type"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
+            <td data-label="Type" class="text-center"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
             <td data-label="Debit (₹)" class="text-right text-danger">${debit > 0 ? formatCurrency(debit) : '--'}</td>
             <td data-label="Credit (₹)" class="text-right text-success">${credit > 0 ? formatCurrency(credit) : '--'}</td>
             <td data-label="Balance (₹)" class="text-right" style="font-weight:600;">${formatCurrency(runningBal)}</td>
