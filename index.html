@@ -1859,11 +1859,32 @@
         display: none !important;
       }
       
+      /* Mobile Modals Optimization */
+      .modal-backdrop {
+        padding: 8px 6px !important;
+        align-items: flex-start !important;
+      }
+      .modal-card {
+        max-height: 94vh !important;
+        width: 100% !important;
+        border-radius: 12px !important;
+      }
+      .modal-header {
+        padding: 14px 16px !important;
+      }
+      .modal-header h3 {
+        font-size: 16px !important;
+      }
+      .modal-body {
+        padding: 12px 10px !important;
+      }
+
       /* Make modal footers stack full-width on mobile */
       .modal-footer {
         flex-direction: column !important;
         align-items: stretch !important;
         gap: 8px !important;
+        padding: 12px 14px !important;
       }
       .modal-footer > div {
         display: flex !important;
@@ -1876,6 +1897,219 @@
       .modal-footer button, .modal-footer .btn {
         width: 100% !important;
         justify-content: center !important;
+      }
+
+      /* Mobile Voucher & Invoice Responsive View */
+      #viewVoucherModal .modal-card {
+        max-width: 100% !important;
+        width: 100% !important;
+        max-height: 94vh !important;
+      }
+      #viewVoucherModal .modal-body {
+        padding: 8px 6px !important;
+        max-height: 80vh !important;
+      }
+      .invoice-container {
+        padding: 14px 12px !important;
+        border-radius: 8px !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      .inv-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 12px !important;
+      }
+      .inv-header .title-section {
+        text-align: left !important;
+        width: 100% !important;
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 6px !important;
+        border-top: 1px dashed #E2E8F0;
+        padding-top: 8px;
+      }
+      .company-section {
+        gap: 12px !important;
+      }
+      .company-name {
+        font-size: 18px !important;
+      }
+      .billing-grid {
+        grid-template-columns: 1fr !important;
+        gap: 14px !important;
+        margin-bottom: 20px !important;
+      }
+      .billing-col.text-right {
+        text-align: left !important;
+      }
+      .items-table {
+        display: block !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        width: 100% !important;
+        margin-bottom: 16px !important;
+      }
+      .items-table th, .items-table td {
+        padding: 8px 6px !important;
+        font-size: 11.5px !important;
+        white-space: nowrap !important;
+      }
+      .summary-section {
+        flex-direction: column !important;
+        gap: 16px !important;
+      }
+      .terms-box {
+        max-width: 100% !important;
+      }
+      .totals-box {
+        width: 100% !important;
+      }
+
+      /* Receipt Voucher Balance Summary Cards (Stacking cleanly on mobile) */
+      .dues-summary-box {
+        padding: 12px 10px !important;
+        margin: 16px 0 !important;
+      }
+      .summary-title {
+        font-size: 11.5px !important;
+        margin-bottom: 10px !important;
+      }
+      .summary-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+      }
+      .summary-card {
+        background: #FFFFFF !important;
+        padding: 10px 12px !important;
+        border-radius: 8px !important;
+        border: 1px solid #E2E8F0 !important;
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        box-sizing: border-box !important;
+      }
+      .summary-card .card-label {
+        font-size: 11px !important;
+        color: #64748B !important;
+        font-weight: 600 !important;
+      }
+      .summary-card .card-val {
+        font-size: 15px !important;
+        font-weight: 700 !important;
+      }
+      .signature-section {
+        grid-template-columns: 1fr !important;
+        gap: 28px !important;
+        margin-top: 30px !important;
+      }
+      .sig-col.text-right {
+        text-align: left !important;
+      }
+      .sig-line {
+        margin-left: 0 !important;
+        width: 160px !important;
+      }
+
+      /* Mobile Table-to-Card Responsive Transformation */
+      .responsive-table-cards {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        min-width: 100% !important;
+        width: 100% !important;
+      }
+      .responsive-table-cards thead {
+        display: none !important;
+      }
+      .responsive-table-cards tbody {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        width: 100% !important;
+      }
+      .responsive-table-cards tr {
+        display: block !important;
+        background: var(--card) !important;
+        border: 1px solid var(--brd) !important;
+        border-radius: 12px !important;
+        padding: 12px 14px !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.03) !important;
+        box-sizing: border-box !important;
+      }
+      body.dark-theme .responsive-table-cards tr {
+        background: #151F32 !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+      }
+      .responsive-table-cards td {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 6px 0 !important;
+        border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+        font-size: 13px !important;
+        text-align: right !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+      }
+      body.dark-theme .responsive-table-cards td {
+        border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+      }
+      .responsive-table-cards td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        font-size: 11.5px;
+        color: var(--txt2);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        text-align: left;
+        margin-right: 12px;
+        flex-shrink: 0;
+      }
+      .responsive-table-cards td[data-label="Actions"],
+      .responsive-table-cards td[data-label="Action"] {
+        border-bottom: none !important;
+        padding-top: 10px !important;
+        margin-top: 4px !important;
+        border-top: 1px dashed var(--brd) !important;
+        justify-content: flex-end !important;
+        gap: 8px !important;
+        flex-wrap: wrap !important;
+      }
+      .responsive-table-cards td[data-label="Actions"]::before,
+      .responsive-table-cards td[data-label="Action"]::before {
+        content: "" !important;
+        display: none !important;
+      }
+      .responsive-table-cards td[data-label="Description"] {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        text-align: left !important;
+        gap: 4px !important;
+      }
+      .responsive-table-cards td[data-label="Description"]::before {
+        margin-bottom: 2px !important;
+      }
+      .responsive-table-cards td[colspan] {
+        display: block !important;
+        text-align: center !important;
+        justify-content: center !important;
+        padding: 16px 8px !important;
+        border-bottom: none !important;
+      }
+      .responsive-table-cards td[colspan]::before {
+        display: none !important;
+      }
+
+      /* Specific adjustments for Ledger & Transactions modals */
+      #ledgerModal table, #myTransactionsModal table {
+        min-width: 100% !important;
+      }
+      #ledgerModal .table-container, #myTransactionsModal .table-container {
+        overflow-x: visible !important;
       }
     }
     @media (min-width: 769px) {
@@ -2752,7 +2986,7 @@
                 <h3>Recent Transactions</h3>
               </div>
               <div class="table-container">
-                <table>
+                <table class="responsive-table-cards">
                   <thead>
                     <tr>
                       <th class="text-center">Date</th>
@@ -2850,7 +3084,7 @@
                 <h3>My Recent Transactions</h3>
               </div>
               <div class="table-container">
-                <table>
+                <table class="responsive-table-cards">
                   <thead>
                     <tr>
                       <th>Date</th>
@@ -4266,7 +4500,7 @@
       </div>
       <div class="modal-body" style="padding: 0; overflow-x: auto; min-width: 0;">
         <div class="table-container" style="box-shadow: none; border-radius: 0; border: none; margin: 0;">
-          <table style="min-width: 750px; width: 100%;">
+          <table class="responsive-table-cards" style="width: 100%;">
             <thead>
               <tr>
                 <th>Voucher No</th>
@@ -5464,7 +5698,7 @@
 
         <div id="ledgerTabContent">
           <div class="table-container">
-            <table style="min-width: 850px; width: 100%;">
+            <table class="responsive-table-cards" style="width: 100%;">
               <thead>
                 <tr>
                   <th style="width: 100px;">Date</th>
@@ -8865,14 +9099,14 @@
 
             recentBody.innerHTML += `
               <tr>
-                <td>${formatDate(t.date)}</td>
-                <td><strong>${t.voucherNo || t.id}</strong></td>
-                <td><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
-                <td class="text-right">${debit > 0 ? formatCurrency(debit) : '--'}</td>
-                <td class="text-right">${credit > 0 ? formatCurrency(credit) : '--'}</td>
-                <td>${t.paymentMode || 'Cash'}</td>
-                <td class="text-center">${proofLink}</td>
-                <td class="text-center" style="white-space:nowrap;">
+                <td data-label="Date">${formatDate(t.date)}</td>
+                <td data-label="Voucher No"><strong>${t.voucherNo || t.id}</strong></td>
+                <td data-label="Type"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
+                <td data-label="Debit (Dr)" class="text-right">${debit > 0 ? formatCurrency(debit) : '--'}</td>
+                <td data-label="Credit (Cr)" class="text-right">${credit > 0 ? formatCurrency(credit) : '--'}</td>
+                <td data-label="Mode">${t.paymentMode || 'Cash'}</td>
+                <td data-label="Proof" class="text-center">${proofLink}</td>
+                <td data-label="Actions" class="text-center" style="white-space:nowrap;">
                   <button class="btn btn-icon" onclick="viewVoucher('${t.id}')" title="View Details"><i class="fa-solid fa-eye"></i></button>
                   <button class="btn btn-icon" onclick="printVoucher('${t.id}')" title="Print Invoice"><i class="fa-solid fa-print"></i></button>
                   ${payBtn}
@@ -9056,12 +9290,12 @@
 
             recentTxnsBody.innerHTML += `
               <tr>
-                <td class="text-center">${formatDate(t.date)}</td>
-                <td class="text-center"><strong>${t.voucherNo || t.id}</strong></td>
-                <td>${t.partyName || 'Internal / Cash'}</td>
-                <td class="text-center"><span class="badge badge-${badgeClass}">${t.txnType}</span></td>
-                <td class="text-center">${formatCurrency(grandTotal)}</td>
-                <td class="text-center" style="font-weight:600; color:${due > 0 ? 'var(--dan)' : 'var(--txt)'}">${due > 0 ? formatCurrency(due) : '--'}</td>
+                <td data-label="Date" class="text-center">${formatDate(t.date)}</td>
+                <td data-label="Voucher No" class="text-center"><strong>${t.voucherNo || t.id}</strong></td>
+                <td data-label="Party Name">${t.partyName || 'Internal / Cash'}</td>
+                <td data-label="Type" class="text-center"><span class="badge badge-${badgeClass}">${t.txnType}</span></td>
+                <td data-label="Amount" class="text-center">${formatCurrency(grandTotal)}</td>
+                <td data-label="Voucher Due" class="text-center" style="font-weight:600; color:${due > 0 ? 'var(--dan)' : 'var(--txt)'}">${due > 0 ? formatCurrency(due) : '--'}</td>
               </tr>
             `;
           });
@@ -13874,7 +14108,7 @@
         }
         
         const actionCell = `
-          <td class="text-center admin-only">
+          <td data-label="Action" class="text-center admin-only">
             <div class="flex-gap" style="justify-content: center;">
               <button class="btn btn-icon" onclick="editLedgerTransaction('${t.id}', '${t.txnType}', '${p.id}')" title="Edit Entry"><i class="fa-solid fa-pen-to-square"></i></button>
               <button class="btn btn-icon" onclick="deleteLedgerTransaction('${t.id}', '${p.id}')" style="color:var(--dan);" title="Delete Entry"><i class="fa-solid fa-trash"></i></button>
@@ -13884,13 +14118,13 @@
         
         body.innerHTML += `
           <tr>
-            <td>${formatDate(t.date)}</td>
-            <td style="word-break: break-all;"><strong>${voucherLink}</strong></td>
-            <td>${descHTML}</td>
-            <td><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
-            <td class="text-right text-danger">${debit > 0 ? formatCurrency(debit) : '--'}</td>
-            <td class="text-right text-success">${credit > 0 ? formatCurrency(credit) : '--'}</td>
-            <td class="text-right" style="font-weight:600;">${formatCurrency(runningBal)}</td>
+            <td data-label="Date">${formatDate(t.date)}</td>
+            <td data-label="Voucher No" style="word-break: break-all;"><strong>${voucherLink}</strong></td>
+            <td data-label="Description">${descHTML}</td>
+            <td data-label="Type"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
+            <td data-label="Debit (₹)" class="text-right text-danger">${debit > 0 ? formatCurrency(debit) : '--'}</td>
+            <td data-label="Credit (₹)" class="text-right text-success">${credit > 0 ? formatCurrency(credit) : '--'}</td>
+            <td data-label="Balance (₹)" class="text-right" style="font-weight:600;">${formatCurrency(runningBal)}</td>
             ${actionCell}
           </tr>
         `;
@@ -15323,6 +15557,21 @@
               }
               .text-right { text-align: right; }
               .text-center { text-align: center; }
+              @media (max-width: 600px) {
+                body { padding: 10px; }
+                .invoice-container { padding: 14px 10px; }
+                .inv-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+                .inv-header .title-section { text-align: left; width: 100%; border-top: 1px dashed #E2E8F0; padding-top: 8px; }
+                .billing-grid { grid-template-columns: 1fr; gap: 14px; }
+                .billing-col.text-right { text-align: left; }
+                .summary-section { flex-direction: column; gap: 14px; }
+                .totals-box { width: 100%; }
+                .summary-grid { display: flex; flex-direction: column; gap: 8px; }
+                .summary-card { flex-direction: row; justify-content: space-between; align-items: center; padding: 10px 12px; border: 1px solid #E2E8F0; border-radius: 6px; }
+                .signature-section { grid-template-columns: 1fr; gap: 24px; margin-top: 30px; }
+                .sig-col.text-right { text-align: left; }
+                .sig-line { margin-left: 0; }
+              }
               @media print {
                 body { padding: 0; }
                 .invoice-container { 
@@ -17485,14 +17734,14 @@
 
           body.innerHTML += `
             <tr>
-              <td style="word-break: break-all; font-size: 12.5px; max-width: 140px;"><strong>${t.voucherNo || t.id}</strong></td>
-              <td>${formatDate(t.date)}</td>
-              <td><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
-              <td class="text-right">${debit > 0 ? formatCurrency(debit) : '--'}</td>
-              <td class="text-right">${credit > 0 ? formatCurrency(credit) : '--'}</td>
-              <td>${t.paymentMode || 'Cash'}</td>
-              <td class="text-center">${proofLink}</td>
-              <td class="text-center" style="white-space:nowrap;">
+              <td data-label="Voucher No" style="word-break: break-all; font-size: 12.5px; max-width: 140px;"><strong>${t.voucherNo || t.id}</strong></td>
+              <td data-label="Date">${formatDate(t.date)}</td>
+              <td data-label="Type"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
+              <td data-label="Debit (Dr)" class="text-right">${debit > 0 ? formatCurrency(debit) : '--'}</td>
+              <td data-label="Credit (Cr)" class="text-right">${credit > 0 ? formatCurrency(credit) : '--'}</td>
+              <td data-label="Mode">${t.paymentMode || 'Cash'}</td>
+              <td data-label="Proof" class="text-center">${proofLink}</td>
+              <td data-label="Actions" class="text-center" style="white-space:nowrap;">
                 <button class="btn btn-icon" onclick="viewVoucher('${t.id}')" title="View Details"><i class="fa-solid fa-eye"></i></button>
                 <button class="btn btn-icon" onclick="printVoucher('${t.id}')" title="Print Invoice"><i class="fa-solid fa-print"></i></button>
                 ${payBtn}
