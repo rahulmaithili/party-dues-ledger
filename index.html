@@ -2101,6 +2101,45 @@
     }
     .kpi-card.kpi-bank-4:hover { box-shadow: 0 15px 30px rgba(13, 148, 136, 0.3) !important; }
 
+    /* Party Dashboard KPI Cards Styling */
+    .kpi-card.kpi-party-balance {
+      background: linear-gradient(135deg, #E11D48, #BE123C) !important; /* Crimson / Rose for Dues */
+      box-shadow: 0 10px 20px rgba(225, 29, 72, 0.25) !important;
+    }
+    .kpi-card.kpi-party-balance:hover {
+      box-shadow: 0 15px 30px rgba(225, 29, 72, 0.35) !important;
+    }
+    .kpi-card.kpi-party-invoiced {
+      background: linear-gradient(135deg, #6366F1, #4F46E5) !important; /* Indigo / Purple */
+      box-shadow: 0 10px 20px rgba(99, 102, 241, 0.25) !important;
+    }
+    .kpi-card.kpi-party-invoiced:hover {
+      box-shadow: 0 15px 30px rgba(99, 102, 241, 0.35) !important;
+    }
+    .kpi-card.kpi-party-paid {
+      background: linear-gradient(135deg, #10B981, #059669) !important; /* Emerald / Green */
+      box-shadow: 0 10px 20px rgba(16, 185, 129, 0.25) !important;
+    }
+    .kpi-card.kpi-party-paid:hover {
+      box-shadow: 0 15px 30px rgba(16, 185, 129, 0.35) !important;
+    }
+    .kpi-card.kpi-party-date {
+      background: linear-gradient(135deg, #0EA5E9, #0284C7) !important; /* Sky / Cyan */
+      box-shadow: 0 10px 20px rgba(14, 165, 233, 0.25) !important;
+    }
+    .kpi-card.kpi-party-date:hover {
+      box-shadow: 0 15px 30px rgba(14, 165, 233, 0.35) !important;
+    }
+
+    /* Admin / Staff Purchases KPI Card */
+    .kpi-card.kpi-purchases {
+      background: linear-gradient(135deg, #F59E0B, #D97706) !important; /* Amber / Orange */
+      box-shadow: 0 10px 20px rgba(245, 158, 11, 0.25) !important;
+    }
+    .kpi-card.kpi-purchases:hover {
+      box-shadow: 0 15px 30px rgba(245, 158, 11, 0.35) !important;
+    }
+
     /* Multi-color icons in Reports Menu */
     .report-menu-item i.fa-calendar-day { color: #F59E0B !important; }
     .report-menu-item i.fa-chart-pie { color: #10B981 !important; }
@@ -2435,6 +2474,20 @@
                   <span id="kpiBankSubtext">All bank accounts</span>
                 </div>
               </div>
+
+              <!-- Purchases KPI Card -->
+              <div class="kpi-card kpi-purchases">
+                <div class="kpi-header-row">
+                  <span class="kpi-title"><i class="fa-solid fa-cart-shopping"></i> PURCHASES THIS MONTH</span>
+                  <div class="kpi-icon-wrapper"><i class="fa-solid fa-cart-flatbed"></i></div>
+                </div>
+                <div class="kpi-value-row">
+                  <h2 id="kpiPurchases">₹0.00</h2>
+                </div>
+                <div class="kpi-footer-row">
+                  <span id="kpiPurchasesSubtext">Vendor purchase entries</span>
+                </div>
+              </div>
             </div>
 
             <div class="dashboard-grid">
@@ -2551,33 +2604,60 @@
           <!-- PARTY CLIENT DASHBOARD VIEW -->
           <div class="party-only">
             <div class="kpi-grid">
-              <div class="kpi-card">
-                <div class="kpi-details">
-                  <h3>My Account Balance</h3>
-                  <p id="partyKpiBalance" style="font-size: 22px; font-weight: 700;">₹0.00</p>
+              <!-- My Account Balance Card -->
+              <div class="kpi-card kpi-party-balance" id="partyKpiBalanceCard">
+                <div class="kpi-header-row">
+                  <span class="kpi-title"><i class="fa-solid fa-scale-unbalanced"></i> CURRENT OUTSTANDING</span>
+                  <div class="kpi-icon-wrapper"><i class="fa-solid fa-wallet"></i></div>
                 </div>
-                <div class="kpi-icon blue"><i class="fa-solid fa-scale-unbalanced"></i></div>
+                <div class="kpi-value-row">
+                  <h2 id="partyKpiBalance">₹0.00</h2>
+                </div>
+                <div class="kpi-footer-row">
+                  <span id="partyKpiBalanceStatus">Current account balance</span>
+                </div>
               </div>
-              <div class="kpi-card">
-                <div class="kpi-details">
-                  <h3>Total Invoiced</h3>
-                  <p id="partyKpiInvoiced">₹0.00</p>
+
+              <!-- Total Invoiced Card -->
+              <div class="kpi-card kpi-party-invoiced">
+                <div class="kpi-header-row">
+                  <span class="kpi-title"><i class="fa-solid fa-file-invoice-dollar"></i> TOTAL INVOICED</span>
+                  <div class="kpi-icon-wrapper"><i class="fa-solid fa-file-invoice"></i></div>
                 </div>
-                <div class="kpi-icon orange"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <div class="kpi-value-row">
+                  <h2 id="partyKpiInvoiced">₹0.00</h2>
+                </div>
+                <div class="kpi-footer-row">
+                  <span>All time billing amount</span>
+                </div>
               </div>
-              <div class="kpi-card">
-                <div class="kpi-details">
-                  <h3>Total Paid</h3>
-                  <p id="partyKpiPaid">₹0.00</p>
+
+              <!-- Total Paid Card -->
+              <div class="kpi-card kpi-party-paid">
+                <div class="kpi-header-row">
+                  <span class="kpi-title"><i class="fa-solid fa-circle-check"></i> TOTAL PAID</span>
+                  <div class="kpi-icon-wrapper"><i class="fa-solid fa-money-bill-wave"></i></div>
                 </div>
-                <div class="kpi-icon green"><i class="fa-solid fa-circle-check"></i></div>
+                <div class="kpi-value-row">
+                  <h2 id="partyKpiPaid">₹0.00</h2>
+                </div>
+                <div class="kpi-footer-row">
+                  <span>Total payments settled</span>
+                </div>
               </div>
-              <div class="kpi-card">
-                <div class="kpi-details">
-                  <h3>Last Transaction</h3>
-                  <p id="partyKpiLastDate">--</p>
+
+              <!-- Last Transaction Card -->
+              <div class="kpi-card kpi-party-date">
+                <div class="kpi-header-row">
+                  <span class="kpi-title"><i class="fa-solid fa-calendar-day"></i> LAST TRANSACTION</span>
+                  <div class="kpi-icon-wrapper"><i class="fa-solid fa-clock-rotate-left"></i></div>
                 </div>
-                <div class="kpi-icon blue"><i class="fa-solid fa-calendar-day"></i></div>
+                <div class="kpi-value-row">
+                  <h2 id="partyKpiLastDate" style="font-size: 22px;">--</h2>
+                </div>
+                <div class="kpi-footer-row">
+                  <span>Latest activity date</span>
+                </div>
               </div>
             </div>
 
@@ -8153,12 +8233,19 @@
         // Populate Party KPI Cards
         document.getElementById('partyKpiBalance').textContent = formatCurrency(runningBal);
         const balEl = document.getElementById('partyKpiBalance');
+        const balCard = document.getElementById('partyKpiBalanceCard');
+        const balStatus = document.getElementById('partyKpiBalanceStatus');
+        if (balEl) balEl.style.color = '#FFFFFF';
+        
         if (runningBal > 0) {
-          balEl.style.color = 'var(--dan)'; // Debit outstanding (due)
+          if (balCard) balCard.style.background = 'linear-gradient(135deg, #E11D48, #BE123C)'; // Rose/Crimson when dues pending
+          if (balStatus) balStatus.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Outstanding dues to pay';
         } else if (runningBal < 0) {
-          balEl.style.color = 'var(--suc)'; // Credit (advance/overpaid)
+          if (balCard) balCard.style.background = 'linear-gradient(135deg, #059669, #10B981)'; // Emerald when advance/overpaid
+          if (balStatus) balStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> Advance balance in account';
         } else {
-          balEl.style.color = 'var(--txt)';
+          if (balCard) balCard.style.background = 'linear-gradient(135deg, #059669, #10B981)'; // Emerald when zero
+          if (balStatus) balStatus.innerHTML = '<i class="fa-solid fa-circle-check"></i> All dues cleared';
         }
         
         document.getElementById('partyKpiInvoiced').textContent = formatCurrency(totalInvoiced);
@@ -8293,6 +8380,11 @@
         
         const kpiPurch = document.getElementById('kpiPurchases');
         if (kpiPurch) kpiPurch.textContent = formatCurrency(totalPurchase);
+        const kpiPurchSub = document.getElementById('kpiPurchasesSubtext');
+        const purchCount = App.data.transactions.filter(t => t.txnType === 'Purchase' && parseDate(t.date).getMonth() === thisMonth && parseDate(t.date).getFullYear() === thisYear).length;
+        if (kpiPurchSub) {
+          kpiPurchSub.textContent = `${purchCount} entries in ${new Date().toLocaleString('default', { month: 'long' })} ${thisYear}`;
+        }
 
         // Account reserves
         let cashVal = 0, bankVal = 0;
@@ -11274,19 +11366,33 @@
 
       const cardsGrid = document.getElementById('expenseSummaryGrid');
       let gridHtml = `
-        <div class="kpi-card" style="border-left:4px solid var(--dan)">
-          <div class="kpi-details">
-            <h3>Grand Total Expenses</h3>
-            <p>${formatCurrency(grandExpense)}</p>
+        <div class="kpi-card kpi-cash">
+          <div class="kpi-header-row">
+            <span class="kpi-title"><i class="fa-solid fa-money-bill-wave"></i> GRAND TOTAL EXPENSES</span>
+            <div class="kpi-icon-wrapper"><i class="fa-solid fa-receipt"></i></div>
+          </div>
+          <div class="kpi-value-row">
+            <h2>${formatCurrency(grandExpense)}</h2>
+          </div>
+          <div class="kpi-footer-row">
+            <span>All expense categories</span>
           </div>
         </div>
       `;
-      Object.keys(catTotals).forEach(cat => {
+      const colorGradients = ['kpi-bank-0', 'kpi-bank-1', 'kpi-bank-2', 'kpi-bank-3', 'kpi-bank-4'];
+      Object.keys(catTotals).forEach((cat, idx) => {
+        const grad = colorGradients[idx % colorGradients.length];
         gridHtml += `
-          <div class="kpi-card">
-            <div class="kpi-details">
-              <h3>${cat}</h3>
-              <p>${formatCurrency(catTotals[cat])}</p>
+          <div class="kpi-card ${grad}">
+            <div class="kpi-header-row">
+              <span class="kpi-title"><i class="fa-solid fa-tag"></i> ${cat.toUpperCase()}</span>
+              <div class="kpi-icon-wrapper"><i class="fa-solid fa-wallet"></i></div>
+            </div>
+            <div class="kpi-value-row">
+              <h2>${formatCurrency(catTotals[cat])}</h2>
+            </div>
+            <div class="kpi-footer-row">
+              <span>Category total</span>
             </div>
           </div>
         `;
