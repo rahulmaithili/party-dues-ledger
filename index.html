@@ -2113,6 +2113,18 @@
       #ledgerModal .table-container, #myTransactionsModal .table-container {
         overflow-x: visible !important;
       }
+      #btnToggleMobileLedgerFilters {
+        display: inline-flex !important;
+      }
+      .responsive-table-cards td[data-label="Select"] {
+        justify-content: space-between !important;
+        padding: 8px 0 !important;
+      }
+      .responsive-table-cards td[data-label="Select"] input {
+        width: 18px !important;
+        height: 18px !important;
+        cursor: pointer !important;
+      }
     }
     #ledgerModal .modal-card {
       max-width: 1140px !important;
@@ -5729,18 +5741,119 @@
         </div>
 
         <div id="ledgerTabContent">
+          <!-- Ledger Toolbar: Bulk Actions & Counters -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+              <span id="ledgerFilteredCount" style="font-size: 12.5px; color: var(--txt2); font-weight: 600;"></span>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnToggleMobileLedgerFilters" onclick="toggleMobileLedgerFilters()" style="display: none; height: 32px; font-size: 12px; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-filter"></i> Filters
+              </button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+              <button class="btn admin-only" id="btnBulkDeleteLedger" onclick="bulkDeleteLedgerTransactions()" style="display: none; background: var(--dan); color: white; border: none; font-weight: 700; height: 32px; align-items: center; justify-content: center; gap: 6px; padding: 0 14px; border-radius: var(--r); cursor: pointer; font-size: 12px; white-space: nowrap;">
+                <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selectedLedgerCount">0</span>)
+              </button>
+            </div>
+          </div>
+
+          <!-- Mobile-only Filter Panel (collapsible on small screens) -->
+          <div id="ledgerMobileFilterPanel" style="display: none; background: var(--card); border: 1px solid var(--brd); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+            <div style="font-size: 12px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+              <span><i class="fa-solid fa-filter"></i> Column Filters</span>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="resetLedgerFilters()" style="padding: 2px 8px; font-size: 11px;"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Date</label>
+                <input type="text" id="lfDateMob" placeholder="Filter date..." oninput="syncAndFilterLedger('date', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Voucher No</label>
+                <input type="text" id="lfVoucherMob" placeholder="Voucher no..." oninput="syncAndFilterLedger('voucher', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
+              </div>
+              <div style="grid-column: span 2;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Description / Item</label>
+                <input type="text" id="lfDescMob" placeholder="Description or item..." oninput="syncAndFilterLedger('desc', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Type</label>
+                <select id="lfTypeMob" onchange="syncAndFilterLedger('type', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
+                  <option value="All">All Types</option>
+                  <option value="Sale">Sale</option>
+                  <option value="Receipt">Receipt</option>
+                  <option value="Payment">Payment</option>
+                  <option value="Purchase">Purchase</option>
+                  <option value="Return">Return</option>
+                </select>
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Debit (₹)</label>
+                <input type="text" id="lfDebitMob" placeholder="Debit..." oninput="syncAndFilterLedger('debit', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Credit (₹)</label>
+                <input type="text" id="lfCreditMob" placeholder="Credit..." oninput="syncAndFilterLedger('credit', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
+              </div>
+              <div style="grid-column: span 2;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Running Balance (₹)</label>
+                <input type="text" id="lfBalanceMob" placeholder="Balance..." oninput="syncAndFilterLedger('balance', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
+              </div>
+            </div>
+          </div>
+
           <div class="table-container">
-            <table class="responsive-table-cards" style="width: 100%;">
+            <table class="responsive-table-cards" id="ledgerTable" style="width: 100%;">
               <thead>
                 <tr>
+                  <th class="admin-only text-center" style="width: 38px;">
+                    <input type="checkbox" id="selectAllLedger" onchange="toggleSelectAllLedger(this)" title="Select All" style="cursor: pointer; width: 16px; height: 16px;">
+                  </th>
                   <th style="width: 100px;">Date</th>
-                  <th style="width: 130px; word-break: break-all;">Voucher No</th>
+                  <th style="width: 125px; word-break: break-all;">Voucher No</th>
                   <th>Description</th>
-                  <th class="text-center" style="width: 75px;">Type</th>
+                  <th class="text-center" style="width: 80px;">Type</th>
                   <th class="text-right" style="width: 105px;">Debit (₹)</th>
                   <th class="text-right" style="width: 105px;">Credit (₹)</th>
                   <th class="text-right" style="width: 125px;">Running Balance (₹)</th>
                   <th class="text-center" style="width: 110px;">Action</th>
+                </tr>
+                <tr class="ledger-filter-row" style="background: rgba(0,0,0,0.02);">
+                  <th class="admin-only text-center" style="padding: 4px;">
+                    <i class="fa-solid fa-filter" style="color: var(--txt2); font-size: 11px;" title="Column Filters"></i>
+                  </th>
+                  <th style="padding: 4px;">
+                    <input type="text" id="lfDate" placeholder="Date..." oninput="syncAndFilterLedger('date', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 60px;">
+                  </th>
+                  <th style="padding: 4px;">
+                    <input type="text" id="lfVoucher" placeholder="Voucher..." oninput="syncAndFilterLedger('voucher', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 70px;">
+                  </th>
+                  <th style="padding: 4px;">
+                    <input type="text" id="lfDesc" placeholder="Filter desc/item..." oninput="syncAndFilterLedger('desc', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 100px;">
+                  </th>
+                  <th style="padding: 4px;">
+                    <select id="lfType" onchange="syncAndFilterLedger('type', this.value)" class="light-form-control" style="font-size: 11px; padding: 2px 4px; height: 26px; width: 100%; margin: 0; min-width: 65px;">
+                      <option value="All">All</option>
+                      <option value="Sale">Sale</option>
+                      <option value="Receipt">Receipt</option>
+                      <option value="Payment">Payment</option>
+                      <option value="Purchase">Purchase</option>
+                      <option value="Return">Return</option>
+                    </select>
+                  </th>
+                  <th style="padding: 4px;">
+                    <input type="text" id="lfDebit" placeholder="Debit..." oninput="syncAndFilterLedger('debit', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 60px;">
+                  </th>
+                  <th style="padding: 4px;">
+                    <input type="text" id="lfCredit" placeholder="Credit..." oninput="syncAndFilterLedger('credit', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 60px;">
+                  </th>
+                  <th style="padding: 4px;">
+                    <input type="text" id="lfBalance" placeholder="Balance..." oninput="syncAndFilterLedger('balance', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 65px;">
+                  </th>
+                  <th class="text-center" style="padding: 4px;">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="resetLedgerFilters()" title="Reset All Filters" style="font-size: 11px; padding: 3px 8px; height: 26px; border-radius: 4px; white-space: nowrap;">
+                      <i class="fa-solid fa-rotate-left"></i> Reset
+                    </button>
+                  </th>
                 </tr>
               </thead>
               <tbody id="ledgerTableBody"></tbody>
@@ -11808,7 +11921,10 @@
             syncAllData(() => {
               renderSales();
               renderPurchases();
-            }, ["Transactions", "Products", "BankAccounts", "ActivityLog"]);
+              if (window._activeLedgerPartyId) {
+                viewPartyLedger(window._activeLedgerPartyId);
+              }
+            }, ["Transactions", "Products", "BankAccounts", "Parties", "ActivityLog"]);
           });
         }
       });
@@ -14083,6 +14199,15 @@
       // Set followup party reference
       document.getElementById('followupPartyId').value = p.id;
 
+      // Reset selection and filters
+      resetLedgerFilters(false);
+      const selectAll = document.getElementById('selectAllLedger');
+      if (selectAll) selectAll.checked = false;
+      const btnBulkDel = document.getElementById('btnBulkDeleteLedger');
+      if (btnBulkDel) btnBulkDel.style.display = 'none';
+      const selCount = document.getElementById('selectedLedgerCount');
+      if (selCount) selCount.textContent = '0';
+
       // Calculate ledger client-side instantly!
       const ledger = App.data.transactions.filter(t => t.partyId === p.id);
       const openingBal = parseFloat(p.openingBalance || 0);
@@ -14107,8 +14232,10 @@
         // 2. Build detailed description with Products and Dues
         let descHTML = `<span style="font-size:13px; font-weight:500;">${t.description || ''}</span>`;
         
+        let itemsSearchText = '';
         // Show Products Sold/Purchased
         if (t.items && Array.isArray(t.items) && t.items.length > 0) {
+          itemsSearchText = t.items.map(x => `${x.productName || ''} ${x.quantity || ''} ${x.unit || ''}`).join(' ');
           const itemsList = t.items.map(x => `<span style="display:inline-block; background:rgba(229,193,88,0.1); border:1px solid rgba(229,193,88,0.25); border-radius:4px; padding:2px 6px; margin:2px 0; font-size:11px; font-weight:600; color:var(--acc);">${x.productName} (x${x.quantity} ${x.unit || ''})</span>`).join(' ');
           if (t.description) {
             descHTML += `<div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:4px;">${itemsList}</div>`;
@@ -14139,6 +14266,12 @@
           cylText += `</div>`;
           descHTML += cylText;
         }
+
+        const dateFormatted = formatDate(t.date);
+        const rawDate = t.date || '';
+        const voucherStr = t.voucherNo || t.id || '';
+        const descFilterText = `${t.description || ''} ${itemsSearchText}`.toLowerCase().replace(/"/g, '&quot;');
+        const txnType = t.txnType || '';
         
         const actionCell = `
           <td data-label="Action" class="text-center">
@@ -14151,8 +14284,19 @@
         `;
         
         body.innerHTML += `
-          <tr>
-            <td data-label="Date">${formatDate(t.date)}</td>
+          <tr class="ledger-row"
+              data-id="${t.id}"
+              data-date="${dateFormatted.toLowerCase()} ${rawDate}"
+              data-voucher="${voucherStr.toLowerCase()}"
+              data-desc="${descFilterText}"
+              data-type="${txnType.toLowerCase()}"
+              data-debit="${debit}"
+              data-credit="${credit}"
+              data-balance="${runningBal.toFixed(2)}">
+            <td class="admin-only text-center" data-label="Select" style="width: 38px;">
+              <input type="checkbox" class="ledger-select-checkbox" data-id="${t.id}" onchange="updateSelectedLedgerCount()" style="cursor: pointer; width: 16px; height: 16px;">
+            </td>
+            <td data-label="Date">${dateFormatted}</td>
             <td data-label="Voucher No" style="word-break: break-all;"><strong>${voucherLink}</strong></td>
             <td data-label="Description">${descHTML}</td>
             <td data-label="Type" class="text-center"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
@@ -14179,6 +14323,11 @@
       });
       document.getElementById('ledgerCylindersHolding').innerHTML = `${cylindersHolding} ${parts.length > 0 ? ': ' + parts.join(', ') : ''}`;
       
+      const counterElem = document.getElementById('ledgerFilteredCount');
+      if (counterElem) {
+        counterElem.textContent = sortedLedger.length > 0 ? `Showing all ${sortedLedger.length} entries` : 'No transactions recorded';
+      }
+
       // Update the add sale / add payment buttons dynamically
       const isCustomer = getPartyBaseType(p) === 'Customer';
       const addSaleBtn = document.getElementById('ledgerAddSaleBtn');
@@ -14218,6 +14367,147 @@
       openModal('ledgerModal');
     }
 
+    function syncAndFilterLedger(field, val) {
+      const capField = field.charAt(0).toUpperCase() + field.slice(1);
+      const deskId = 'lf' + capField;
+      const mobId = 'lf' + capField + 'Mob';
+      const deskElem = document.getElementById(deskId);
+      const mobElem = document.getElementById(mobId);
+      if (deskElem && deskElem.value !== val) deskElem.value = val;
+      if (mobElem && mobElem.value !== val) mobElem.value = val;
+      filterLedgerTable();
+    }
+
+    function resetLedgerFilters(runFilter = true) {
+      ['lfDate', 'lfVoucher', 'lfDesc', 'lfDebit', 'lfCredit', 'lfBalance'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+        const mobEl = document.getElementById(id + 'Mob');
+        if (mobEl) mobEl.value = '';
+      });
+      const typeEl = document.getElementById('lfType');
+      if (typeEl) typeEl.value = 'All';
+      const typeMobEl = document.getElementById('lfTypeMob');
+      if (typeMobEl) typeMobEl.value = 'All';
+
+      if (runFilter) {
+        filterLedgerTable();
+      }
+    }
+
+    function toggleMobileLedgerFilters() {
+      const panel = document.getElementById('ledgerMobileFilterPanel');
+      if (panel) {
+        panel.style.display = (panel.style.display === 'none' || !panel.style.display) ? 'block' : 'none';
+      }
+    }
+
+    function toggleSelectAllLedger(elem) {
+      const visibleRows = document.querySelectorAll('#ledgerTableBody tr.ledger-row:not([style*="display: none"])');
+      visibleRows.forEach(tr => {
+        const cb = tr.querySelector('.ledger-select-checkbox');
+        if (cb) cb.checked = elem.checked;
+      });
+      updateSelectedLedgerCount();
+    }
+
+    function updateSelectedLedgerCount() {
+      const checkedBoxes = document.querySelectorAll('.ledger-select-checkbox:checked');
+      const count = checkedBoxes.length;
+      const btn = document.getElementById('btnBulkDeleteLedger');
+      const text = document.getElementById('selectedLedgerCount');
+      if (text) text.textContent = count;
+      if (btn) {
+        btn.style.display = count > 0 ? 'inline-flex' : 'none';
+      }
+
+      const selectAll = document.getElementById('selectAllLedger');
+      const visibleRows = document.querySelectorAll('#ledgerTableBody tr.ledger-row:not([style*="display: none"])');
+      if (selectAll && visibleRows.length > 0) {
+        const visibleChecked = document.querySelectorAll('#ledgerTableBody tr.ledger-row:not([style*="display: none"]) .ledger-select-checkbox:checked');
+        selectAll.checked = (visibleChecked.length === visibleRows.length && visibleRows.length > 0);
+      }
+    }
+
+    function filterLedgerTable() {
+      const fDate = (document.getElementById('lfDate')?.value || '').trim().toLowerCase();
+      const fVoucher = (document.getElementById('lfVoucher')?.value || '').trim().toLowerCase();
+      const fDesc = (document.getElementById('lfDesc')?.value || '').trim().toLowerCase();
+      const fType = (document.getElementById('lfType')?.value || 'All').trim().toLowerCase();
+      const fDebit = (document.getElementById('lfDebit')?.value || '').trim();
+      const fCredit = (document.getElementById('lfCredit')?.value || '').trim();
+      const fBalance = (document.getElementById('lfBalance')?.value || '').trim();
+
+      const rows = document.querySelectorAll('#ledgerTableBody tr.ledger-row');
+      let visibleCount = 0;
+
+      function matchNumeric(valStr, filterStr) {
+        if (!filterStr) return true;
+        const val = parseFloat(valStr) || 0;
+        const cleanFilter = filterStr.replace(/,/g, '');
+        if (cleanFilter.startsWith('>=')) {
+          return val >= (parseFloat(cleanFilter.slice(2).trim()) || 0);
+        } else if (cleanFilter.startsWith('<=')) {
+          return val <= (parseFloat(cleanFilter.slice(2).trim()) || 0);
+        } else if (cleanFilter.startsWith('>')) {
+          return val > (parseFloat(cleanFilter.slice(1).trim()) || 0);
+        } else if (cleanFilter.startsWith('<')) {
+          return val < (parseFloat(cleanFilter.slice(1).trim()) || 0);
+        } else if (cleanFilter.startsWith('=')) {
+          return val === (parseFloat(cleanFilter.slice(1).trim()) || 0);
+        }
+        return valStr.includes(cleanFilter) || val.toString().includes(cleanFilter);
+      }
+
+      rows.forEach(tr => {
+        const dDate = tr.dataset.date || '';
+        const dVoucher = tr.dataset.voucher || '';
+        const dDesc = tr.dataset.desc || '';
+        const dType = tr.dataset.type || '';
+        const dDebit = tr.dataset.debit || '0';
+        const dCredit = tr.dataset.credit || '0';
+        const dBalance = tr.dataset.balance || '0';
+
+        const matchDate = !fDate || dDate.includes(fDate);
+        const matchVoucher = !fVoucher || dVoucher.includes(fVoucher);
+        const matchDesc = !fDesc || dDesc.includes(fDesc);
+        const matchType = !fType || fType === 'all' || dType === fType;
+        const matchDebit = matchNumeric(dDebit, fDebit);
+        const matchCredit = matchNumeric(dCredit, fCredit);
+        const matchBalance = matchNumeric(dBalance, fBalance);
+
+        if (matchDate && matchVoucher && matchDesc && matchType && matchDebit && matchCredit && matchBalance) {
+          tr.style.display = '';
+          visibleCount++;
+        } else {
+          tr.style.display = 'none';
+        }
+      });
+
+      const existingNoMatch = document.getElementById('ledgerNoMatchRow');
+      if (existingNoMatch) existingNoMatch.remove();
+
+      if (visibleCount === 0 && rows.length > 0) {
+        const noMatchRow = document.createElement('tr');
+        noMatchRow.id = 'ledgerNoMatchRow';
+        noMatchRow.innerHTML = `<td colspan="9" class="text-center" style="padding: 24px; color: var(--txt2); font-style: italic;"><i class="fa-solid fa-filter-circle-xmark" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>No matching ledger entries found.</td>`;
+        document.getElementById('ledgerTableBody').appendChild(noMatchRow);
+      }
+
+      const counterElem = document.getElementById('ledgerFilteredCount');
+      if (counterElem) {
+        if (rows.length === 0) {
+          counterElem.textContent = 'No transactions recorded';
+        } else if (visibleCount === rows.length) {
+          counterElem.textContent = `Showing all ${rows.length} entries`;
+        } else {
+          counterElem.textContent = `Showing ${visibleCount} of ${rows.length} entries`;
+        }
+      }
+
+      updateSelectedLedgerCount();
+    }
+
     function editLedgerTransaction(txnId, txnType, partyId) {
       reopenLedgerPartyId = partyId;
       closeModal('ledgerModal');
@@ -14231,6 +14521,77 @@
     function deleteLedgerTransaction(txnId, partyId) {
       window._activeLedgerPartyId = partyId;
       deleteTransaction(txnId);
+    }
+
+    function bulkDeleteLedgerTransactions() {
+      if (App.currentUser && App.currentUser.role !== 'Admin' && App.currentUser.role !== 'Owner') {
+        showToast('Only administrators can delete transactions', 'warning');
+        return;
+      }
+      const checkedBoxes = document.querySelectorAll('.ledger-select-checkbox:checked');
+      const ids = Array.from(checkedBoxes).map(cb => cb.dataset.id).filter(Boolean);
+      if (ids.length === 0) {
+        showToast('Please select at least one transaction to delete', 'warning');
+        return;
+      }
+
+      const partyId = window._activeLedgerPartyId;
+      const count = ids.length;
+
+      showConfirmModal({
+        title: `Delete ${count} Selected Transaction${count > 1 ? 's' : ''}`,
+        message: `Are you sure you want to permanently delete ${count} selected transaction(s)? The party ledger balance, inventory stock, and bank accounts will be safely rolled back. This action cannot be undone.`,
+        confirmText: `Delete ${count} Entry${count > 1 ? 's' : ''}`,
+        isDanger: true,
+        onConfirm: async function() {
+          showLoading(true, `Deleting ${count} transaction(s) and restoring balances...`);
+          try {
+            let batch = db.batch();
+            let opCount = 0;
+            const updates = {};
+
+            for (const id of ids) {
+              rollbackLocalBalances(id, updates);
+              batch.delete(db.collection('transactions').doc(id));
+              opCount += 2;
+
+              if (opCount >= 400) {
+                _applyCalculatedUpdates(updates, batch);
+                await batch.commit();
+                batch = db.batch();
+                for (const key of Object.keys(updates)) delete updates[key];
+                opCount = 0;
+              }
+            }
+
+            if (opCount > 0 || Object.keys(updates).length > 0) {
+              _applyCalculatedUpdates(updates, batch);
+              await batch.commit();
+            }
+
+            _logActivity('DELETE_BULK', 'Transactions', `Bulk deleted ${count} transactions for party ID: ${partyId}`);
+
+            showLoading(false);
+            showToast(`Successfully deleted ${count} transaction(s) and restored balances.`, 'success');
+
+            const selectAll = document.getElementById('selectAllLedger');
+            if (selectAll) selectAll.checked = false;
+            updateSelectedLedgerCount();
+
+            syncAllData(() => {
+              if (partyId) {
+                viewPartyLedger(partyId);
+              }
+              renderParties();
+              renderSales();
+              renderPurchases();
+            }, ["Transactions", "Products", "BankAccounts", "Parties", "ActivityLog"]);
+          } catch(e) {
+            showLoading(false);
+            showToast("Failed to delete transactions: " + (e.message || e), 'error');
+          }
+        }
+      });
     }
 
     function printReport() {
