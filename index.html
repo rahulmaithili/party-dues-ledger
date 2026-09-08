@@ -2128,10 +2128,88 @@
         height: 18px !important;
         cursor: pointer !important;
       }
+      #ledgerModal .modal-card {
+        height: 94vh !important;
+        max-height: 94vh !important;
+      }
+      #ledgerModal .modal-body {
+        overflow-y: auto !important;
+        display: block !important;
+      }
+      #ledgerModal #ledgerTabContent {
+        overflow: visible !important;
+        display: block !important;
+      }
+      #ledgerModal #ledgerTabContent .table-container {
+        overflow: visible !important;
+        max-height: none !important;
+      }
     }
+    /* Party Ledger Frozen / Sticky Table Header Styles */
     #ledgerModal .modal-card {
       max-width: 1140px !important;
-      width: 92% !important;
+      width: 94% !important;
+      height: 90vh !important;
+      max-height: 90vh !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    #ledgerModal .modal-body {
+      display: flex !important;
+      flex-direction: column !important;
+      overflow: hidden !important;
+      padding: 16px 20px 8px 20px !important;
+      flex: 1 !important;
+      min-height: 0 !important;
+    }
+    #ledgerModal #ledgerTabContent {
+      display: flex !important;
+      flex-direction: column !important;
+      flex: 1 !important;
+      min-height: 0 !important;
+      overflow: hidden !important;
+    }
+    #ledgerModal #ledgerTabContent .table-container {
+      flex: 1 !important;
+      min-height: 250px !important;
+      overflow-y: auto !important;
+      overflow-x: auto !important;
+      position: relative !important;
+      border: 1px solid var(--brd) !important;
+      border-radius: 8px !important;
+      margin-bottom: 0 !important;
+    }
+    #ledgerModal #ledgerTable {
+      border-collapse: separate !important;
+      border-spacing: 0 !important;
+      width: 100% !important;
+    }
+    #ledgerModal #ledgerTable thead tr:first-child th {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 35 !important;
+      background: #F1F5F9 !important;
+      height: 52px !important;
+      box-sizing: border-box !important;
+      border-bottom: 1px solid var(--brd) !important;
+    }
+    #ledgerModal #ledgerTable thead tr.ledger-filter-row th {
+      position: sticky !important;
+      top: 52px !important;
+      z-index: 34 !important;
+      background: #FFFFFF !important;
+      height: 38px !important;
+      box-sizing: border-box !important;
+      border-bottom: 2px solid var(--brd) !important;
+      box-shadow: 0 3px 6px rgba(0,0,0,0.06) !important;
+    }
+    body.dark-theme #ledgerModal #ledgerTable thead tr:first-child th {
+      background: #1E293B !important;
+      border-color: #334155 !important;
+    }
+    body.dark-theme #ledgerModal #ledgerTable thead tr.ledger-filter-row th {
+      background: #0F172A !important;
+      border-color: #334155 !important;
     }
     #viewVoucherModal {
       z-index: 100010 !important;
@@ -5744,15 +5822,28 @@
         </div>
 
         <div id="ledgerTabContent">
-          <!-- Ledger Toolbar: Bulk Actions & Counters -->
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
-            <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <!-- Ledger Toolbar: Bulk Actions, Live Calculation Badges & Counters -->
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
               <span id="ledgerFilteredCount" style="font-size: 12.5px; color: var(--txt2); font-weight: 600;"></span>
-              <button type="button" class="btn btn-secondary btn-sm" id="btnToggleMobileLedgerFilters" onclick="toggleMobileLedgerFilters()" style="display: none; height: 32px; font-size: 12px; align-items: center; gap: 6px;">
+              <span id="ledgerCalcBadge" style="background: rgba(59, 130, 246, 0.1); color: var(--pri); border: 1px solid rgba(59, 130, 246, 0.25); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">Live: All</span>
+              <button type="button" class="btn btn-secondary btn-sm" id="btnToggleMobileLedgerFilters" onclick="toggleMobileLedgerFilters()" style="display: none; height: 30px; font-size: 12px; align-items: center; gap: 6px;">
                 <i class="fa-solid fa-filter"></i> Filters
               </button>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px; margin-left: auto;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap;">
+              <div style="display: inline-flex; align-items: center; gap: 5px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 6px; padding: 3px 8px; font-size: 12px;">
+                <span style="color: var(--txt2); font-weight: 600; font-size: 11px;">Debit (Sale):</span>
+                <strong id="barDebitTotal" style="color: var(--dan); font-size: 12.5px; font-weight: 800;">₹0.00</strong>
+              </div>
+              <div style="display: inline-flex; align-items: center; gap: 5px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 3px 8px; font-size: 12px;">
+                <span style="color: var(--txt2); font-weight: 600; font-size: 11px;">Credit (Receipt):</span>
+                <strong id="barCreditTotal" style="color: var(--suc); font-size: 12.5px; font-weight: 800;">₹0.00</strong>
+              </div>
+              <div style="display: inline-flex; align-items: center; gap: 5px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 6px; padding: 3px 8px; font-size: 12px;">
+                <span style="color: var(--txt2); font-weight: 600; font-size: 11px;">Net:</span>
+                <strong id="barNetTotal" style="color: var(--pri); font-size: 12.5px; font-weight: 800;">₹0.00</strong>
+              </div>
               <button class="btn admin-only" id="btnBulkDeleteLedger" onclick="bulkDeleteLedgerTransactions()" style="display: none; background: var(--dan); color: white; border: none; font-weight: 700; height: 32px; align-items: center; justify-content: center; gap: 6px; padding: 0 14px; border-radius: var(--r); cursor: pointer; font-size: 12px; white-space: nowrap;">
                 <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selectedLedgerCount">0</span>)
               </button>
@@ -5808,17 +5899,26 @@
             <table class="responsive-table-cards" id="ledgerTable" style="width: 100%;">
               <thead>
                 <tr>
-                  <th class="admin-only text-center" style="width: 38px;">
+                  <th class="admin-only text-center" style="width: 38px; vertical-align: middle;">
                     <input type="checkbox" id="selectAllLedger" onchange="toggleSelectAllLedger(this)" title="Select All" style="cursor: pointer; width: 16px; height: 16px;">
                   </th>
-                  <th style="width: 100px;">Date</th>
-                  <th style="width: 125px; word-break: break-all;">Voucher No</th>
-                  <th>Description</th>
-                  <th class="text-center" style="width: 80px;">Type</th>
-                  <th class="text-right" style="width: 105px;">Debit (₹)</th>
-                  <th class="text-right" style="width: 105px;">Credit (₹)</th>
-                  <th class="text-right" style="width: 125px;">Running Balance (₹)</th>
-                  <th class="text-center" style="width: 110px;">Action</th>
+                  <th style="width: 95px; vertical-align: middle;">Date</th>
+                  <th style="width: 120px; word-break: break-all; vertical-align: middle;">Voucher No</th>
+                  <th style="vertical-align: middle;">Description</th>
+                  <th class="text-center" style="width: 80px; vertical-align: middle;">Type</th>
+                  <th class="text-right" style="width: 110px; vertical-align: middle;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--txt);">Debit (₹)</div>
+                    <div id="liveDebitHeaderTotal" style="font-size: 12.5px; font-weight: 800; color: var(--dan); white-space: nowrap; margin-top: 2px;">₹0.00</div>
+                  </th>
+                  <th class="text-right" style="width: 110px; vertical-align: middle;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--txt);">Credit (₹)</div>
+                    <div id="liveCreditHeaderTotal" style="font-size: 12.5px; font-weight: 800; color: var(--suc); white-space: nowrap; margin-top: 2px;">₹0.00</div>
+                  </th>
+                  <th class="text-right" style="width: 125px; vertical-align: middle;">
+                    <div style="font-size: 11px; font-weight: 700; color: var(--txt);">Running Balance</div>
+                    <div id="liveBalanceHeaderTotal" style="font-size: 11.5px; font-weight: 700; color: var(--pri); white-space: nowrap; margin-top: 2px;">Net: ₹0.00</div>
+                  </th>
+                  <th class="text-center" style="width: 105px; vertical-align: middle;">Action</th>
                 </tr>
                 <tr class="ledger-filter-row" style="background: rgba(0,0,0,0.02);">
                   <th class="admin-only text-center" style="padding: 4px;">
@@ -14331,6 +14431,8 @@
         counterElem.textContent = sortedLedger.length > 0 ? `Showing all ${sortedLedger.length} entries` : 'No transactions recorded';
       }
 
+      updateLedgerLiveCalculations();
+
       // Update the add sale / add payment buttons dynamically
       const isCustomer = getPartyBaseType(p) === 'Customer';
       const addSaleBtn = document.getElementById('ledgerAddSaleBtn');
@@ -14429,6 +14531,82 @@
       if (selectAll && visibleRows.length > 0) {
         const visibleChecked = document.querySelectorAll('#ledgerTableBody tr.ledger-row:not([style*="display: none"]) .ledger-select-checkbox:checked');
         selectAll.checked = (visibleChecked.length === visibleRows.length && visibleRows.length > 0);
+      }
+
+      updateLedgerLiveCalculations();
+    }
+
+    function updateLedgerLiveCalculations() {
+      const allRows = document.querySelectorAll('#ledgerTableBody tr.ledger-row');
+      const visibleRows = document.querySelectorAll('#ledgerTableBody tr.ledger-row:not([style*="display: none"])');
+      const checkedBoxes = document.querySelectorAll('#ledgerTableBody tr.ledger-row .ledger-select-checkbox:checked');
+
+      let targetRows = [];
+      let isSelectionMode = false;
+
+      if (checkedBoxes.length > 0) {
+        isSelectionMode = true;
+        checkedBoxes.forEach(cb => {
+          const tr = cb.closest('tr.ledger-row');
+          if (tr) targetRows.push(tr);
+        });
+      } else {
+        targetRows = Array.from(visibleRows);
+      }
+
+      let totalDebit = 0;
+      let totalCredit = 0;
+
+      targetRows.forEach(tr => {
+        const deb = parseFloat(tr.dataset.debit || 0) || 0;
+        const cred = parseFloat(tr.dataset.credit || 0) || 0;
+        totalDebit += deb;
+        totalCredit += cred;
+      });
+
+      const netBalance = totalDebit - totalCredit;
+
+      const debFormatted = formatCurrency(totalDebit);
+      const credFormatted = formatCurrency(totalCredit);
+      const netFormatted = (netBalance >= 0 ? '+' : '') + formatCurrency(netBalance);
+
+      // 1. Update Table Headers directly above Debit, Credit and Running Balance
+      const headerDeb = document.getElementById('liveDebitHeaderTotal');
+      const headerCred = document.getElementById('liveCreditHeaderTotal');
+      const headerNet = document.getElementById('liveBalanceHeaderTotal');
+
+      if (headerDeb) headerDeb.textContent = debFormatted;
+      if (headerCred) headerCred.textContent = credFormatted;
+      if (headerNet) headerNet.textContent = `Net: ${netFormatted}`;
+
+      // 2. Update Toolbar Summary Badges
+      const barDeb = document.getElementById('barDebitTotal');
+      const barCred = document.getElementById('barCreditTotal');
+      const barNet = document.getElementById('barNetTotal');
+
+      if (barDeb) barDeb.textContent = debFormatted;
+      if (barCred) barCred.textContent = credFormatted;
+      if (barNet) barNet.textContent = netFormatted;
+
+      // 3. Update Status Badge
+      const badge = document.getElementById('ledgerCalcBadge');
+      if (badge) {
+        if (isSelectionMode) {
+          badge.textContent = `Selected: ${checkedBoxes.length} row${checkedBoxes.length > 1 ? 's' : ''}`;
+          badge.style.background = 'rgba(239, 68, 68, 0.1)';
+          badge.style.color = 'var(--dan)';
+          badge.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+        } else if (allRows.length > 0 && visibleRows.length !== allRows.length) {
+          badge.textContent = `Filtered: ${visibleRows.length} of ${allRows.length}`;
+          badge.style.background = 'rgba(59, 130, 246, 0.1)';
+          badge.style.color = 'var(--pri)';
+          badge.style.borderColor = 'rgba(59, 130, 246, 0.25)';
+        } else {
+          badge.textContent = `Total: ${allRows.length} entries`;
+          badge.style.background = 'rgba(100, 116, 139, 0.1)';
+          badge.style.color = 'var(--txt2)';
+          badge.style.borderColor = 'rgba(100, 116, 139, 0.25)';
+        }
       }
     }
 
@@ -18583,7 +18761,7 @@
         btnFollowup.classList.add('btn-secondary');
         btnFollowup.classList.remove('btn-primary');
         
-        ledgerContent.style.display = 'block';
+        ledgerContent.style.display = 'flex';
         followupContent.style.display = 'none';
       } else {
         btnFollowup.classList.add('btn-primary');
@@ -18592,7 +18770,10 @@
         btnLedger.classList.remove('btn-primary');
         
         ledgerContent.style.display = 'none';
-        followupContent.style.display = 'block';
+        followupContent.style.display = 'flex';
+        followupContent.style.flexDirection = 'column';
+        followupContent.style.flex = '1';
+        followupContent.style.overflowY = 'auto';
         
         renderFollowupList();
       }
