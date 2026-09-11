@@ -2183,6 +2183,17 @@
       border-collapse: separate !important;
       border-spacing: 0 !important;
       width: 100% !important;
+      border: 1px solid var(--brd) !important;
+    }
+    #ledgerModal #ledgerTable th {
+      border-right: 1px solid var(--brd) !important;
+      border-bottom: 1px solid var(--brd) !important;
+      padding: 8px 10px !important;
+      font-size: 11.5px !important;
+      box-sizing: border-box !important;
+    }
+    #ledgerModal #ledgerTable th:last-child {
+      border-right: none !important;
     }
     #ledgerModal #ledgerTable thead tr:first-child th {
       position: sticky !important;
@@ -2203,13 +2214,86 @@
       border-bottom: 2px solid var(--brd) !important;
       box-shadow: 0 3px 6px rgba(0,0,0,0.06) !important;
     }
+    #ledgerModal #ledgerTable tbody td {
+      border-right: 1px solid var(--brd) !important;
+      border-bottom: 1px solid var(--brd) !important;
+      padding: 7px 10px !important;
+      vertical-align: top !important;
+      background: var(--card) !important;
+      font-size: 12.5px !important;
+      color: var(--txt) !important;
+      box-sizing: border-box !important;
+    }
+    #ledgerModal #ledgerTable tbody td:last-child {
+      border-right: none !important;
+    }
+    #ledgerModal #ledgerTable tbody tr:nth-child(even) td {
+      background: rgba(0, 0, 0, 0.02) !important;
+    }
+    #ledgerModal #ledgerTable tbody tr:hover td {
+      background: rgba(59, 130, 246, 0.07) !important;
+    }
+    body.dark-theme #ledgerModal #ledgerTable {
+      border-color: #334155 !important;
+    }
+    body.dark-theme #ledgerModal #ledgerTable th {
+      border-color: #334155 !important;
+    }
     body.dark-theme #ledgerModal #ledgerTable thead tr:first-child th {
       background: #1E293B !important;
       border-color: #334155 !important;
+      color: #F1F5F9 !important;
     }
     body.dark-theme #ledgerModal #ledgerTable thead tr.ledger-filter-row th {
       background: #0F172A !important;
       border-color: #334155 !important;
+    }
+    body.dark-theme #ledgerModal #ledgerTable tbody td {
+      border-color: #334155 !important;
+      background: #151F32 !important;
+      color: #F1F5F9 !important;
+    }
+    body.dark-theme #ledgerModal #ledgerTable tbody tr:nth-child(even) td {
+      background: #1B283F !important;
+    }
+    body.dark-theme #ledgerModal #ledgerTable tbody tr:hover td {
+      background: rgba(59, 130, 246, 0.15) !important;
+    }
+    /* Item Sub-row styles for multi-item alignment */
+    .item-sub-row {
+      padding: 3px 0;
+      min-height: 26px;
+      display: flex;
+      align-items: center;
+      box-sizing: border-box;
+    }
+    .item-sub-row.has-divider {
+      border-bottom: 1px dashed var(--brd);
+    }
+    .btn-action-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 5px;
+      border: 1px solid var(--brd);
+      background: var(--card);
+      transition: all 0.15s ease;
+      cursor: pointer;
+      color: var(--txt);
+      box-sizing: border-box;
+    }
+    .btn-action-pill:hover {
+      background: var(--bg2);
+      transform: translateY(-1px);
+    }
+    body.dark-theme .btn-action-pill {
+      background: #1E293B;
+      border-color: #334155;
+    }
+    body.dark-theme .btn-action-pill:hover {
+      background: #2D3D56;
     }
     #viewVoucherModal {
       z-index: 100010 !important;
@@ -5907,49 +5991,49 @@
             <table class="responsive-table-cards" id="ledgerTable" style="width: 100%;">
               <thead>
                 <tr>
-                  <th class="admin-only text-center" style="width: 36px; vertical-align: middle;">
+                  <th class="admin-only text-center" style="width: 38px; min-width: 38px; vertical-align: middle;">
                     <input type="checkbox" id="selectAllLedger" onchange="toggleSelectAllLedger(this)" title="Select All" style="cursor: pointer; width: 16px; height: 16px;">
                   </th>
-                  <th style="width: 90px; vertical-align: middle;">Date</th>
-                  <th style="width: 85px; vertical-align: middle;">Voucher No</th>
-                  <th style="vertical-align: middle; min-width: 150px;">Product / Particulars</th>
-                  <th class="text-center" style="width: 55px; vertical-align: middle;">Qty</th>
-                  <th class="text-right" style="width: 80px; vertical-align: middle;">Rate (₹)</th>
-                  <th class="text-center" style="width: 70px; vertical-align: middle;">Type</th>
-                  <th class="text-right" style="width: 100px; vertical-align: middle;">
+                  <th style="width: 105px; min-width: 105px; white-space: nowrap; vertical-align: middle;">Date</th>
+                  <th style="width: 120px; min-width: 120px; white-space: nowrap; vertical-align: middle;">Voucher No</th>
+                  <th style="vertical-align: middle; min-width: 160px;">Product / Particulars</th>
+                  <th class="text-center" style="width: 75px; min-width: 75px; vertical-align: middle;">Qty</th>
+                  <th class="text-right" style="width: 95px; min-width: 95px; vertical-align: middle;">Rate (₹)</th>
+                  <th class="text-center" style="width: 75px; min-width: 75px; vertical-align: middle;">Type</th>
+                  <th class="text-right" style="width: 105px; min-width: 105px; vertical-align: middle;">
                     <div style="font-size: 11px; font-weight: 700; color: var(--txt);">Debit (₹)</div>
                     <div id="liveDebitHeaderTotal" style="font-size: 12.5px; font-weight: 800; color: var(--dan); white-space: nowrap; margin-top: 2px;">₹0.00</div>
                   </th>
-                  <th class="text-right" style="width: 100px; vertical-align: middle;">
+                  <th class="text-right" style="width: 105px; min-width: 105px; vertical-align: middle;">
                     <div style="font-size: 11px; font-weight: 700; color: var(--txt);">Credit (₹)</div>
                     <div id="liveCreditHeaderTotal" style="font-size: 12.5px; font-weight: 800; color: var(--suc); white-space: nowrap; margin-top: 2px;">₹0.00</div>
                   </th>
-                  <th class="text-right" style="width: 115px; vertical-align: middle;">
+                  <th class="text-right" style="width: 115px; min-width: 115px; vertical-align: middle;">
                     <div style="font-size: 11px; font-weight: 700; color: var(--txt);">Running Balance</div>
                     <div id="liveBalanceHeaderTotal" style="font-size: 11.5px; font-weight: 700; color: var(--pri); white-space: nowrap; margin-top: 2px;">Net: ₹0.00</div>
                   </th>
-                  <th class="text-center" style="width: 95px; vertical-align: middle;">Action</th>
+                  <th class="text-center" style="width: 100px; min-width: 100px; vertical-align: middle;">Action</th>
                 </tr>
                 <tr class="ledger-filter-row" style="background: rgba(0,0,0,0.02);">
-                  <th class="admin-only text-center" style="padding: 4px;">
+                  <th class="admin-only text-center" style="padding: 4px; width: 38px; min-width: 38px;">
                     <i class="fa-solid fa-filter" style="color: var(--txt2); font-size: 11px;" title="Column Filters"></i>
                   </th>
-                  <th style="padding: 4px;">
-                    <input type="text" id="lfDate" placeholder="Date..." oninput="syncAndFilterLedger('date', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 60px;">
+                  <th style="padding: 4px; width: 105px; min-width: 105px;">
+                    <input type="text" id="lfDate" placeholder="Date..." oninput="syncAndFilterLedger('date', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 80px;">
                   </th>
-                  <th style="padding: 4px;">
-                    <input type="text" id="lfVoucher" placeholder="Voucher..." oninput="syncAndFilterLedger('voucher', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 65px;">
+                  <th style="padding: 4px; width: 120px; min-width: 120px;">
+                    <input type="text" id="lfVoucher" placeholder="Voucher..." oninput="syncAndFilterLedger('voucher', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 80px;">
                   </th>
-                  <th style="padding: 4px;">
+                  <th style="padding: 4px; min-width: 160px;">
                     <input type="text" id="lfProduct" placeholder="Product name..." oninput="syncAndFilterLedger('product', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 110px;">
                   </th>
-                  <th style="padding: 4px;">
-                    <input type="text" id="lfQty" placeholder="Qty..." oninput="syncAndFilterLedger('qty', this.value)" class="light-form-control text-center" style="font-size: 11px; padding: 3px 4px; height: 26px; width: 100%; margin: 0; min-width: 45px;">
+                  <th style="padding: 4px; width: 75px; min-width: 75px;">
+                    <input type="text" id="lfQty" placeholder="Qty..." oninput="syncAndFilterLedger('qty', this.value)" class="light-form-control text-center" style="font-size: 11px; padding: 3px 4px; height: 26px; width: 100%; margin: 0; min-width: 55px;">
                   </th>
-                  <th style="padding: 4px;">
-                    <input type="text" id="lfRate" placeholder="Rate..." oninput="syncAndFilterLedger('rate', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 4px; height: 26px; width: 100%; margin: 0; min-width: 55px;">
+                  <th style="padding: 4px; width: 95px; min-width: 95px;">
+                    <input type="text" id="lfRate" placeholder="Rate..." oninput="syncAndFilterLedger('rate', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 4px; height: 26px; width: 100%; margin: 0; min-width: 65px;">
                   </th>
-                  <th style="padding: 4px;">
+                  <th style="padding: 4px; width: 75px; min-width: 75px;">
                     <select id="lfType" onchange="syncAndFilterLedger('type', this.value)" class="light-form-control" style="font-size: 11px; padding: 2px 4px; height: 26px; width: 100%; margin: 0; min-width: 65px;">
                       <option value="All">All</option>
                       <option value="Sale">Sale</option>
@@ -5959,16 +6043,16 @@
                       <option value="Return">Return</option>
                     </select>
                   </th>
-                  <th style="padding: 4px;">
-                    <input type="text" id="lfDebit" placeholder="Debit..." oninput="syncAndFilterLedger('debit', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 60px;">
+                  <th style="padding: 4px; width: 105px; min-width: 105px;">
+                    <input type="text" id="lfDebit" placeholder="Debit..." oninput="syncAndFilterLedger('debit', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 70px;">
                   </th>
-                  <th style="padding: 4px;">
-                    <input type="text" id="lfCredit" placeholder="Credit..." oninput="syncAndFilterLedger('credit', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 60px;">
+                  <th style="padding: 4px; width: 105px; min-width: 105px;">
+                    <input type="text" id="lfCredit" placeholder="Credit..." oninput="syncAndFilterLedger('credit', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 70px;">
                   </th>
-                  <th style="padding: 4px;">
-                    <input type="text" id="lfBalance" placeholder="Balance..." oninput="syncAndFilterLedger('balance', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 65px;">
+                  <th style="padding: 4px; width: 115px; min-width: 115px;">
+                    <input type="text" id="lfBalance" placeholder="Balance..." oninput="syncAndFilterLedger('balance', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 75px;">
                   </th>
-                  <th class="text-center" style="padding: 4px;">
+                  <th class="text-center" style="padding: 4px; width: 100px; min-width: 100px;">
                     <button type="button" class="btn btn-secondary btn-sm" onclick="resetLedgerFilters()" title="Reset All Filters" style="font-size: 11px; padding: 3px 8px; height: 26px; border-radius: 4px; white-space: nowrap;">
                       <i class="fa-solid fa-rotate-left"></i> Reset
                     </button>
@@ -14375,9 +14459,25 @@
         let rateSearchText = '';
 
         if (t.items && Array.isArray(t.items) && t.items.length > 0) {
-          productHTML = t.items.map(x => `<div style="font-weight:600; color:var(--txt); line-height:1.35; margin-bottom:2px;">${x.productName || 'Item'}</div>`).join('');
-          qtyHTML = t.items.map(x => `<div style="margin-bottom:2px;"><span class="badge" style="background:rgba(59,130,246,0.1); color:var(--pri); font-size:11px; padding:1px 5px; font-weight:600;">${x.quantity || 1}${x.unit ? ' ' + x.unit : ''}</span></div>`).join('');
-          rateHTML = t.items.map(x => `<div style="font-weight:600; color:var(--txt); margin-bottom:2px; line-height:1.35;">${formatCurrency(x.rate || x.price || 0)}</div>`).join('');
+          const hasMultiple = t.items.length > 1;
+
+          productHTML = t.items.map((x, idx) => {
+            const isLast = idx === t.items.length - 1;
+            const dividerClass = (hasMultiple && !isLast) ? 'has-divider' : '';
+            return `<div class="item-sub-row ${dividerClass}" style="font-weight:600; color:var(--txt);">${x.productName || 'Item'}</div>`;
+          }).join('');
+
+          qtyHTML = t.items.map((x, idx) => {
+            const isLast = idx === t.items.length - 1;
+            const dividerClass = (hasMultiple && !isLast) ? 'has-divider' : '';
+            return `<div class="item-sub-row ${dividerClass}" style="justify-content:center;"><span class="badge" style="background:rgba(59,130,246,0.1); color:var(--pri); font-size:11px; padding:1px 6px; font-weight:600; border: 1px solid rgba(59,130,246,0.2);">${x.quantity || 1}${x.unit ? ' ' + x.unit : ''}</span></div>`;
+          }).join('');
+
+          rateHTML = t.items.map((x, idx) => {
+            const isLast = idx === t.items.length - 1;
+            const dividerClass = (hasMultiple && !isLast) ? 'has-divider' : '';
+            return `<div class="item-sub-row ${dividerClass}" style="justify-content:flex-end; font-weight:600; color:var(--txt);">${formatCurrency(x.rate || x.price || 0)}</div>`;
+          }).join('');
 
           productSearchText = t.items.map(x => x.productName || '').join(' ');
           qtySearchText = t.items.map(x => `${x.quantity || ''} ${x.unit || ''}`).join(' ');
@@ -14390,10 +14490,10 @@
         } else {
           // Receipt, payment, or entry without items
           const defaultLabel = t.description || (t.txnType === 'Payment' ? 'Payment Made' : (t.txnType === 'Receipt' ? 'Payment Receipt' : t.txnType || 'Transaction'));
-          productHTML = `<div style="font-weight:500; color:var(--txt);">${defaultLabel}</div>`;
+          productHTML = `<div class="item-sub-row" style="font-weight:500; color:var(--txt);">${defaultLabel}</div>`;
           productSearchText = `${t.description || ''} ${t.txnType || ''}`;
-          qtyHTML = `<div style="color:var(--txt2);">--</div>`;
-          rateHTML = `<div style="color:var(--txt2);">--</div>`;
+          qtyHTML = `<div class="item-sub-row" style="justify-content:center; color:var(--txt2);">--</div>`;
+          rateHTML = `<div class="item-sub-row" style="justify-content:flex-end; color:var(--txt2);">--</div>`;
         }
 
         // Show Payment Mode Badge if available
@@ -14431,11 +14531,11 @@
         const txnType = t.txnType || '';
         
         const actionCell = `
-          <td data-label="Action" class="text-center">
-            <div class="flex-gap" style="justify-content: center; gap: 6px;">
-              <button class="btn btn-icon" onclick="viewVoucher('${t.id}')" title="View Voucher / Receipt Details" style="color: var(--pri);"><i class="fa-solid fa-eye"></i></button>
-              <button class="btn btn-icon admin-only" onclick="editLedgerTransaction('${t.id}', '${t.txnType}', '${p.id}')" title="Edit Entry"><i class="fa-solid fa-pen-to-square"></i></button>
-              <button class="btn btn-icon admin-only" onclick="deleteLedgerTransaction('${t.id}', '${p.id}')" style="color:var(--dan);" title="Delete Entry"><i class="fa-solid fa-trash"></i></button>
+          <td data-label="Action" class="text-center" style="vertical-align: top; padding-top: 8px;">
+            <div class="flex-gap" style="justify-content: center; gap: 5px;">
+              <button class="btn-action-pill" onclick="viewVoucher('${t.id}')" title="View Voucher / Receipt Details" style="color: var(--pri);"><i class="fa-solid fa-eye" style="font-size: 11px;"></i></button>
+              <button class="btn-action-pill admin-only" onclick="editLedgerTransaction('${t.id}', '${t.txnType}', '${p.id}')" title="Edit Entry" style="color: var(--txt);"><i class="fa-solid fa-pen-to-square" style="font-size: 11px;"></i></button>
+              <button class="btn-action-pill admin-only" onclick="deleteLedgerTransaction('${t.id}', '${p.id}')" style="color: var(--dan);" title="Delete Entry"><i class="fa-solid fa-trash" style="font-size: 11px;"></i></button>
             </div>
           </td>
         `;
@@ -14452,18 +14552,18 @@
               data-debit="${debit}"
               data-credit="${credit}"
               data-balance="${runningBal.toFixed(2)}">
-            <td class="admin-only text-center" data-label="Select" style="width: 36px;">
+            <td class="admin-only text-center" data-label="Select" style="width: 38px; vertical-align: top; padding-top: 10px;">
               <input type="checkbox" class="ledger-select-checkbox" data-id="${t.id}" onchange="updateSelectedLedgerCount()" style="cursor: pointer; width: 16px; height: 16px;">
             </td>
-            <td data-label="Date">${dateFormatted}</td>
-            <td data-label="Voucher No" style="word-break: break-all;"><strong>${voucherLink}</strong></td>
-            <td data-label="Product / Particulars">${productHTML}</td>
-            <td data-label="Qty" class="text-center">${qtyHTML}</td>
-            <td data-label="Rate (₹)" class="text-right">${rateHTML}</td>
-            <td data-label="Type" class="text-center"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
-            <td data-label="Debit (₹)" class="text-right text-danger">${debit > 0 ? formatCurrency(debit) : '--'}</td>
-            <td data-label="Credit (₹)" class="text-right text-success">${credit > 0 ? formatCurrency(credit) : '--'}</td>
-            <td data-label="Balance (₹)" class="text-right" style="font-weight:600;">${formatCurrency(runningBal)}</td>
+            <td data-label="Date" style="white-space: nowrap; font-weight: 500; vertical-align: top; padding-top: 10px;">${dateFormatted}</td>
+            <td data-label="Voucher No" style="white-space: nowrap; vertical-align: top; padding-top: 10px;"><strong>${voucherLink}</strong></td>
+            <td data-label="Product / Particulars" style="vertical-align: top;">${productHTML}</td>
+            <td data-label="Qty" class="text-center" style="vertical-align: top;">${qtyHTML}</td>
+            <td data-label="Rate (₹)" class="text-right" style="vertical-align: top;">${rateHTML}</td>
+            <td data-label="Type" class="text-center" style="vertical-align: top; padding-top: 10px;"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
+            <td data-label="Debit (₹)" class="text-right text-danger" style="font-weight: 700; vertical-align: top; padding-top: 10px;">${debit > 0 ? formatCurrency(debit) : '--'}</td>
+            <td data-label="Credit (₹)" class="text-right text-success" style="font-weight: 700; vertical-align: top; padding-top: 10px;">${credit > 0 ? formatCurrency(credit) : '--'}</td>
+            <td data-label="Balance (₹)" class="text-right" style="font-weight: 700; vertical-align: top; padding-top: 10px;">${formatCurrency(runningBal)}</td>
             ${actionCell}
           </tr>
         `;
