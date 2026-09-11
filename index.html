@@ -5866,8 +5866,16 @@
                 <input type="text" id="lfVoucherMob" placeholder="Voucher no..." oninput="syncAndFilterLedger('voucher', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
               </div>
               <div style="grid-column: span 2;">
-                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Description / Item</label>
-                <input type="text" id="lfDescMob" placeholder="Description or item..." oninput="syncAndFilterLedger('desc', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
+                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Product / Particulars</label>
+                <input type="text" id="lfProductMob" placeholder="Product name or details..." oninput="syncAndFilterLedger('product', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Quantity (Qty)</label>
+                <input type="text" id="lfQtyMob" placeholder="Qty..." oninput="syncAndFilterLedger('qty', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
+              </div>
+              <div>
+                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Rate (₹)</label>
+                <input type="text" id="lfRateMob" placeholder="Rate..." oninput="syncAndFilterLedger('rate', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
               </div>
               <div>
                 <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Type</label>
@@ -5888,7 +5896,7 @@
                 <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Credit (₹)</label>
                 <input type="text" id="lfCreditMob" placeholder="Credit..." oninput="syncAndFilterLedger('credit', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
               </div>
-              <div style="grid-column: span 2;">
+              <div>
                 <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Running Balance (₹)</label>
                 <input type="text" id="lfBalanceMob" placeholder="Balance..." oninput="syncAndFilterLedger('balance', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
               </div>
@@ -5899,26 +5907,28 @@
             <table class="responsive-table-cards" id="ledgerTable" style="width: 100%;">
               <thead>
                 <tr>
-                  <th class="admin-only text-center" style="width: 38px; vertical-align: middle;">
+                  <th class="admin-only text-center" style="width: 36px; vertical-align: middle;">
                     <input type="checkbox" id="selectAllLedger" onchange="toggleSelectAllLedger(this)" title="Select All" style="cursor: pointer; width: 16px; height: 16px;">
                   </th>
-                  <th style="width: 95px; vertical-align: middle;">Date</th>
-                  <th style="width: 120px; word-break: break-all; vertical-align: middle;">Voucher No</th>
-                  <th style="vertical-align: middle;">Description</th>
-                  <th class="text-center" style="width: 80px; vertical-align: middle;">Type</th>
-                  <th class="text-right" style="width: 110px; vertical-align: middle;">
+                  <th style="width: 90px; vertical-align: middle;">Date</th>
+                  <th style="width: 85px; vertical-align: middle;">Voucher No</th>
+                  <th style="vertical-align: middle; min-width: 150px;">Product / Particulars</th>
+                  <th class="text-center" style="width: 55px; vertical-align: middle;">Qty</th>
+                  <th class="text-right" style="width: 80px; vertical-align: middle;">Rate (₹)</th>
+                  <th class="text-center" style="width: 70px; vertical-align: middle;">Type</th>
+                  <th class="text-right" style="width: 100px; vertical-align: middle;">
                     <div style="font-size: 11px; font-weight: 700; color: var(--txt);">Debit (₹)</div>
                     <div id="liveDebitHeaderTotal" style="font-size: 12.5px; font-weight: 800; color: var(--dan); white-space: nowrap; margin-top: 2px;">₹0.00</div>
                   </th>
-                  <th class="text-right" style="width: 110px; vertical-align: middle;">
+                  <th class="text-right" style="width: 100px; vertical-align: middle;">
                     <div style="font-size: 11px; font-weight: 700; color: var(--txt);">Credit (₹)</div>
                     <div id="liveCreditHeaderTotal" style="font-size: 12.5px; font-weight: 800; color: var(--suc); white-space: nowrap; margin-top: 2px;">₹0.00</div>
                   </th>
-                  <th class="text-right" style="width: 125px; vertical-align: middle;">
+                  <th class="text-right" style="width: 115px; vertical-align: middle;">
                     <div style="font-size: 11px; font-weight: 700; color: var(--txt);">Running Balance</div>
                     <div id="liveBalanceHeaderTotal" style="font-size: 11.5px; font-weight: 700; color: var(--pri); white-space: nowrap; margin-top: 2px;">Net: ₹0.00</div>
                   </th>
-                  <th class="text-center" style="width: 105px; vertical-align: middle;">Action</th>
+                  <th class="text-center" style="width: 95px; vertical-align: middle;">Action</th>
                 </tr>
                 <tr class="ledger-filter-row" style="background: rgba(0,0,0,0.02);">
                   <th class="admin-only text-center" style="padding: 4px;">
@@ -5928,10 +5938,16 @@
                     <input type="text" id="lfDate" placeholder="Date..." oninput="syncAndFilterLedger('date', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 60px;">
                   </th>
                   <th style="padding: 4px;">
-                    <input type="text" id="lfVoucher" placeholder="Voucher..." oninput="syncAndFilterLedger('voucher', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 70px;">
+                    <input type="text" id="lfVoucher" placeholder="Voucher..." oninput="syncAndFilterLedger('voucher', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 65px;">
                   </th>
                   <th style="padding: 4px;">
-                    <input type="text" id="lfDesc" placeholder="Filter desc/item..." oninput="syncAndFilterLedger('desc', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 100px;">
+                    <input type="text" id="lfProduct" placeholder="Product name..." oninput="syncAndFilterLedger('product', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 110px;">
+                  </th>
+                  <th style="padding: 4px;">
+                    <input type="text" id="lfQty" placeholder="Qty..." oninput="syncAndFilterLedger('qty', this.value)" class="light-form-control text-center" style="font-size: 11px; padding: 3px 4px; height: 26px; width: 100%; margin: 0; min-width: 45px;">
+                  </th>
+                  <th style="padding: 4px;">
+                    <input type="text" id="lfRate" placeholder="Rate..." oninput="syncAndFilterLedger('rate', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 4px; height: 26px; width: 100%; margin: 0; min-width: 55px;">
                   </th>
                   <th style="padding: 4px;">
                     <select id="lfType" onchange="syncAndFilterLedger('type', this.value)" class="light-form-control" style="font-size: 11px; padding: 2px 4px; height: 26px; width: 100%; margin: 0; min-width: 65px;">
@@ -14288,6 +14304,21 @@
       });
     }
 
+    function formatShortVoucherNo(v) {
+      if (!v) return '';
+      const str = String(v).trim();
+      // IMP-1783691307339-182 -> IMP-182
+      const impMatch = str.match(/^IMP-\d+-(\d+)$/);
+      if (impMatch) return `IMP-${impMatch[1]}`;
+      // TXN_1783691307339_182 or TXN_1783691307339-182 or TXN-182
+      const txnMatch = str.match(/^TXN[_-].*?[_-](\d+)$/i);
+      if (txnMatch) return `TXN-${txnMatch[1]}`;
+      // Long timestamped TXN or IMP fallback
+      if (str.startsWith('TXN_') && str.length > 12) return 'TXN-' + str.slice(-5);
+      if (str.startsWith('IMP_') && str.length > 12) return 'IMP-' + str.slice(-5);
+      return str;
+    }
+
     // Party statement print popup
     function viewPartyLedger(id) {
       window._activeLedgerPartyId = id;
@@ -14327,53 +14358,76 @@
         const credit = parseFloat(t.credit || 0);
         runningBal += debit - credit;
         
-        const proofLink = t.proofUrl ? `<a href="javascript:void(0)" onclick="openDocumentViewer('${t.proofUrl}', 'Payment Proof - ${t.voucherNo || t.id}')" style="margin-left:8px; color:var(--acc);" title="View Proof"><i class="fa-solid fa-file-image"></i></a>` : '';
+        const proofLink = t.proofUrl ? `<a href="javascript:void(0)" onclick="openDocumentViewer('${t.proofUrl}', 'Payment Proof - ${t.voucherNo || t.id}')" style="margin-left:6px; color:var(--acc);" title="View Proof"><i class="fa-solid fa-file-image"></i></a>` : '';
         
-        // 1. Clickable Voucher Link
-        const voucherLink = `<a href="javascript:void(0)" onclick="printVoucher('${t.id}')" title="Click to View/Print Invoice" style="color:var(--pri); font-weight:700; text-decoration:underline;">${t.voucherNo || t.id}</a>${proofLink}`;
+        // 1. Shortened Clickable Voucher Link with full voucherNo in tooltip
+        const fullVoucherNo = t.voucherNo || t.id || '';
+        const displayVoucherNo = formatShortVoucherNo(fullVoucherNo);
+        const voucherLink = `<a href="javascript:void(0)" onclick="printVoucher('${t.id}')" title="Full Ref: ${fullVoucherNo} (Click to View/Print)" style="color:var(--pri); font-weight:700; text-decoration:underline;">${displayVoucherNo}</a>${proofLink}`;
         
-        // 2. Build detailed description with Products and Dues
-        let descHTML = `<span style="font-size:13px; font-weight:500;">${t.description || ''}</span>`;
-        
-        let itemsSearchText = '';
-        // Show Products Sold/Purchased
+        // 2. Build detailed Product / Particulars, Qty, and Rate
+        let productHTML = '';
+        let qtyHTML = '';
+        let rateHTML = '';
+
+        let productSearchText = '';
+        let qtySearchText = '';
+        let rateSearchText = '';
+
         if (t.items && Array.isArray(t.items) && t.items.length > 0) {
-          itemsSearchText = t.items.map(x => `${x.productName || ''} ${x.quantity || ''} ${x.unit || ''}`).join(' ');
-          const itemsList = t.items.map(x => `<span style="display:inline-block; background:rgba(229,193,88,0.1); border:1px solid rgba(229,193,88,0.25); border-radius:4px; padding:2px 6px; margin:2px 0; font-size:11px; font-weight:600; color:var(--acc);">${x.productName} (x${x.quantity} ${x.unit || ''})</span>`).join(' ');
+          productHTML = t.items.map(x => `<div style="font-weight:600; color:var(--txt); line-height:1.35; margin-bottom:2px;">${x.productName || 'Item'}</div>`).join('');
+          qtyHTML = t.items.map(x => `<div style="margin-bottom:2px;"><span class="badge" style="background:rgba(59,130,246,0.1); color:var(--pri); font-size:11px; padding:1px 5px; font-weight:600;">${x.quantity || 1}${x.unit ? ' ' + x.unit : ''}</span></div>`).join('');
+          rateHTML = t.items.map(x => `<div style="font-weight:600; color:var(--txt); margin-bottom:2px; line-height:1.35;">${formatCurrency(x.rate || x.price || 0)}</div>`).join('');
+
+          productSearchText = t.items.map(x => x.productName || '').join(' ');
+          qtySearchText = t.items.map(x => `${x.quantity || ''} ${x.unit || ''}`).join(' ');
+          rateSearchText = t.items.map(x => `${x.rate || x.price || ''}`).join(' ');
+
           if (t.description) {
-            descHTML += `<div style="margin-top:4px; display:flex; flex-wrap:wrap; gap:4px;">${itemsList}</div>`;
-          } else {
-            descHTML = `<div style="display:flex; flex-wrap:wrap; gap:4px;">${itemsList}</div>`;
+            productHTML += `<div style="font-size:11px; color:var(--txt2); margin-top:3px; font-style:italic;">${t.description}</div>`;
+            productSearchText += ' ' + t.description;
           }
+        } else {
+          // Receipt, payment, or entry without items
+          const defaultLabel = t.description || (t.txnType === 'Payment' ? 'Payment Made' : (t.txnType === 'Receipt' ? 'Payment Receipt' : t.txnType || 'Transaction'));
+          productHTML = `<div style="font-weight:500; color:var(--txt);">${defaultLabel}</div>`;
+          productSearchText = `${t.description || ''} ${t.txnType || ''}`;
+          qtyHTML = `<div style="color:var(--txt2);">--</div>`;
+          rateHTML = `<div style="color:var(--txt2);">--</div>`;
         }
-        
+
+        // Show Payment Mode Badge if available
+        if (t.paymentMode) {
+          productHTML += `<div style="margin-top:2px;"><span class="badge" style="font-size:10px; padding:1px 5px; background:rgba(100,116,139,0.1); color:var(--txt2); border:1px solid rgba(100,116,139,0.2);"><i class="fa-solid fa-wallet" style="margin-right:3px;"></i>${t.paymentMode}</span></div>`;
+          productSearchText += ' ' + t.paymentMode;
+        }
+
         // Show Invoice Dues Status
         if (t.txnType === 'Sale' || t.txnType === 'Purchase') {
           const dueAmt = t.totals && t.totals.balanceDue ? parseFloat(t.totals.balanceDue) : 0;
           if (dueAmt > 0) {
-            descHTML += `<div style="margin-top:4px;"><span class="badge badge-danger" style="font-size:10px; padding:2px 6px; font-weight:600;"><i class="fa-solid fa-circle-exclamation" style="margin-right:4px;"></i>₹${dueAmt.toFixed(2)} Dues Pending</span></div>`;
+            productHTML += `<div style="margin-top:3px;"><span class="badge badge-danger" style="font-size:10px; padding:1px 6px; font-weight:600;"><i class="fa-solid fa-circle-exclamation" style="margin-right:3px;"></i>₹${dueAmt.toFixed(2)} Dues Pending</span></div>`;
           } else {
-            descHTML += `<div style="margin-top:4px;"><span class="badge badge-success" style="font-size:10px; padding:2px 6px; font-weight:600;"><i class="fa-solid fa-circle-check" style="margin-right:4px;"></i>Fully Paid</span></div>`;
+            productHTML += `<div style="margin-top:3px;"><span class="badge badge-success" style="font-size:10px; padding:1px 6px; font-weight:600;"><i class="fa-solid fa-circle-check" style="margin-right:3px;"></i>Fully Paid</span></div>`;
           }
         }
         
         // Show Cylinder out/in counts in ledger list
         if (t.cylinderOut > 0 || t.cylinderIn > 0) {
-          let cylText = `<div style="margin-top: 4px; display: flex; gap: 4px; flex-wrap: wrap;">`;
+          let cylText = `<div style="margin-top:3px; display:flex; gap:4px; flex-wrap:wrap;">`;
           if (t.cylinderOut > 0) {
-            cylText += `<span class="badge" style="font-size:10px; padding:2px 6px; font-weight:600; background: rgba(59, 130, 246, 0.1); color: var(--pri); border: 1px solid rgba(59, 130, 246, 0.25);"><i class="fa-solid fa-arrow-up-from-bracket" style="margin-right:4px;"></i>Cyl Out: ${t.cylinderOut}</span>`;
+            cylText += `<span class="badge" style="font-size:10px; padding:1px 5px; font-weight:600; background:rgba(59, 130, 246, 0.1); color:var(--pri); border:1px solid rgba(59, 130, 246, 0.25);"><i class="fa-solid fa-arrow-up-from-bracket" style="margin-right:3px;"></i>Cyl Out: ${t.cylinderOut}</span>`;
           }
           if (t.cylinderIn > 0) {
-            cylText += `<span class="badge" style="font-size:10px; padding:2px 6px; font-weight:600; background: rgba(16, 185, 129, 0.1); color: var(--suc); border: 1px solid rgba(16, 185, 129, 0.25);"><i class="fa-solid fa-arrow-down-to-bracket" style="margin-right:4px;"></i>Cyl In: ${t.cylinderIn}</span>`;
+            cylText += `<span class="badge" style="font-size:10px; padding:1px 5px; font-weight:600; background:rgba(16, 185, 129, 0.1); color:var(--suc); border:1px solid rgba(16, 185, 129, 0.25);"><i class="fa-solid fa-arrow-down-to-bracket" style="margin-right:3px;"></i>Cyl In: ${t.cylinderIn}</span>`;
           }
           cylText += `</div>`;
-          descHTML += cylText;
+          productHTML += cylText;
         }
 
         const dateFormatted = formatDate(t.date);
         const rawDate = t.date || '';
-        const voucherStr = t.voucherNo || t.id || '';
-        const descFilterText = `${t.description || ''} ${itemsSearchText}`.toLowerCase().replace(/"/g, '&quot;');
+        const voucherFilterText = `${fullVoucherNo} ${displayVoucherNo}`.toLowerCase();
         const txnType = t.txnType || '';
         
         const actionCell = `
@@ -14390,18 +14444,22 @@
           <tr class="ledger-row"
               data-id="${t.id}"
               data-date="${dateFormatted.toLowerCase()} ${rawDate}"
-              data-voucher="${voucherStr.toLowerCase()}"
-              data-desc="${descFilterText}"
+              data-voucher="${voucherFilterText}"
+              data-product="${productSearchText.toLowerCase().replace(/"/g, '&quot;')}"
+              data-qty="${qtySearchText.toLowerCase().replace(/"/g, '&quot;')}"
+              data-rate="${rateSearchText.toLowerCase().replace(/"/g, '&quot;')}"
               data-type="${txnType.toLowerCase()}"
               data-debit="${debit}"
               data-credit="${credit}"
               data-balance="${runningBal.toFixed(2)}">
-            <td class="admin-only text-center" data-label="Select" style="width: 38px;">
+            <td class="admin-only text-center" data-label="Select" style="width: 36px;">
               <input type="checkbox" class="ledger-select-checkbox" data-id="${t.id}" onchange="updateSelectedLedgerCount()" style="cursor: pointer; width: 16px; height: 16px;">
             </td>
             <td data-label="Date">${dateFormatted}</td>
             <td data-label="Voucher No" style="word-break: break-all;"><strong>${voucherLink}</strong></td>
-            <td data-label="Description">${descHTML}</td>
+            <td data-label="Product / Particulars">${productHTML}</td>
+            <td data-label="Qty" class="text-center">${qtyHTML}</td>
+            <td data-label="Rate (₹)" class="text-right">${rateHTML}</td>
             <td data-label="Type" class="text-center"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
             <td data-label="Debit (₹)" class="text-right text-danger">${debit > 0 ? formatCurrency(debit) : '--'}</td>
             <td data-label="Credit (₹)" class="text-right text-success">${credit > 0 ? formatCurrency(credit) : '--'}</td>
@@ -14484,7 +14542,7 @@
     }
 
     function resetLedgerFilters(runFilter = true) {
-      ['lfDate', 'lfVoucher', 'lfDesc', 'lfDebit', 'lfCredit', 'lfBalance'].forEach(id => {
+      ['lfDate', 'lfVoucher', 'lfProduct', 'lfQty', 'lfRate', 'lfDebit', 'lfCredit', 'lfBalance'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
         const mobEl = document.getElementById(id + 'Mob');
@@ -14613,7 +14671,9 @@
     function filterLedgerTable() {
       const fDate = (document.getElementById('lfDate')?.value || '').trim().toLowerCase();
       const fVoucher = (document.getElementById('lfVoucher')?.value || '').trim().toLowerCase();
-      const fDesc = (document.getElementById('lfDesc')?.value || '').trim().toLowerCase();
+      const fProduct = (document.getElementById('lfProduct')?.value || '').trim().toLowerCase();
+      const fQty = (document.getElementById('lfQty')?.value || '').trim().toLowerCase();
+      const fRate = (document.getElementById('lfRate')?.value || '').trim().toLowerCase();
       const fType = (document.getElementById('lfType')?.value || 'All').trim().toLowerCase();
       const fDebit = (document.getElementById('lfDebit')?.value || '').trim();
       const fCredit = (document.getElementById('lfCredit')?.value || '').trim();
@@ -14643,7 +14703,9 @@
       rows.forEach(tr => {
         const dDate = tr.dataset.date || '';
         const dVoucher = tr.dataset.voucher || '';
-        const dDesc = tr.dataset.desc || '';
+        const dProduct = tr.dataset.product || '';
+        const dQty = tr.dataset.qty || '';
+        const dRate = tr.dataset.rate || '';
         const dType = tr.dataset.type || '';
         const dDebit = tr.dataset.debit || '0';
         const dCredit = tr.dataset.credit || '0';
@@ -14651,13 +14713,15 @@
 
         const matchDate = !fDate || dDate.includes(fDate);
         const matchVoucher = !fVoucher || dVoucher.includes(fVoucher);
-        const matchDesc = !fDesc || dDesc.includes(fDesc);
+        const matchProduct = !fProduct || dProduct.includes(fProduct);
+        const matchQty = !fQty || dQty.includes(fQty);
+        const matchRate = !fRate || dRate.includes(fRate);
         const matchType = !fType || fType === 'all' || dType === fType;
         const matchDebit = matchNumeric(dDebit, fDebit);
         const matchCredit = matchNumeric(dCredit, fCredit);
         const matchBalance = matchNumeric(dBalance, fBalance);
 
-        if (matchDate && matchVoucher && matchDesc && matchType && matchDebit && matchCredit && matchBalance) {
+        if (matchDate && matchVoucher && matchProduct && matchQty && matchRate && matchType && matchDebit && matchCredit && matchBalance) {
           tr.style.display = '';
           visibleCount++;
         } else {
@@ -14671,7 +14735,7 @@
       if (visibleCount === 0 && rows.length > 0) {
         const noMatchRow = document.createElement('tr');
         noMatchRow.id = 'ledgerNoMatchRow';
-        noMatchRow.innerHTML = `<td colspan="9" class="text-center" style="padding: 24px; color: var(--txt2); font-style: italic;"><i class="fa-solid fa-filter-circle-xmark" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>No matching ledger entries found.</td>`;
+        noMatchRow.innerHTML = `<td colspan="11" class="text-center" style="padding: 24px; color: var(--txt2); font-style: italic;"><i class="fa-solid fa-filter-circle-xmark" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>No matching ledger entries found.</td>`;
         document.getElementById('ledgerTableBody').appendChild(noMatchRow);
       }
 
@@ -15068,7 +15132,8 @@
       const ledger = App.data.transactions.filter(t => t.partyId === p.id);
       const sortedLedger = ledger.sort((a, b) => new Date(a.date) - new Date(b.date));
       
-      let runningBal = parseFloat(p.openingBalance || 0);
+      const openingBal = parseFloat(p.openingBalance || 0);
+      let runningBal = openingBal;
       let tableRows = '';
       
       // Add Opening Balance Row
@@ -15076,11 +15141,13 @@
       tableRows += `
         <tr>
           <td style="color: #64748B; font-style: italic;">--</td>
-          <td style="font-weight: 600; color: #475569; font-style: italic;">Opening Balance</td>
-          <td style="color: #64748B; font-style: italic;">Initial balance at start</td>
-          <td style="font-weight: 600; color: #475569; font-style: italic;">--</td>
-          <td class="text-right">--</td>
-          <td class="text-right">--</td>
+          <td style="font-weight: 600; color: #475569; font-style: italic;">OPENING-BAL</td>
+          <td style="color: #64748B; font-style: italic;">Opening Balance Brought Forward</td>
+          <td class="text-center" style="color: #64748B;">--</td>
+          <td class="text-right" style="color: #64748B;">--</td>
+          <td class="text-center" style="font-weight: 600; color: #475569; font-style: italic;">--</td>
+          <td class="text-right">${openingBal > 0 ? '₹' + openingBal.toFixed(2) : '--'}</td>
+          <td class="text-right">${openingBal < 0 ? '₹' + Math.abs(openingBal).toFixed(2) : '--'}</td>
           <td class="text-right text-bold" style="color: ${runningBal > 0 ? '#EF4444' : (runningBal < 0 ? '#22C55E' : '#334155')}">${initialDisplayBal}</td>
         </tr>
       `;
@@ -15094,18 +15161,38 @@
         const displayCredit = credit === 0 ? '--' : `₹${credit.toFixed(2)}`;
         const displayBal = runningBal === 0 ? '₹0.00' : (runningBal > 0 ? `₹${runningBal.toFixed(2)} (Dr)` : `₹${Math.abs(runningBal).toFixed(2)} (Cr)`);
         
-        let itemsList = '';
+        let prodHTML = '';
+        let qtyHTML = '';
+        let rateHTML = '';
+
         if (t.items && Array.isArray(t.items) && t.items.length > 0) {
-          itemsList = ' | ' + t.items.map(x => `${x.productName} (x${x.quantity})`).join(', ');
+          prodHTML = t.items.map(x => `<div style="font-weight:600; line-height:1.35;">${x.productName || 'Item'}</div>`).join('');
+          qtyHTML = t.items.map(x => `<div style="line-height:1.35;">${x.quantity || 1}${x.unit ? ' ' + x.unit : ''}</div>`).join('');
+          rateHTML = t.items.map(x => `<div style="line-height:1.35;">₹${parseFloat(x.rate || x.price || 0).toFixed(2)}</div>`).join('');
+          if (t.description) {
+            prodHTML += `<div style="font-size:11px; color:#64748B; font-style:italic; margin-top:2px;">${t.description}</div>`;
+          }
+        } else {
+          let descText = t.description || (t.txnType === 'Payment' ? 'Payment Made' : (t.txnType === 'Receipt' ? 'Payment Receipt' : t.txnType || 'Transaction'));
+          if (t.paymentMode) {
+            descText += ` (${t.paymentMode})`;
+          }
+          prodHTML = `<div style="font-weight:500;">${descText}</div>`;
+          qtyHTML = '--';
+          rateHTML = '--';
         }
-        const description = (t.description || '') + itemsList;
+
+        const fullVoucherNo = t.voucherNo || t.id || '';
+        const displayVoucher = formatShortVoucherNo(fullVoucherNo);
 
         tableRows += `
           <tr>
             <td>${formatDate(t.date)}</td>
-            <td class="text-bold">${t.voucherNo || t.id}</td>
-            <td>${description}</td>
-            <td><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-dr' : 'badge-cr'}">${t.txnType}</span></td>
+            <td class="text-bold" title="${fullVoucherNo}">${displayVoucher}</td>
+            <td>${prodHTML}</td>
+            <td class="text-center">${qtyHTML}</td>
+            <td class="text-right">${rateHTML}</td>
+            <td class="text-center"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-dr' : 'badge-cr'}">${t.txnType}</span></td>
             <td class="text-right" style="color: ${debit > 0 ? '#EF4444' : '#334155'}">${displayDebit}</td>
             <td class="text-right" style="color: ${credit > 0 ? '#22C55E' : '#334155'}">${displayCredit}</td>
             <td class="text-right text-bold" style="color: ${runningBal > 0 ? '#EF4444' : (runningBal < 0 ? '#22C55E' : '#334155')}">${displayBal}</td>
@@ -15200,6 +15287,9 @@
               .text-right {
                 text-align: right;
               }
+              .text-center {
+                text-align: center;
+              }
               .text-bold {
                 font-weight: 600;
               }
@@ -15278,13 +15368,15 @@
             <table>
               <thead>
                 <tr>
-                  <th style="width: 12%;">Date</th>
-                  <th style="width: 15%;">Voucher No</th>
-                  <th>Description</th>
-                  <th style="width: 10%;">Type</th>
-                  <th class="text-right" style="width: 12%;">Debit</th>
-                  <th class="text-right" style="width: 12%;">Credit</th>
-                  <th class="text-right" style="width: 18%;">Balance</th>
+                  <th style="width: 10%;">Date</th>
+                  <th style="width: 11%;">Voucher No</th>
+                  <th>Product / Particulars</th>
+                  <th class="text-center" style="width: 8%;">Qty</th>
+                  <th class="text-right" style="width: 10%;">Rate (₹)</th>
+                  <th class="text-center" style="width: 8%;">Type</th>
+                  <th class="text-right" style="width: 11%;">Debit (₹)</th>
+                  <th class="text-right" style="width: 11%;">Credit (₹)</th>
+                  <th class="text-right" style="width: 14%;">Balance (₹)</th>
                 </tr>
               </thead>
               <tbody>
@@ -15550,8 +15642,10 @@
         'S.No',
         'Date',
         'Voucher No',
+        'Product / Particulars',
+        'Qty',
+        'Rate (₹)',
         'Type',
-        'Description / Items',
         'Payment Mode',
         'Cyl Out',
         'Cyl In',
@@ -15564,8 +15658,10 @@
         1,
         formatDate(p.createdAt || new Date()),
         'OPENING-BAL',
-        'Opening Balance',
         'Opening Balance Brought Forward',
+        '--',
+        '--',
+        'Opening Balance',
         '--',
         0,
         0,
@@ -15591,18 +15687,34 @@
         totalCylOut += cylOut;
         totalCylIn += cylIn;
 
-        let itemDetails = t.description || '';
+        let prodText = '';
+        let qtyText = '--';
+        let rateText = '--';
+
         if (t.items && Array.isArray(t.items) && t.items.length > 0) {
-          const itemsStr = t.items.map(x => `${x.productName} (Qty: ${x.quantity}${x.unit ? ' ' + x.unit : ''})`).join('; ');
-          itemDetails = itemDetails ? `${itemDetails} | ${itemsStr}` : itemsStr;
+          prodText = t.items.map(x => x.productName || 'Item').join(', ');
+          if (t.description) {
+            prodText += ` | ${t.description}`;
+          }
+          qtyText = t.items.map(x => `${x.quantity || 1}${x.unit ? ' ' + x.unit : ''}`).join(', ');
+          rateText = t.items.map(x => (x.rate || x.price || 0)).join(', ');
+        } else {
+          prodText = t.description || (t.txnType === 'Payment' ? 'Payment Made' : (t.txnType === 'Receipt' ? 'Payment Receipt' : t.txnType || 'Transaction'));
+          qtyText = '--';
+          rateText = '--';
         }
+
+        const fullVoucherNo = t.voucherNo || t.id || '';
+        const displayVoucher = formatShortVoucherNo(fullVoucherNo);
 
         rows.push([
           idx + 2,
           formatDate(t.date),
-          t.voucherNo || t.id,
+          displayVoucher,
+          prodText,
+          qtyText,
+          rateText,
           t.txnType || 'Txn',
-          itemDetails,
           t.paymentMode || 'Cash',
           cylOut,
           cylIn,
@@ -15620,15 +15732,17 @@
         '',
         '',
         '',
+        '',
+        '',
         totalCylOut,
         totalCylIn,
         totalDebit,
         totalCredit,
         runningBal
       ]);
-      rows.push(['CLOSING OUTSTANDING BALANCE:', '', '', '', '', '', '', '', '', '', runningBal]);
+      rows.push(['CLOSING OUTSTANDING BALANCE:', '', '', '', '', '', '', '', '', '', '', '', runningBal]);
 
-      const colWidths = [8, 14, 18, 14, 35, 14, 10, 10, 16, 16, 18];
+      const colWidths = [8, 14, 16, 32, 12, 12, 12, 14, 10, 10, 16, 16, 18];
       const filename = `${p.name}_Ledger_Statement`;
       exportToExcelOrCsv(filename, 'Statement', rows, colWidths);
     }
@@ -15682,7 +15796,7 @@
         rows.push([
           idx + 1,
           formatDate(t.date),
-          t.voucherNo || t.id,
+          formatShortVoucherNo(t.voucherNo || t.id),
           t.txnType,
           debit > 0 ? debit : 0,
           credit > 0 ? credit : 0,
