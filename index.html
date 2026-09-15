@@ -7569,76 +7569,90 @@
     }
 
     // ==================== GOOGLE GEMINI AI HELPERS ====================
-    async function callGeminiAI(prompt, systemInstruction = '') {
-      const apiKey = App.data.companyProfile && App.data.companyProfile.geminiApiKey;
-      if (!apiKey) {
-        throw new Error("Gemini AI API Key is not configured. Please add it in App Settings.");
-      }
+    // Model priority list — tries each in order on failure
+    const GEMINI_MODELS = [
+      'gemini-3.8-flash',
+      'gemini-3.7-flash',
+      'gemini-3.6-flash',
+      'gemini-2.0-flash',
+    ];
 
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
-      
-      const requestBody = {
-        contents: [{
-          parts: [{ text: prompt }]
-        }]
-      };
-
-      if (systemInstruction) {
-        requestBody.systemInstruction = {
-          parts: [{ text: systemInstruction }]
-        };
-      }
-
+    async function _geminiRequest(apiKey, modelName, requestBody) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
       const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
       });
-
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error?.message || `HTTP error! status: ${response.status}`);
+        const msg = errData.error?.message || `HTTP ${response.status}`;
+        const err = new Error(msg);
+        err.status = response.status;
+        throw err;
       }
-
       const data = await response.json();
       return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     }
 
+    async function callGeminiAI(prompt, systemInstruction = '') {
+      const apiKey = App.data.companyProfile && App.data.companyProfile.geminiApiKey;
+      if (!apiKey) throw new Error("Gemini AI API Key is not configured. Please add it in App Settings.");
+
+      const requestBody = { contents: [{ parts: [{ text: prompt }] }] };
+      if (systemInstruction) requestBody.systemInstruction = { parts: [{ text: systemInstruction }] };
+
+      let lastErr;
+      for (const model of GEMINI_MODELS) {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            return await _geminiRequest(apiKey, model, requestBody);
+          } catch (e) {
+            lastErr = e;
+            const isRetryable = e.status === 503 || (e.message && (e.message.includes('high demand') || e.message.includes('overloaded') || e.message.includes('temporarily')));
+            const isNotFound = e.message && (e.message.includes('not found') || e.message.includes('not supported') || e.message.includes('no longer available'));
+            if (isNotFound) break; // try next model
+            if (isRetryable && attempt < 3) {
+              await new Promise(r => setTimeout(r, 1500 * attempt));
+              continue;
+            }
+            if (!isRetryable) break; // non-retryable error, try next model
+          }
+        }
+      }
+      throw lastErr || new Error('AI request failed. Please try again.');
+    }
+
     async function callGeminiVision(prompt, base64Data, mimeType) {
       const apiKey = App.data.companyProfile && App.data.companyProfile.geminiApiKey;
-      if (!apiKey) {
-        throw new Error("Gemini AI API Key is not configured. Please add it in App Settings.");
-      }
-
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${apiKey}`;
+      if (!apiKey) throw new Error("Gemini AI API Key is not configured. Please add it in App Settings.");
 
       const requestBody = {
-        contents: [{
-          parts: [
-            { text: prompt },
-            {
-              inlineData: {
-                mimeType: mimeType,
-                data: base64Data
-              }
-            }
-          ]
-        }]
+        contents: [{ parts: [
+          { text: prompt },
+          { inlineData: { mimeType: mimeType, data: base64Data } }
+        ]}]
       };
 
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody)
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.error?.message || `HTTP error! status: ${response.status}`);
+      let lastErr;
+      for (const model of GEMINI_MODELS) {
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          try {
+            return await _geminiRequest(apiKey, model, requestBody);
+          } catch (e) {
+            lastErr = e;
+            const isRetryable = e.status === 503 || (e.message && (e.message.includes('high demand') || e.message.includes('overloaded') || e.message.includes('temporarily')));
+            const isNotFound = e.message && (e.message.includes('not found') || e.message.includes('not supported') || e.message.includes('no longer available'));
+            if (isNotFound) break;
+            if (isRetryable && attempt < 3) {
+              await new Promise(r => setTimeout(r, 1500 * attempt));
+              continue;
+            }
+            if (!isRetryable) break;
+          }
+        }
       }
-
-      const data = await response.json();
-      return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      throw lastErr || new Error('AI Vision request failed. Please try again.');
     }
 
     // ==================== AI OCR FUNCTIONS ====================
