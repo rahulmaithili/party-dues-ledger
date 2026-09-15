@@ -2215,6 +2215,7 @@
         border-collapse: separate !important;
         border-spacing: 0 !important;
         width: 100% !important;
+        background: transparent !important;
       }
       #ledgerModal #ledgerTable thead {
         display: none !important;
@@ -2229,81 +2230,406 @@
         display: block !important;
         background: var(--card) !important;
         border: 1px solid var(--brd) !important;
-        border-radius: 10px !important;
-        padding: 10px 12px !important;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+        border-radius: 12px !important;
+        padding: 11px 12px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.03) !important;
         box-sizing: border-box !important;
       }
       body.dark-theme #ledgerModal #ledgerTable tbody tr.ledger-row {
         background: #151F32 !important;
         border-color: rgba(255, 255, 255, 0.08) !important;
       }
-      #ledgerModal #ledgerTable tbody td {
+
+      .ledger-desktop-cell {
+        display: none !important;
+      }
+      .ledger-mobile-cell {
+        display: block !important;
+        width: 100% !important;
+        padding: 0 !important;
+        border: none !important;
+        background: transparent !important;
+      }
+      .ledger-mobile-cell::before {
+        display: none !important;
+        content: none !important;
+      }
+
+      /* Mobile Card Elements (Matches mobile_design_preview.html) */
+      .lmc-card {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+        box-sizing: border-box;
+      }
+      .lmc-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-bottom: 7px;
+        border-bottom: 1px solid rgba(0,0,0,0.06);
+      }
+      body.dark-theme .lmc-header {
+        border-bottom-color: rgba(255,255,255,0.07);
+      }
+      .lmc-header-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .lmc-voucher {
+        font-weight: 700;
+        font-size: 13px;
+      }
+      .lmc-badge {
+        font-size: 10.5px;
+        font-weight: 700;
+        padding: 2px 7px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+      .lmc-badge.badge-sale {
+        background: rgba(59, 130, 246, 0.12);
+        color: var(--pri);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+      }
+      .lmc-badge.badge-receipt {
+        background: rgba(16, 185, 129, 0.12);
+        color: var(--suc);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+      }
+      .lmc-badge.badge-purchase {
+        background: rgba(245, 158, 11, 0.12);
+        color: var(--war);
+        border: 1px solid rgba(245, 158, 11, 0.25);
+      }
+      .lmc-badge.badge-payment {
+        background: rgba(239, 68, 68, 0.12);
+        color: var(--dan);
+        border: 1px solid rgba(239, 68, 68, 0.25);
+      }
+      .lmc-date {
+        font-size: 11.5px;
+        color: var(--txt2);
+        font-weight: 500;
+      }
+      .lmc-items-box {
+        background: var(--bg);
+        border-radius: 8px;
+        padding: 8px 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        box-sizing: border-box;
+        border: 1px solid rgba(0,0,0,0.03);
+      }
+      body.dark-theme .lmc-items-box {
+        background: #0F172A;
+        border-color: rgba(255,255,255,0.05);
+      }
+      .lmc-item-line {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12px;
+        gap: 6px;
+      }
+      .lmc-item-line:not(:last-child) {
+        border-bottom: 1px dashed rgba(0,0,0,0.05);
+        padding-bottom: 4px;
+      }
+      body.dark-theme .lmc-item-line:not(:last-child) {
+        border-bottom-color: rgba(255,255,255,0.06);
+      }
+      .lmc-item-name {
+        font-weight: 600;
+        color: var(--txt);
+        word-break: break-word;
+        flex: 1;
+      }
+      .lmc-item-meta {
+        font-size: 11.5px;
+        color: var(--txt2);
+        font-weight: 500;
+        white-space: nowrap;
+        text-align: right;
+      }
+      .lmc-item-desc {
+        font-size: 11px;
+        color: var(--txt2);
+        font-style: italic;
+        margin-top: 2px;
+      }
+      .lmc-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 4px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .lmc-amounts {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .lmc-amt-group {
+        display: flex;
+        align-items: baseline;
+        gap: 4px;
+      }
+      .lmc-label {
+        font-size: 10.5px;
+        color: var(--txt2);
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .lmc-amt-val {
+        font-size: 13.5px;
+        font-weight: 800;
+      }
+      .lmc-bal-val {
+        font-size: 13.5px;
+        font-weight: 800;
+        color: var(--txt);
+      }
+      .lmc-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-left: auto;
+      }
+      .lmc-actions .btn-action-pill {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+      }
+      .ledger-toolbar {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        margin-bottom: 10px !important;
+      }
+      .ledger-toolbar-top {
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
-        padding: 5px 0 !important;
-        border-bottom: 1px solid rgba(0,0,0,0.05) !important;
-        border-right: none !important;
-        border-top: none !important;
-        border-left: none !important;
-        font-size: 12.5px !important;
-        text-align: right !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-        background: transparent !important;
+        width: 100% !important;
       }
-      body.dark-theme #ledgerModal #ledgerTable tbody td {
-        border-bottom-color: rgba(255, 255, 255, 0.06) !important;
-        background: transparent !important;
-      }
-      #ledgerModal #ledgerTable tbody td::before {
-        content: attr(data-label);
-        font-weight: 600;
-        font-size: 11px;
-        color: var(--txt2);
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        text-align: left;
-        margin-right: 10px;
-        flex-shrink: 0;
-      }
-      #ledgerModal #ledgerTable tbody td[data-label="Product / Particulars"] {
-        flex-direction: column !important;
-        align-items: flex-start !important;
-        text-align: left !important;
-        gap: 3px !important;
-      }
-      #ledgerModal #ledgerTable tbody td[data-label="Product / Particulars"]::before {
-        margin-bottom: 2px !important;
-      }
-      #ledgerModal #ledgerTable tbody td[data-label="Action"] {
-        border-bottom: none !important;
-        padding-top: 8px !important;
-        margin-top: 4px !important;
-        border-top: 1px dashed var(--brd) !important;
-        justify-content: flex-end !important;
+      .ledger-live-bar {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
         gap: 6px !important;
+        width: 100% !important;
       }
-      #ledgerModal #ledgerTable tbody td[data-label="Action"]::before {
-        content: "" !important;
+      .ledger-live-card {
+        background: var(--card) !important;
+        border: 1px solid var(--brd) !important;
+        border-radius: 8px !important;
+        padding: 5px 4px !important;
+        text-align: center !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      .ledger-live-card .live-label {
+        font-size: 9.5px !important;
+        color: var(--txt2) !important;
+        font-weight: 600 !important;
+      }
+      .ledger-live-card .live-val {
+        font-size: 11.5px !important;
+        font-weight: 800 !important;
+        margin-top: 1px !important;
+      }
+    }
+
+    /* Party Ledger Summary Card (Mobile & Desktop) */
+    .party-ledger-summary-card {
+      background: #F8FAFC;
+      border: 1px solid var(--brd);
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    body.dark-theme .party-ledger-summary-card {
+      background: #151F32;
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    .plsc-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    .plsc-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--txt);
+      margin: 0 0 3px 0;
+    }
+    .plsc-sub {
+      font-size: 11.5px;
+      color: var(--txt2);
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .plsc-right {
+      text-align: right;
+      flex-shrink: 0;
+    }
+    .plsc-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--txt2);
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .plsc-closing-val {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--dan);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: flex-end;
+    }
+    .plsc-bottom {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(0,0,0,0.06);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      color: var(--txt2);
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    body.dark-theme .plsc-bottom {
+      border-top-color: rgba(255, 255, 255, 0.06);
+    }
+    .plsc-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .plsc-cyl-pill {
+      color: var(--pri);
+      font-weight: 600;
+    }
+
+    /* Ledger Modal Tabs */
+    .ledger-modal-tabs {
+      display: flex !important;
+      gap: 8px !important;
+      margin-bottom: 12px !important;
+      border-bottom: 1px solid var(--brd) !important;
+      padding-bottom: 8px !important;
+    }
+    .ledger-modal-tabs button {
+      height: 34px !important;
+      padding: 6px 14px !important;
+      font-size: 12.5px !important;
+      font-weight: 600 !important;
+      border-radius: 8px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    /* Ledger Toolbar & Live Calculations (Base & Desktop) */
+    .ledger-toolbar {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .ledger-toolbar-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .ledger-live-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      width: 100%;
+    }
+    .ledger-live-card {
+      background: var(--card);
+      border: 1px solid var(--brd);
+      border-radius: 8px;
+      padding: 6px 8px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    }
+    body.dark-theme .ledger-live-card {
+      background: #151F32;
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+    .ledger-live-card .live-label {
+      font-size: 10px;
+      color: var(--txt2);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .ledger-live-card .live-val {
+      font-size: 12.5px;
+      font-weight: 800;
+      margin-top: 1px;
+    }
+    .ledger-live-card.card-debit {
+      border-color: rgba(239, 68, 68, 0.25);
+      background: rgba(239, 68, 68, 0.03);
+    }
+    .ledger-live-card.card-credit {
+      border-color: rgba(16, 185, 129, 0.25);
+      background: rgba(16, 185, 129, 0.03);
+    }
+    .ledger-live-card.card-net {
+      border-color: rgba(59, 130, 246, 0.25);
+      background: rgba(59, 130, 246, 0.03);
+    }
+
+    /* Tablet & Desktop rules (>= 769px) */
+    @media (min-width: 769px) {
+      .ledger-mobile-cell {
         display: none !important;
       }
-      #ledgerModal #ledgerTable tbody td[data-label="Select"] {
+      .ledger-desktop-cell {
+        display: table-cell !important;
+      }
+      .ledger-toolbar {
+        flex-direction: row !important;
         justify-content: space-between !important;
-        padding: 6px 0 !important;
+        align-items: center !important;
       }
-      #ledgerModal #ledgerTable tbody td[data-label="Debit (₹)"] {
-        color: var(--dan) !important;
-        font-weight: 700 !important;
+      .ledger-toolbar-top {
+        width: auto !important;
       }
-      #ledgerModal #ledgerTable tbody td[data-label="Credit (₹)"] {
-        color: var(--suc) !important;
-        font-weight: 700 !important;
+      .ledger-live-bar {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        width: auto !important;
+        margin-left: auto !important;
       }
-      #ledgerModal #ledgerTable tbody td[data-label="Balance (₹)"] {
-        font-weight: 800 !important;
-        font-size: 13px !important;
+      .ledger-live-card {
+        flex-direction: row !important;
+        align-items: center !important;
+        gap: 6px !important;
+        padding: 4px 10px !important;
       }
     }
 
@@ -6146,49 +6472,70 @@
         <i class="fa-solid fa-xmark pointer" onclick="closeModal('ledgerModal')"></i>
       </div>
       <div class="modal-body" style="min-width: 0; overflow-x: hidden;">
-        <div class="grid-2" style="background:#F8FAFC; padding:16px; border-radius:var(--r); margin-bottom:20px; font-size:13.5px;">
-          <div>
-            <p><strong>Party Name:</strong> <span id="ledgerPartyName">Loading...</span></p>
-            <p><strong>Mobile:</strong> <span id="ledgerPartyMobile">Loading...</span></p>
-            <p class="gst-only"><strong>GSTIN:</strong> <span id="ledgerPartyGstin">--</span></p>
+        <!-- Party Quick Summary Card -->
+        <div class="party-ledger-summary-card">
+          <div class="plsc-top">
+            <div class="plsc-left">
+              <h3 id="ledgerPartyName" class="plsc-name">Loading...</h3>
+              <div class="plsc-sub">
+                <span><i class="fa-solid fa-phone" style="font-size:10px; margin-right:4px;"></i><span id="ledgerPartyMobile">--</span></span>
+                <span class="gst-only" id="ledgerPartyGstinWrap" style="margin-left:8px; display:none;"><i class="fa-solid fa-receipt" style="font-size:10px; margin-right:4px;"></i><span id="ledgerPartyGstin">--</span></span>
+              </div>
+            </div>
+            <div class="plsc-right">
+              <span class="plsc-label">Closing Balance</span>
+              <div class="plsc-closing-val">
+                <span id="ledgerClosingBalance">₹0.00</span>
+              </div>
+            </div>
           </div>
-          <div class="text-right">
-            <p><strong>Opening Balance:</strong> <span id="ledgerOpeningBalance">₹0.00</span></p>
-            <p style="font-size: 16px; font-weight:700; margin-top:4px;"><strong>Closing Balance:</strong> <span id="ledgerClosingBalance">₹0.00</span></p>
-            <p style="font-size: 13.5px; font-weight:600; margin-top:4px; color: var(--acc);"><strong>Cylinders Holding:</strong> <span id="ledgerCylindersHolding">0</span></p>
+          <div class="plsc-bottom">
+            <div class="plsc-pill">
+              <span>Opening:</span>
+              <strong id="ledgerOpeningBalance" style="color:var(--txt);">₹0.00</strong>
+            </div>
+            <div class="plsc-pill plsc-cyl-pill">
+              <span><i class="fa-solid fa-gas-pump" style="margin-right:4px;"></i>Cylinders Holding:</span>
+              <span id="ledgerCylindersHolding">0</span>
+            </div>
           </div>
         </div>
-        <div class="tabs" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--brd); padding-bottom: 10px;">
-          <button class="btn btn-primary" id="btnLedgerTab" onclick="switchLedgerTab('ledger')">Account Statement</button>
-          <button class="btn btn-secondary hide-for-party" id="btnFollowupTab" onclick="switchLedgerTab('followup')">CRM Follow-ups</button>
+
+        <div class="tabs ledger-modal-tabs">
+          <button class="btn btn-primary" id="btnLedgerTab" onclick="switchLedgerTab('ledger')"><i class="fa-solid fa-file-invoice" style="margin-right:5px;"></i>Account Statement</button>
+          <button class="btn btn-secondary hide-for-party" id="btnFollowupTab" onclick="switchLedgerTab('followup')"><i class="fa-solid fa-comments" style="margin-right:5px;"></i>CRM Follow-ups</button>
         </div>
 
         <div id="ledgerTabContent">
           <!-- Ledger Toolbar: Bulk Actions, Live Calculation Badges & Counters -->
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
-            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-              <span id="ledgerFilteredCount" style="font-size: 12.5px; color: var(--txt2); font-weight: 600;"></span>
-              <span id="ledgerCalcBadge" style="background: rgba(59, 130, 246, 0.1); color: var(--pri); border: 1px solid rgba(59, 130, 246, 0.25); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">Live: All</span>
-              <button type="button" class="btn btn-secondary btn-sm" id="btnToggleMobileLedgerFilters" onclick="toggleMobileLedgerFilters()" style="display: none; height: 30px; font-size: 12px; align-items: center; gap: 6px;">
-                <i class="fa-solid fa-filter"></i> Filters
-              </button>
+          <div class="ledger-toolbar">
+            <div class="ledger-toolbar-top">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span id="ledgerFilteredCount" style="font-size: 12.5px; color: var(--txt2); font-weight: 600;"></span>
+                <span id="ledgerCalcBadge" style="background: rgba(59, 130, 246, 0.1); color: var(--pri); border: 1px solid rgba(59, 130, 246, 0.25); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">Live: All</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnToggleMobileLedgerFilters" onclick="toggleMobileLedgerFilters()" style="display: none; height: 30px; font-size: 12px; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-filter"></i> Filters
+                </button>
+                <button class="btn admin-only" id="btnBulkDeleteLedger" onclick="bulkDeleteLedgerTransactions()" style="display: none; background: var(--dan); color: white; border: none; font-weight: 700; height: 30px; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border-radius: var(--r); cursor: pointer; font-size: 11.5px; white-space: nowrap;">
+                  <i class="fa-solid fa-trash-can"></i> Delete (<span id="selectedLedgerCount">0</span>)
+                </button>
+              </div>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px; margin-left: auto; flex-wrap: wrap;">
-              <div style="display: inline-flex; align-items: center; gap: 5px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.25); border-radius: 6px; padding: 3px 8px; font-size: 12px;">
-                <span style="color: var(--txt2); font-weight: 600; font-size: 11px;">Debit (Sale):</span>
-                <strong id="barDebitTotal" style="color: var(--dan); font-size: 12.5px; font-weight: 800;">₹0.00</strong>
+            <div class="ledger-live-bar">
+              <div class="ledger-live-card card-debit">
+                <span class="live-label">Debit (Sale)</span>
+                <strong id="barDebitTotal" class="live-val text-danger">₹0.00</strong>
               </div>
-              <div style="display: inline-flex; align-items: center; gap: 5px; background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.25); border-radius: 6px; padding: 3px 8px; font-size: 12px;">
-                <span style="color: var(--txt2); font-weight: 600; font-size: 11px;">Credit (Receipt):</span>
-                <strong id="barCreditTotal" style="color: var(--suc); font-size: 12.5px; font-weight: 800;">₹0.00</strong>
+              <div class="ledger-live-card card-credit">
+                <span class="live-label">Credit (Receipt)</span>
+                <strong id="barCreditTotal" class="live-val text-success">₹0.00</strong>
               </div>
-              <div style="display: inline-flex; align-items: center; gap: 5px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.25); border-radius: 6px; padding: 3px 8px; font-size: 12px;">
-                <span style="color: var(--txt2); font-weight: 600; font-size: 11px;">Net:</span>
-                <strong id="barNetTotal" style="color: var(--pri); font-size: 12.5px; font-weight: 800;">₹0.00</strong>
+              <div class="ledger-live-card card-net">
+                <span class="live-label">Net Balance</span>
+                <strong id="barNetTotal" class="live-val text-primary">₹0.00</strong>
               </div>
-              <button class="btn admin-only" id="btnBulkDeleteLedger" onclick="bulkDeleteLedgerTransactions()" style="display: none; background: var(--dan); color: white; border: none; font-weight: 700; height: 32px; align-items: center; justify-content: center; gap: 6px; padding: 0 14px; border-radius: var(--r); cursor: pointer; font-size: 12px; white-space: nowrap;">
-                <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selectedLedgerCount">0</span>)
-              </button>
             </div>
           </div>
 
@@ -6246,7 +6593,7 @@
           </div>
 
           <div class="table-container">
-            <table class="responsive-table-cards" id="ledgerTable" style="width: 100%;">
+            <table id="ledgerTable" style="width: 100%;">
               <thead>
                 <tr>
                   <th class="admin-only text-center" style="width: 38px; min-width: 38px; vertical-align: middle;">
@@ -14669,8 +15016,10 @@
 
       document.getElementById('ledgerModalTitle').textContent = `Account Ledger: ${p.name}`;
       document.getElementById('ledgerPartyName').textContent = p.name;
-      document.getElementById('ledgerPartyMobile').textContent = p.mobile;
+      document.getElementById('ledgerPartyMobile').textContent = p.mobile || '--';
       document.getElementById('ledgerPartyGstin').textContent = p.gstin || '--';
+      const gstinWrap = document.getElementById('ledgerPartyGstinWrap');
+      if (gstinWrap) gstinWrap.style.display = p.gstin ? 'inline-flex' : 'none';
 
       // Set followup party reference
       document.getElementById('followupPartyId').value = p.id;
@@ -14787,15 +15136,89 @@
         const rawDate = t.date || '';
         const voucherFilterText = `${fullVoucherNo} ${displayVoucherNo}`.toLowerCase();
         const txnType = t.txnType || '';
-        
-        const actionCell = `
-          <td data-label="Action" class="text-center" style="vertical-align: top; padding-top: 8px;">
-            <div class="flex-gap" style="justify-content: center; gap: 5px;">
-              <button class="btn-action-pill" onclick="viewVoucher('${t.id}')" title="View Voucher / Receipt Details" style="color: var(--pri);"><i class="fa-solid fa-eye" style="font-size: 11px;"></i></button>
-              <button class="btn-action-pill admin-only" onclick="editLedgerTransaction('${t.id}', '${t.txnType}', '${p.id}')" title="Edit Entry" style="color: var(--txt);"><i class="fa-solid fa-pen-to-square" style="font-size: 11px;"></i></button>
-              <button class="btn-action-pill admin-only" onclick="deleteLedgerTransaction('${t.id}', '${p.id}')" style="color: var(--dan);" title="Delete Entry"><i class="fa-solid fa-trash" style="font-size: 11px;"></i></button>
+
+        // Mobile Badges & Item Rows (Matches mobile_design_preview.html)
+        let mobileItemsHTML = '';
+        if (t.items && Array.isArray(t.items) && t.items.length > 0) {
+          mobileItemsHTML = t.items.map(x => {
+            const qtyStr = `${x.quantity || 1}${x.unit ? ' ' + x.unit : ' Pcs'}`;
+            const rateStr = formatCurrency(x.rate || x.price || 0);
+            return `
+              <div class="lmc-item-line">
+                <span class="lmc-item-name">• ${x.productName || 'Item'}</span>
+                <span class="lmc-item-meta">${qtyStr} @ ${rateStr}</span>
+              </div>
+            `;
+          }).join('');
+          if (t.description) {
+            mobileItemsHTML += `<div class="lmc-item-desc">${t.description}</div>`;
+          }
+        } else {
+          const defaultLabel = t.description || (t.txnType === 'Payment' ? 'Payment Made' : (t.txnType === 'Receipt' ? 'Payment Receipt' : t.txnType || 'Transaction'));
+          const modeStr = t.paymentMode ? `<span class="badge" style="font-size:10px; padding:1px 5px; background:rgba(100,116,139,0.1); color:var(--txt2);"><i class="fa-solid fa-wallet" style="margin-right:3px;"></i>${t.paymentMode}</span>` : `<span style="color:var(--suc); font-weight:600;">Credit Received</span>`;
+          mobileItemsHTML = `
+            <div class="lmc-item-line">
+              <span class="lmc-item-name">${defaultLabel}</span>
+              <span class="lmc-item-meta">${modeStr}</span>
             </div>
-          </td>
+          `;
+        }
+
+        let mobileBadgesHTML = '';
+        if (t.paymentMode && t.items && t.items.length > 0) {
+          mobileBadgesHTML += `<div><span class="badge" style="font-size:10px; padding:1px 5px; background:rgba(100,116,139,0.1); color:var(--txt2); border:1px solid rgba(100,116,139,0.2);"><i class="fa-solid fa-wallet" style="margin-right:3px;"></i>${t.paymentMode}</span></div>`;
+        }
+        if (t.txnType === 'Sale' || t.txnType === 'Purchase') {
+          const dueAmt = t.totals && t.totals.balanceDue ? parseFloat(t.totals.balanceDue) : 0;
+          if (dueAmt > 0) {
+            mobileBadgesHTML += `<div><span class="badge badge-danger" style="font-size:10px; padding:1px 6px; font-weight:600;"><i class="fa-solid fa-circle-exclamation" style="margin-right:3px;"></i>₹${dueAmt.toFixed(2)} Dues Pending</span></div>`;
+          } else {
+            mobileBadgesHTML += `<div><span class="badge badge-success" style="font-size:10px; padding:1px 6px; font-weight:600;"><i class="fa-solid fa-circle-check" style="margin-right:3px;"></i>Fully Paid</span></div>`;
+          }
+        }
+        if (t.cylinderOut > 0 || t.cylinderIn > 0) {
+          let cylText = `<div style="display:flex; gap:4px; flex-wrap:wrap;">`;
+          if (t.cylinderOut > 0) {
+            cylText += `<span class="badge" style="font-size:10px; padding:1px 5px; font-weight:600; background:rgba(59, 130, 246, 0.1); color:var(--pri); border:1px solid rgba(59, 130, 246, 0.25);"><i class="fa-solid fa-arrow-up-from-bracket" style="margin-right:3px;"></i>Cyl Out: ${t.cylinderOut}</span>`;
+          }
+          if (t.cylinderIn > 0) {
+            cylText += `<span class="badge" style="font-size:10px; padding:1px 5px; font-weight:600; background:rgba(16, 185, 129, 0.1); color:var(--suc); border:1px solid rgba(16, 185, 129, 0.25);"><i class="fa-solid fa-arrow-down-to-bracket" style="margin-right:3px;"></i>Cyl In: ${t.cylinderIn}</span>`;
+          }
+          cylText += `</div>`;
+          mobileBadgesHTML += cylText;
+        }
+        if (mobileBadgesHTML) {
+          mobileItemsHTML += `<div style="margin-top:4px; display:flex; flex-direction:column; gap:3px;">${mobileBadgesHTML}</div>`;
+        }
+
+        let debitOrCreditMobile = '';
+        if (debit > 0) {
+          debitOrCreditMobile = `
+            <div class="lmc-amt-group">
+              <span class="lmc-label">Debit:</span>
+              <span class="lmc-amt-val text-danger">${formatCurrency(debit)}</span>
+            </div>
+          `;
+        } else if (credit > 0) {
+          debitOrCreditMobile = `
+            <div class="lmc-amt-group">
+              <span class="lmc-label">Credit:</span>
+              <span class="lmc-amt-val text-success">${formatCurrency(credit)}</span>
+            </div>
+          `;
+        }
+
+        let badgeTypeClass = 'badge-sale';
+        if (t.txnType === 'Receipt') badgeTypeClass = 'badge-receipt';
+        else if (t.txnType === 'Purchase') badgeTypeClass = 'badge-purchase';
+        else if (t.txnType === 'Payment') badgeTypeClass = 'badge-payment';
+
+        const actionPills = `
+          <div class="flex-gap" style="justify-content: center; gap: 5px;">
+            <button class="btn-action-pill" onclick="viewVoucher('${t.id}')" title="View Voucher / Receipt Details" style="color: var(--pri);"><i class="fa-solid fa-eye" style="font-size: 11px;"></i></button>
+            <button class="btn-action-pill admin-only" onclick="editLedgerTransaction('${t.id}', '${t.txnType}', '${p.id}')" title="Edit Entry" style="color: var(--txt);"><i class="fa-solid fa-pen-to-square" style="font-size: 11px;"></i></button>
+            <button class="btn-action-pill admin-only" onclick="deleteLedgerTransaction('${t.id}', '${p.id}')" style="color: var(--dan);" title="Delete Entry"><i class="fa-solid fa-trash" style="font-size: 11px;"></i></button>
+          </div>
         `;
         
         body.innerHTML += `
@@ -14810,19 +15233,54 @@
               data-debit="${debit}"
               data-credit="${credit}"
               data-balance="${runningBal.toFixed(2)}">
-            <td class="admin-only text-center" data-label="Select" style="width: 38px; vertical-align: top; padding-top: 10px;">
-              <input type="checkbox" class="ledger-select-checkbox" data-id="${t.id}" onchange="updateSelectedLedgerCount()" style="cursor: pointer; width: 16px; height: 16px;">
+            
+            <!-- MOBILE CARD VIEW (Matches mobile_design_preview.html) -->
+            <td class="ledger-mobile-cell" colspan="11">
+              <div class="lmc-card">
+                <div class="lmc-header">
+                  <div class="lmc-header-left">
+                    <input type="checkbox" class="ledger-select-checkbox admin-only" data-id="${t.id}" onchange="syncRowCheckbox(this, '${t.id}')" style="cursor: pointer; width: 16px; height: 16px;">
+                    <span class="lmc-voucher">${voucherLink}</span>
+                    <span class="lmc-badge ${badgeTypeClass}">${t.txnType || 'Txn'}</span>
+                  </div>
+                  <div class="lmc-date">${dateFormatted}</div>
+                </div>
+                <div class="lmc-items-box">
+                  ${mobileItemsHTML}
+                </div>
+                <div class="lmc-footer">
+                  <div class="lmc-amounts">
+                    ${debitOrCreditMobile}
+                    <div class="lmc-amt-group">
+                      <span class="lmc-label">Bal:</span>
+                      <span class="lmc-bal-val">${formatCurrency(runningBal)}</span>
+                    </div>
+                  </div>
+                  <div class="lmc-actions">
+                    <button class="btn-action-pill" onclick="viewVoucher('${t.id}')" title="View"><i class="fa-solid fa-eye" style="font-size: 11px; color: var(--pri);"></i></button>
+                    <button class="btn-action-pill admin-only" onclick="editLedgerTransaction('${t.id}', '${t.txnType}', '${p.id}')" title="Edit"><i class="fa-solid fa-pen-to-square" style="font-size: 11px; color: var(--txt);"></i></button>
+                    <button class="btn-action-pill admin-only" onclick="deleteLedgerTransaction('${t.id}', '${p.id}')" style="color: var(--dan);" title="Delete"><i class="fa-solid fa-trash" style="font-size: 11px;"></i></button>
+                  </div>
+                </div>
+              </div>
             </td>
-            <td data-label="Date" style="white-space: nowrap; font-weight: 500; vertical-align: top; padding-top: 10px;">${dateFormatted}</td>
-            <td data-label="Voucher No" style="white-space: nowrap; vertical-align: top; padding-top: 10px;"><strong>${voucherLink}</strong></td>
-            <td data-label="Product / Particulars" style="vertical-align: top;">${productHTML}</td>
-            <td data-label="Qty" class="text-center" style="vertical-align: top;">${qtyHTML}</td>
-            <td data-label="Rate (₹)" class="text-right" style="vertical-align: top;">${rateHTML}</td>
-            <td data-label="Type" class="text-center" style="vertical-align: top; padding-top: 10px;"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
-            <td data-label="Debit (₹)" class="text-right text-danger" style="font-weight: 700; vertical-align: top; padding-top: 10px;">${debit > 0 ? formatCurrency(debit) : '--'}</td>
-            <td data-label="Credit (₹)" class="text-right text-success" style="font-weight: 700; vertical-align: top; padding-top: 10px;">${credit > 0 ? formatCurrency(credit) : '--'}</td>
-            <td data-label="Balance (₹)" class="text-right" style="font-weight: 700; vertical-align: top; padding-top: 10px;">${formatCurrency(runningBal)}</td>
-            ${actionCell}
+
+            <!-- DESKTOP / TABLET 11-COLUMN VIEW -->
+            <td class="ledger-desktop-cell admin-only text-center" data-label="Select" style="width: 38px; vertical-align: top; padding-top: 10px;">
+              <input type="checkbox" class="ledger-select-checkbox" data-id="${t.id}" onchange="syncRowCheckbox(this, '${t.id}')" style="cursor: pointer; width: 16px; height: 16px;">
+            </td>
+            <td class="ledger-desktop-cell" data-label="Date" style="white-space: nowrap; font-weight: 500; vertical-align: top; padding-top: 10px;">${dateFormatted}</td>
+            <td class="ledger-desktop-cell" data-label="Voucher No" style="white-space: nowrap; vertical-align: top; padding-top: 10px;"><strong>${voucherLink}</strong></td>
+            <td class="ledger-desktop-cell" data-label="Product / Particulars" style="vertical-align: top;">${productHTML}</td>
+            <td class="ledger-desktop-cell text-center" data-label="Qty" style="vertical-align: top;">${qtyHTML}</td>
+            <td class="ledger-desktop-cell text-right" data-label="Rate (₹)" style="vertical-align: top;">${rateHTML}</td>
+            <td class="ledger-desktop-cell text-center" data-label="Type" style="vertical-align: top; padding-top: 10px;"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
+            <td class="ledger-desktop-cell text-right text-danger" data-label="Debit (₹)" style="font-weight: 700; vertical-align: top; padding-top: 10px;">${debit > 0 ? formatCurrency(debit) : '--'}</td>
+            <td class="ledger-desktop-cell text-right text-success" data-label="Credit (₹)" style="font-weight: 700; vertical-align: top; padding-top: 10px;">${credit > 0 ? formatCurrency(credit) : '--'}</td>
+            <td class="ledger-desktop-cell text-right" data-label="Balance (₹)" style="font-weight: 700; vertical-align: top; padding-top: 10px;">${formatCurrency(runningBal)}</td>
+            <td class="ledger-desktop-cell text-center" data-label="Action" style="vertical-align: top; padding-top: 8px;">
+              ${actionPills}
+            </td>
           </tr>
         `;
       });
@@ -14923,18 +15381,26 @@
       }
     }
 
+    function syncRowCheckbox(elem, id) {
+      const allForId = document.querySelectorAll(`.ledger-select-checkbox[data-id="${id}"]`);
+      allForId.forEach(cb => { cb.checked = elem.checked; });
+      updateSelectedLedgerCount();
+    }
+
     function toggleSelectAllLedger(elem) {
       const visibleRows = document.querySelectorAll('#ledgerTableBody tr.ledger-row:not([style*="display: none"])');
       visibleRows.forEach(tr => {
-        const cb = tr.querySelector('.ledger-select-checkbox');
-        if (cb) cb.checked = elem.checked;
+        const rowId = tr.dataset.id;
+        const cbs = tr.querySelectorAll('.ledger-select-checkbox');
+        cbs.forEach(cb => { cb.checked = elem.checked; });
       });
       updateSelectedLedgerCount();
     }
 
     function updateSelectedLedgerCount() {
-      const checkedBoxes = document.querySelectorAll('.ledger-select-checkbox:checked');
-      const count = checkedBoxes.length;
+      const checkedBoxes = document.querySelectorAll('#ledgerTableBody tr.ledger-row .ledger-select-checkbox:checked');
+      const checkedIds = new Set(Array.from(checkedBoxes).map(cb => cb.dataset.id).filter(Boolean));
+      const count = checkedIds.size;
       const btn = document.getElementById('btnBulkDeleteLedger');
       const text = document.getElementById('selectedLedgerCount');
       if (text) text.textContent = count;
@@ -14945,8 +15411,12 @@
       const selectAll = document.getElementById('selectAllLedger');
       const visibleRows = document.querySelectorAll('#ledgerTableBody tr.ledger-row:not([style*="display: none"])');
       if (selectAll && visibleRows.length > 0) {
-        const visibleChecked = document.querySelectorAll('#ledgerTableBody tr.ledger-row:not([style*="display: none"]) .ledger-select-checkbox:checked');
-        selectAll.checked = (visibleChecked.length === visibleRows.length && visibleRows.length > 0);
+        let allVisibleChecked = true;
+        visibleRows.forEach(tr => {
+          const rowId = tr.dataset.id;
+          if (!checkedIds.has(rowId)) allVisibleChecked = false;
+        });
+        selectAll.checked = allVisibleChecked;
       }
 
       updateLedgerLiveCalculations();
@@ -14956,15 +15426,15 @@
       const allRows = document.querySelectorAll('#ledgerTableBody tr.ledger-row');
       const visibleRows = document.querySelectorAll('#ledgerTableBody tr.ledger-row:not([style*="display: none"])');
       const checkedBoxes = document.querySelectorAll('#ledgerTableBody tr.ledger-row .ledger-select-checkbox:checked');
+      const checkedIds = new Set(Array.from(checkedBoxes).map(cb => cb.dataset.id).filter(Boolean));
 
       let targetRows = [];
       let isSelectionMode = false;
 
-      if (checkedBoxes.length > 0) {
+      if (checkedIds.size > 0) {
         isSelectionMode = true;
-        checkedBoxes.forEach(cb => {
-          const tr = cb.closest('tr.ledger-row');
-          if (tr) targetRows.push(tr);
+        allRows.forEach(tr => {
+          if (checkedIds.has(tr.dataset.id)) targetRows.push(tr);
         });
       } else {
         targetRows = Array.from(visibleRows);
