@@ -2882,6 +2882,53 @@
     #viewVoucherModal {
       z-index: 100010 !important;
     }
+
+    /* Impersonation Banner & Direct Login Styles */
+    #impersonationBanner {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100030;
+      background: linear-gradient(90deg, #0F172A, #1E293B);
+      color: white;
+      padding: 7px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      font-size: 13px;
+      border-bottom: 2px solid #F59E0B;
+    }
+    body.is-impersonating {
+      padding-top: 38px !important;
+    }
+    body.is-impersonating #sidebar {
+      top: 38px !important;
+      height: calc(100vh - 38px) !important;
+    }
+    body.is-impersonating #topbar {
+      top: 38px !important;
+    }
+    @media (max-width: 768px) {
+      #impersonationBanner {
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+      }
+      body.is-impersonating {
+        padding-top: 44px !important;
+      }
+      body.is-impersonating #sidebar {
+        top: 44px !important;
+        height: calc(100vh - 44px) !important;
+      }
+      body.is-impersonating #topbar {
+        top: 44px !important;
+      }
+    }
+    /* Direct Login Modal Tab Active State */
+    #dlTabParties.active { color: var(--pri) !important; border-bottom-color: var(--pri) !important; }
+    #dlTabUsers.active { color: var(--pri) !important; border-bottom-color: var(--pri) !important; }
     @media (min-width: 993px) {
       .hide-on-desktop {
         display: none !important;
@@ -3309,6 +3356,15 @@
 </head>
 <body>
 
+  <!-- ADMIN IMPERSONATION BANNER (hidden by default) -->
+  <div id="impersonationBanner" style="display: none;">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <i class="fa-solid fa-user-secret" style="color:#F59E0B;"></i>
+      <span>Admin View: <strong id="impersonationUserName">—</strong> <span style="opacity:0.7; font-size:11px;" id="impersonationUserRole"></span></span>
+    </div>
+    <button onclick="returnToAdminAccount()" style="background:#F59E0B; color:#0F172A; border:none; border-radius:6px; padding:4px 14px; font-weight:700; cursor:pointer; font-size:12px; display:flex; align-items:center; gap:6px;"><i class="fa-solid fa-arrow-left"></i> Return to Admin</button>
+  </div>
+
   <!-- SLIM PROGRESS BAR (replaces full-screen blocking spinner) -->
   <div id="loadingSpinner" style="display:none; position:fixed; top:0; left:0; width:100%; height:3px; z-index:99999; background: transparent;">
     <div id="loadingBar" style="height:3px; background: linear-gradient(90deg, #E5C158, #F59E0B, #E5C158); background-size: 200% 100%; animation: shimmerBar 1.2s linear infinite; width: 100%;"></div>
@@ -3549,6 +3605,10 @@
           </div>
           <div class="topbar-action" onclick="toggleTheme()" title="Toggle Dark/Light Mode" style="margin-right: 8px;">
             <i class="fa-solid fa-moon" id="themeIcon"></i>
+          </div>
+          <!-- Admin Direct Login Button -->
+          <div class="topbar-action admin-only" onclick="openDirectLoginModal()" title="Direct Login as Party / Employee" style="margin-right: 8px;">
+            <i class="fa-solid fa-users-viewfinder" style="color: var(--pri);"></i>
           </div>
           <div class="topbar-action" onclick="toggleNotifications()" style="margin-right: 8px;">
             <i class="fa-solid fa-bell"></i>
@@ -9297,6 +9357,7 @@
 
       // Clear persistent session storage and hash route
       SafeStorage.removeItem('currentUserSession');
+      SafeStorage.removeItem('originalAdminSession');
       window.location.hash = '';
       
       App.currentUser = null;
@@ -9304,6 +9365,9 @@
       document.body.classList.remove('logged-in');
       document.body.classList.remove('not-admin');
       document.body.classList.remove('role-party');
+      document.body.classList.remove('is-impersonating');
+      const banner = document.getElementById('impersonationBanner');
+      if (banner) banner.style.display = 'none';
       document.getElementById('loginForm').reset();
       document.getElementById('loginPage').style.display = 'flex';
       document.getElementById('app').style.display = 'none';
@@ -10527,6 +10591,7 @@
                   ${p.gpsLocation ? `<a href="https://www.google.com/maps?q=${encodeURIComponent(p.gpsLocation)}" target="_blank" class="btn btn-icon" title="View GPS Location" style="color:var(--acc);"><i class="fa-solid fa-map-location-dot"></i></a>` : ''}
                   ${p.documents ? `<button class="btn btn-icon" onclick="openPartyDocViewer('${p.id}')" title="View Document / KYC Proof" style="color: var(--acc); background: none; border: none; cursor: pointer;"><i class="fa-solid fa-paperclip"></i></button>` : ''}
                   <button class="btn btn-icon" onclick="editParty('${p.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
+                  <button class="btn btn-icon admin-only" onclick="adminLoginAsParty('${p.id}')" title="Login as Party" style="color:#6366F1;"><i class="fa-solid fa-right-to-bracket"></i></button>
                   <button class="btn btn-icon admin-only" onclick="deleteParty('${p.id}')" style="color:var(--dan);" title="Delete"><i class="fa-solid fa-trash"></i></button>
                 </div>
               </td>
@@ -10566,6 +10631,8 @@
                   ${p.documents ? `<button class="btn" onclick="openPartyDocViewer('${p.id}')" title="View Documents" style="background: rgba(139, 92, 246, 0.1); color: #8B5CF6; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; transition: background 0.2s, transform 0.1s;" onmouseenter="this.style.background='rgba(139,92,246,0.2)'; this.style.transform='scale(1.08)';" onmouseleave="this.style.background='rgba(139,92,246,0.1)'; this.style.transform='scale(1)';"><i class="fa-solid fa-paperclip" style="font-size: 14px;"></i></button>` : ''}
                   
                   <button class="btn" onclick="editParty('${p.id}')" title="Edit" style="background: rgba(245, 158, 11, 0.1); color: #F59E0B; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; transition: background 0.2s, transform 0.1s;" onmouseenter="this.style.background='rgba(245,158,11,0.2)'; this.style.transform='scale(1.08)';" onmouseleave="this.style.background='rgba(245,158,11,0.1)'; this.style.transform='scale(1)';"><i class="fa-solid fa-pen-to-square" style="font-size: 14px;"></i></button>
+                  
+                  <button class="btn admin-only" onclick="adminLoginAsParty('${p.id}')" title="Login as Party" style="background: rgba(99, 102, 241, 0.1); color: #6366F1; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; transition: background 0.2s, transform 0.1s;" onmouseenter="this.style.background='rgba(99,102,241,0.2)'; this.style.transform='scale(1.08)';" onmouseleave="this.style.background='rgba(99,102,241,0.1)'; this.style.transform='scale(1)';"><i class="fa-solid fa-right-to-bracket" style="font-size: 14px;"></i></button>
                   
                   <button class="btn admin-only" onclick="deleteParty('${p.id}')" title="Delete" style="background: rgba(239, 68, 68, 0.1); color: #EF4444; border: none; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; padding: 0; cursor: pointer; transition: background 0.2s, transform 0.1s;" onmouseenter="this.style.background='rgba(239,68,68,0.2)'; this.style.transform='scale(1.08)';" onmouseleave="this.style.background='rgba(239,68,68,0.1)'; this.style.transform='scale(1)';"><i class="fa-solid fa-trash" style="font-size: 14px;"></i></button>
                 </div>
@@ -17588,6 +17655,7 @@
             <td class="text-center">
               <div class="flex-gap" style="justify-content: center;">
                 <button class="btn btn-icon" onclick="editUser('${u.id}')" title="Edit User"><i class="fa-solid fa-user-pen"></i></button>
+                ${u.role !== 'Admin' ? `<button class="btn btn-icon admin-only" onclick="adminLoginAsUser('${u.id}')" title="Login as this User" style="color:#6366F1;"><i class="fa-solid fa-right-to-bracket"></i></button>` : ''}
                 <button class="btn btn-icon" onclick="deleteUser('${u.id}')" style="color:var(--dan);" title="Delete User"><i class="fa-solid fa-trash"></i></button>
               </div>
             </td>
@@ -19966,7 +20034,229 @@
         }
       });
     }
+
+    // ============================================================
+    //  ADMIN DIRECT LOGIN (Impersonation) FUNCTIONS
+    // ============================================================
+
+    function adminLoginAsParty(partyId) {
+      if (!App.isAdmin) return;
+      const party = App.data.parties.find(p => p.id === partyId);
+      if (!party) { showToast('Party not found', 'error'); return; }
+
+      // Save original admin session
+      SafeStorage.setItem('originalAdminSession', JSON.stringify(App.currentUser));
+
+      // Build synthetic party user object
+      const partyUser = {
+        id: 'IMPERSONATE_PARTY_' + party.id,
+        name: party.name,
+        role: 'Party',
+        partyId: party.id,
+        email: party.email || '',
+        status: 'Active',
+        _impersonated: true
+      };
+
+      // Apply session (but DON'T restart listeners to preserve admin data)
+      App.currentUser = partyUser;
+      App.isAdmin = false;
+      document.getElementById('userNameDisplay').textContent = partyUser.name;
+      const roleTextEl = document.getElementById('userRoleText');
+      if (roleTextEl) roleTextEl.textContent = 'Party (Admin View)';
+      const avatarName = document.getElementById('avatarName');
+      avatarName.textContent = partyUser.name.charAt(0).toUpperCase();
+      document.body.classList.add('not-admin');
+      document.body.classList.add('role-party');
+
+      // Show impersonation banner
+      document.getElementById('impersonationUserName').textContent = party.name;
+      document.getElementById('impersonationUserRole').textContent = '(Party / Customer)';
+      document.getElementById('impersonationBanner').style.display = 'flex';
+      document.body.classList.add('is-impersonating');
+
+      // Close modal if open
+      const modal = document.getElementById('directLoginModal');
+      if (modal) modal.style.display = 'none';
+
+      // Navigate to party dashboard view
+      navigateTo('dashboard');
+      showToast('👁️ Viewing as Party: ' + party.name, 'info');
+    }
+
+    function adminLoginAsUser(userId) {
+      if (!App.isAdmin) return;
+      const user = App.data.users.find(u => u.id === userId);
+      if (!user) { showToast('User not found', 'error'); return; }
+      if (user.role === 'Admin') { showToast('Cannot impersonate another Admin', 'warning'); return; }
+
+      // Save original admin session
+      SafeStorage.setItem('originalAdminSession', JSON.stringify(App.currentUser));
+
+      // Apply session
+      App.currentUser = user;
+      App.isAdmin = false;
+      document.getElementById('userNameDisplay').textContent = user.name;
+      const roleTextEl = document.getElementById('userRoleText');
+      if (roleTextEl) roleTextEl.textContent = user.role + ' (Admin View)';
+      const avatarName = document.getElementById('avatarName');
+      if (user.avatarUrl) {
+        avatarName.innerHTML = `<img src="${toDirectDriveLink(user.avatarUrl)}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+      } else {
+        avatarName.textContent = user.name.charAt(0).toUpperCase();
+      }
+      document.body.classList.add('not-admin');
+      if (user.role === 'Party') {
+        document.body.classList.add('role-party');
+      } else {
+        document.body.classList.remove('role-party');
+      }
+
+      // Show impersonation banner
+      document.getElementById('impersonationUserName').textContent = user.name;
+      document.getElementById('impersonationUserRole').textContent = '(' + user.role + ')';
+      document.getElementById('impersonationBanner').style.display = 'flex';
+      document.body.classList.add('is-impersonating');
+
+      // Close modal if open
+      const modal = document.getElementById('directLoginModal');
+      if (modal) modal.style.display = 'none';
+
+      navigateTo('dashboard');
+      showToast('👁️ Viewing as ' + user.role + ': ' + user.name, 'info');
+    }
+
+    function returnToAdminAccount() {
+      const savedSession = SafeStorage.getItem('originalAdminSession');
+      if (!savedSession) { showToast('No admin session saved', 'error'); return; }
+      const adminUser = JSON.parse(savedSession);
+      SafeStorage.removeItem('originalAdminSession');
+
+      // Restore admin UI
+      App.currentUser = adminUser;
+      App.isAdmin = true;
+      document.getElementById('userNameDisplay').textContent = adminUser.name;
+      const roleTextEl = document.getElementById('userRoleText');
+      if (roleTextEl) roleTextEl.textContent = 'Administrator';
+      const avatarName = document.getElementById('avatarName');
+      if (adminUser.avatarUrl) {
+        avatarName.innerHTML = `<img src="${toDirectDriveLink(adminUser.avatarUrl)}" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+      } else {
+        avatarName.textContent = adminUser.name.charAt(0).toUpperCase();
+      }
+      document.body.classList.remove('not-admin');
+      document.body.classList.remove('role-party');
+      document.body.classList.remove('is-impersonating');
+
+      // Hide banner
+      document.getElementById('impersonationBanner').style.display = 'none';
+      document.getElementById('impersonationUserName').textContent = '—';
+      document.getElementById('impersonationUserRole').textContent = '';
+
+      navigateTo('dashboard');
+      showToast('✅ Returned to Admin account', 'success');
+    }
+
+    function openDirectLoginModal() {
+      if (!App.isAdmin) return;
+      // Render parties tab
+      switchDirectLoginTab('parties');
+      document.getElementById('directLoginModal').style.display = 'flex';
+    }
+
+    function switchDirectLoginTab(tab) {
+      document.getElementById('dlTabParties').classList.toggle('active', tab === 'parties');
+      document.getElementById('dlTabUsers').classList.toggle('active', tab === 'users');
+      document.getElementById('dlPartyList').style.display = tab === 'parties' ? 'block' : 'none';
+      document.getElementById('dlUserList').style.display = tab === 'users' ? 'block' : 'none';
+      document.getElementById('dlSearchInput').value = '';
+      filterDirectLoginList(tab);
+      window._dlActiveTab = tab;
+    }
+
+    function filterDirectLoginList(tab) {
+      const q = (document.getElementById('dlSearchInput').value || '').toLowerCase().trim();
+      const activeTab = tab || window._dlActiveTab || 'parties';
+      if (activeTab === 'parties') {
+        const list = document.getElementById('dlPartyList');
+        list.innerHTML = '';
+        const parties = App.data.parties.filter(p => !q || p.name.toLowerCase().includes(q) || (p.mobile || '').includes(q));
+        if (!parties.length) {
+          list.innerHTML = '<div style="padding:20px; text-align:center; color:var(--txt2); font-size:13px;">No parties found</div>';
+          return;
+        }
+        parties.forEach(p => {
+          const bal = computePartyBalance ? computePartyBalance(p.id) : 0;
+          const balColor = bal > 0 ? '#EF4444' : (bal < 0 ? '#10B981' : 'var(--txt2)');
+          list.innerHTML += `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--brd); gap:10px;">
+              <div>
+                <div style="font-weight:600; font-size:13.5px; color:var(--txt);">${p.name}</div>
+                <div style="font-size:11.5px; color:var(--txt2);">${p.type} • ${p.mobile || '—'}</div>
+              </div>
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span style="font-size:12px; font-weight:700; color:${balColor};">${formatCurrency ? formatCurrency(Math.abs(bal)) : bal}</span>
+                <button onclick="adminLoginAsParty('${p.id}')" style="background:#6366F1; color:white; border:none; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px;"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
+              </div>
+            </div>`;
+        });
+      } else {
+        const list = document.getElementById('dlUserList');
+        list.innerHTML = '';
+        const users = App.data.users.filter(u => u.role !== 'Admin' && (!q || u.name.toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)));
+        if (!users.length) {
+          list.innerHTML = '<div style="padding:20px; text-align:center; color:var(--txt2); font-size:13px;">No employees found</div>';
+          return;
+        }
+        users.forEach(u => {
+          const roleColors = { Manager: '#F59E0B', Cashier: '#10B981', Staff: '#3B82F6', Party: '#6366F1' };
+          const rc = roleColors[u.role] || 'var(--txt2)';
+          list.innerHTML += `
+            <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--brd); gap:10px;">
+              <div>
+                <div style="font-weight:600; font-size:13.5px; color:var(--txt);">${u.name}</div>
+                <div style="font-size:11.5px; color:var(--txt2);">${u.email || '—'} • <span style="color:${rc}; font-weight:600;">${u.role}</span></div>
+              </div>
+              <button onclick="adminLoginAsUser('${u.id}')" style="background:#6366F1; color:white; border:none; border-radius:6px; padding:5px 12px; font-size:12px; font-weight:600; cursor:pointer; display:flex; align-items:center; gap:5px;"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
+            </div>`;
+        });
+      }
+    }
+
   </script>
+
+  <!-- DIRECT LOGIN MODAL -->
+  <div id="directLoginModal" style="display:none; position:fixed; inset:0; z-index:100025; background:rgba(0,0,0,0.55); align-items:center; justify-content:center; padding:16px;" onclick="if(event.target===this)this.style.display='none'">
+    <div style="background:var(--card); border-radius:14px; width:100%; max-width:520px; max-height:85vh; display:flex; flex-direction:column; box-shadow:0 25px 50px rgba(0,0,0,0.4); border:1px solid var(--brd); overflow:hidden;">
+      <!-- Header -->
+      <div style="padding:16px 20px; border-bottom:1px solid var(--brd); display:flex; align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <i class="fa-solid fa-users-viewfinder" style="color:var(--pri); font-size:18px;"></i>
+          <span style="font-size:15px; font-weight:700; color:var(--txt);">Admin Direct Login</span>
+        </div>
+        <button onclick="document.getElementById('directLoginModal').style.display='none'" style="background:none; border:none; color:var(--txt2); font-size:20px; cursor:pointer; line-height:1;">×</button>
+      </div>
+      <!-- Search -->
+      <div style="padding:12px 16px; border-bottom:1px solid var(--brd);">
+        <input id="dlSearchInput" type="text" placeholder="Search by name, mobile, email..." oninput="filterDirectLoginList(window._dlActiveTab||'parties')" style="width:100%; padding:9px 14px; border-radius:8px; border:1px solid var(--brd); background:var(--bg2); color:var(--txt); font-size:13px; outline:none;">
+      </div>
+      <!-- Tabs -->
+      <div style="display:flex; border-bottom:1px solid var(--brd);">
+        <button id="dlTabParties" onclick="switchDirectLoginTab('parties')" class="active" style="flex:1; padding:10px; background:none; border:none; font-size:13px; font-weight:600; cursor:pointer; color:var(--txt); border-bottom:2px solid transparent; transition:all 0.2s;"><i class="fa-solid fa-users" style="margin-right:6px;"></i>Parties</button>
+        <button id="dlTabUsers" onclick="switchDirectLoginTab('users')" style="flex:1; padding:10px; background:none; border:none; font-size:13px; font-weight:600; cursor:pointer; color:var(--txt2); border-bottom:2px solid transparent; transition:all 0.2s;"><i class="fa-solid fa-user-tie" style="margin-right:6px;"></i>Employees</button>
+      </div>
+      <!-- List -->
+      <div style="overflow-y:auto; flex:1;">
+        <div id="dlPartyList"></div>
+        <div id="dlUserList" style="display:none;"></div>
+      </div>
+      <!-- Footer note -->
+      <div style="padding:10px 16px; border-top:1px solid var(--brd); font-size:11.5px; color:var(--txt2); text-align:center;">
+        <i class="fa-solid fa-shield-halved" style="color:#F59E0B; margin-right:4px;"></i>
+        Admin session is saved. Click <strong>Return to Admin</strong> in the yellow banner to go back.
+      </div>
+    </div>
+  </div>
 
   <!-- MOBILE BOTTOM SHORTCUTS BAR -->
   <div class="mobile-bottom-bar hide-on-desktop">
