@@ -15144,7 +15144,7 @@
           qtyHTML = t.items.map((x, idx) => {
             const isLast = idx === t.items.length - 1;
             const dividerClass = (hasMultiple && !isLast) ? 'has-divider' : '';
-            return `<div class="item-sub-row ${dividerClass}" style="justify-content:center;"><span class="badge" style="background:rgba(59,130,246,0.1); color:var(--pri); font-size:11px; padding:1px 6px; font-weight:600; border: 1px solid rgba(59,130,246,0.2);">${x.quantity || 1}${x.unit ? ' ' + x.unit : ''}</span></div>`;
+            return `<div class="item-sub-row ${dividerClass}" style="justify-content:center;"><span class="badge" style="background:rgba(59,130,246,0.1); color:var(--pri); font-size:11px; padding:1px 6px; font-weight:600; border: 1px solid rgba(59,130,246,0.2);">${x.quantity || 1}${x.unit ? ' ' + x.unit : ' Pcs'}</span></div>`;
           }).join('');
 
           rateHTML = t.items.map((x, idx) => {
@@ -16062,7 +16062,7 @@
 
         if (t.items && Array.isArray(t.items) && t.items.length > 0) {
           prodHTML = t.items.map(x => `<div style="font-weight:600; line-height:1.35;">${x.productName || 'Item'}</div>`).join('');
-          qtyHTML = t.items.map(x => `<div style="line-height:1.35;">${x.quantity || 1}${x.unit ? ' ' + x.unit : ''}</div>`).join('');
+          qtyHTML = t.items.map(x => `<div style="line-height:1.35;">${x.quantity || 1}${x.unit ? ' ' + x.unit : ' Pcs'}</div>`).join('');
           rateHTML = t.items.map(x => `<div style="line-height:1.35;">₹${parseFloat(x.rate || x.price || 0).toFixed(2)}</div>`).join('');
           if (t.description) {
             prodHTML += `<div style="font-size:11px; color:#64748B; font-style:italic; margin-top:2px;">${t.description}</div>`;
@@ -16591,7 +16591,7 @@
           if (t.description) {
             prodText += ` | ${t.description}`;
           }
-          qtyText = t.items.map(x => `${x.quantity || 1}${x.unit ? ' ' + x.unit : ''}`).join(', ');
+          qtyText = t.items.map(x => `${x.quantity || 1}${x.unit ? ' ' + x.unit : ' Pcs'}`).join(', ');
           rateText = t.items.map(x => (x.rate || x.price || 0)).join(', ');
         } else {
           prodText = t.description || (t.txnType === 'Payment' ? 'Payment Made' : (t.txnType === 'Receipt' ? 'Payment Receipt' : t.txnType || 'Transaction'));
@@ -20186,7 +20186,7 @@
           return;
         }
         parties.forEach(p => {
-          const bal = computePartyBalance ? computePartyBalance(p.id) : 0;
+          const bal = (() => { const txns = (App.data.transactions || []).filter(x => x.partyId === p.id); let b = parseFloat(p.openingBalance || 0); txns.forEach(x => { const d = parseFloat(x.debit || (x.totals && x.totals.grandTotal) || 0); const c = parseFloat(x.credit || (x.totals && x.totals.paidAmount) || 0); b += d - c; }); return b; })();
           const balColor = bal > 0 ? '#EF4444' : (bal < 0 ? '#10B981' : 'var(--txt2)');
           list.innerHTML += `
             <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--brd); gap:10px;">
