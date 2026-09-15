@@ -1420,10 +1420,10 @@
         display: block;
       }
       .grid-2, .grid-3, .grid-4 {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
       }
       .dashboard-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
       }
       .flex-gap {
         flex-wrap: wrap;
@@ -1884,23 +1884,70 @@
         padding: 12px 10px !important;
       }
 
-      /* Make modal footers stack full-width on mobile */
+      /* Responsive modal footers on mobile: compact, side-by-side where appropriate */
       .modal-footer {
-        flex-direction: column !important;
-        align-items: stretch !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
         gap: 8px !important;
-        padding: 12px 14px !important;
+        padding: 10px 12px !important;
       }
       .modal-footer > div {
         display: flex !important;
-        flex-direction: column !important;
-        width: 100% !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+        width: auto !important;
         margin-left: 0 !important;
         margin-right: 0 !important;
-        gap: 8px !important;
       }
       .modal-footer button, .modal-footer .btn {
+        flex: 1 1 auto !important;
+        width: auto !important;
+        min-width: 80px !important;
+        justify-content: center !important;
+      }
+
+      /* Ledger Modal Compact 2-Row Action Bar on Mobile */
+      #ledgerModal .modal-footer.ledger-modal-footer {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 6px !important;
+        padding: 8px 10px !important;
+        background: var(--bg) !important;
+        border-top: 1px solid var(--brd) !important;
+        flex-shrink: 0 !important;
+      }
+      #ledgerModal .ledger-primary-actions {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 6px !important;
         width: 100% !important;
+      }
+      #ledgerModal .ledger-primary-actions .btn {
+        width: 100% !important;
+        height: 38px !important;
+        font-size: 12.5px !important;
+        font-weight: 700 !important;
+        padding: 6px 8px !important;
+        justify-content: center !important;
+      }
+      #ledgerModal .ledger-secondary-actions {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        gap: 4px !important;
+        width: 100% !important;
+        justify-content: space-between !important;
+      }
+      #ledgerModal .ledger-secondary-actions .btn {
+        flex: 1 1 auto !important;
+        min-width: 55px !important;
+        height: 32px !important;
+        font-size: 11px !important;
+        padding: 4px 6px !important;
         justify-content: center !important;
       }
 
@@ -2129,110 +2176,319 @@
         cursor: pointer !important;
       }
       #ledgerModal .modal-card {
-        height: 94vh !important;
-        max-height: 94vh !important;
+        width: 96% !important;
+        max-width: 100% !important;
+        height: 95vh !important;
+        max-height: 95vh !important;
+        margin: auto !important;
+        border-radius: 12px !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      #ledgerModal .modal-header {
+        padding: 10px 12px !important;
+        flex-shrink: 0 !important;
       }
       #ledgerModal .modal-body {
         overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
         display: block !important;
+        flex: 1 1 auto !important;
+        min-height: 0 !important;
+        padding: 10px !important;
       }
       #ledgerModal #ledgerTabContent {
         overflow: visible !important;
         display: block !important;
+        min-height: auto !important;
       }
       #ledgerModal #ledgerTabContent .table-container {
         overflow: visible !important;
         max-height: none !important;
+        min-height: auto !important;
+        border: none !important;
+        border-radius: 0 !important;
+        padding: 0 !important;
+      }
+      #ledgerModal #ledgerTable {
+        border: none !important;
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        width: 100% !important;
+      }
+      #ledgerModal #ledgerTable thead {
+        display: none !important;
+      }
+      #ledgerModal #ledgerTable tbody {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        width: 100% !important;
+      }
+      #ledgerModal #ledgerTable tbody tr.ledger-row {
+        display: block !important;
+        background: var(--card) !important;
+        border: 1px solid var(--brd) !important;
+        border-radius: 10px !important;
+        padding: 10px 12px !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+        box-sizing: border-box !important;
+      }
+      body.dark-theme #ledgerModal #ledgerTable tbody tr.ledger-row {
+        background: #151F32 !important;
+        border-color: rgba(255, 255, 255, 0.08) !important;
+      }
+      #ledgerModal #ledgerTable tbody td {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 5px 0 !important;
+        border-bottom: 1px solid rgba(0,0,0,0.05) !important;
+        border-right: none !important;
+        border-top: none !important;
+        border-left: none !important;
+        font-size: 12.5px !important;
+        text-align: right !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        background: transparent !important;
+      }
+      body.dark-theme #ledgerModal #ledgerTable tbody td {
+        border-bottom-color: rgba(255, 255, 255, 0.06) !important;
+        background: transparent !important;
+      }
+      #ledgerModal #ledgerTable tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        font-size: 11px;
+        color: var(--txt2);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        text-align: left;
+        margin-right: 10px;
+        flex-shrink: 0;
+      }
+      #ledgerModal #ledgerTable tbody td[data-label="Product / Particulars"] {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        text-align: left !important;
+        gap: 3px !important;
+      }
+      #ledgerModal #ledgerTable tbody td[data-label="Product / Particulars"]::before {
+        margin-bottom: 2px !important;
+      }
+      #ledgerModal #ledgerTable tbody td[data-label="Action"] {
+        border-bottom: none !important;
+        padding-top: 8px !important;
+        margin-top: 4px !important;
+        border-top: 1px dashed var(--brd) !important;
+        justify-content: flex-end !important;
+        gap: 6px !important;
+      }
+      #ledgerModal #ledgerTable tbody td[data-label="Action"]::before {
+        content: "" !important;
+        display: none !important;
+      }
+      #ledgerModal #ledgerTable tbody td[data-label="Select"] {
+        justify-content: space-between !important;
+        padding: 6px 0 !important;
+      }
+      #ledgerModal #ledgerTable tbody td[data-label="Debit (₹)"] {
+        color: var(--dan) !important;
+        font-weight: 700 !important;
+      }
+      #ledgerModal #ledgerTable tbody td[data-label="Credit (₹)"] {
+        color: var(--suc) !important;
+        font-weight: 700 !important;
+      }
+      #ledgerModal #ledgerTable tbody td[data-label="Balance (₹)"] {
+        font-weight: 800 !important;
+        font-size: 13px !important;
       }
     }
-    /* Party Ledger Frozen / Sticky Table Header Styles */
-    #ledgerModal .modal-card {
-      max-width: 1140px !important;
-      width: 94% !important;
-      height: 90vh !important;
-      max-height: 90vh !important;
-      display: flex !important;
-      flex-direction: column !important;
+
+    /* Tablet Styles (769px - 992px) */
+    @media (min-width: 769px) and (max-width: 992px) {
+      #ledgerModal .modal-card {
+        width: 96% !important;
+        max-width: 980px !important;
+        height: 90vh !important;
+        max-height: 90vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      #ledgerModal .modal-body {
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        padding: 14px 16px 8px 16px !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+      }
+      #ledgerModal #ledgerTabContent {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+      }
+      #ledgerModal #ledgerTabContent .table-container {
+        flex: 1 !important;
+        min-height: 250px !important;
+        overflow-y: auto !important;
+        overflow-x: auto !important;
+        position: relative !important;
+        border: 1px solid var(--brd) !important;
+        border-radius: 8px !important;
+        margin-bottom: 0 !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+      #ledgerModal #ledgerTable {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        width: 100% !important;
+        min-width: 920px !important;
+        border: 1px solid var(--brd) !important;
+      }
+      #ledgerModal #ledgerTable th {
+        border-right: 1px solid var(--brd) !important;
+        border-bottom: 1px solid var(--brd) !important;
+        padding: 6px 8px !important;
+        font-size: 11px !important;
+        box-sizing: border-box !important;
+      }
+      #ledgerModal #ledgerTable th:last-child {
+        border-right: none !important;
+      }
+      #ledgerModal #ledgerTable thead tr:first-child th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 35 !important;
+        background: #F1F5F9 !important;
+        height: 48px !important;
+        box-sizing: border-box !important;
+        border-bottom: 1px solid var(--brd) !important;
+      }
+      #ledgerModal #ledgerTable thead tr.ledger-filter-row th {
+        position: sticky !important;
+        top: 48px !important;
+        z-index: 34 !important;
+        background: #FFFFFF !important;
+        height: 38px !important;
+        box-sizing: border-box !important;
+        border-bottom: 2px solid var(--brd) !important;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.06) !important;
+      }
+      #ledgerModal #ledgerTable tbody td {
+        border-right: 1px solid var(--brd) !important;
+        border-bottom: 1px solid var(--brd) !important;
+        padding: 6px 8px !important;
+        vertical-align: top !important;
+        font-size: 12px !important;
+        box-sizing: border-box !important;
+      }
+      #ledgerModal #ledgerTable tbody td:last-child {
+        border-right: none !important;
+      }
+      #ledgerModal #ledgerTable tbody tr:nth-child(even) td {
+        background: rgba(0, 0, 0, 0.02) !important;
+      }
+      #ledgerModal #ledgerTable tbody tr:hover td {
+        background: rgba(59, 130, 246, 0.07) !important;
+      }
     }
-    #ledgerModal .modal-body {
-      display: flex !important;
-      flex-direction: column !important;
-      overflow: hidden !important;
-      padding: 16px 20px 8px 20px !important;
-      flex: 1 !important;
-      min-height: 0 !important;
+
+    /* Desktop Styles (>= 993px): Party Ledger Frozen / Sticky Table Header Styles */
+    @media (min-width: 993px) {
+      #ledgerModal .modal-card {
+        max-width: 1140px !important;
+        width: 94% !important;
+        height: 90vh !important;
+        max-height: 90vh !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+      #ledgerModal .modal-body {
+        display: flex !important;
+        flex-direction: column !important;
+        overflow: hidden !important;
+        padding: 16px 20px 8px 20px !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+      }
+      #ledgerModal #ledgerTabContent {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+      }
+      #ledgerModal #ledgerTabContent .table-container {
+        flex: 1 !important;
+        min-height: 250px !important;
+        overflow-y: auto !important;
+        overflow-x: auto !important;
+        position: relative !important;
+        border: 1px solid var(--brd) !important;
+        border-radius: 8px !important;
+        margin-bottom: 0 !important;
+      }
+      #ledgerModal #ledgerTable {
+        border-collapse: separate !important;
+        border-spacing: 0 !important;
+        width: 100% !important;
+        border: 1px solid var(--brd) !important;
+      }
+      #ledgerModal #ledgerTable th {
+        border-right: 1px solid var(--brd) !important;
+        border-bottom: 1px solid var(--brd) !important;
+        padding: 8px 10px !important;
+        font-size: 11.5px !important;
+        box-sizing: border-box !important;
+      }
+      #ledgerModal #ledgerTable th:last-child {
+        border-right: none !important;
+      }
+      #ledgerModal #ledgerTable thead tr:first-child th {
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 35 !important;
+        background: #F1F5F9 !important;
+        height: 52px !important;
+        box-sizing: border-box !important;
+        border-bottom: 1px solid var(--brd) !important;
+      }
+      #ledgerModal #ledgerTable thead tr.ledger-filter-row th {
+        position: sticky !important;
+        top: 52px !important;
+        z-index: 34 !important;
+        background: #FFFFFF !important;
+        height: 38px !important;
+        box-sizing: border-box !important;
+        border-bottom: 2px solid var(--brd) !important;
+        box-shadow: 0 3px 6px rgba(0,0,0,0.06) !important;
+      }
+      #ledgerModal #ledgerTable tbody td {
+        border-right: 1px solid var(--brd) !important;
+        border-bottom: 1px solid var(--brd) !important;
+        padding: 7px 10px !important;
+        vertical-align: top !important;
+        background: var(--card) !important;
+        font-size: 12.5px !important;
+        color: var(--txt) !important;
+        box-sizing: border-box !important;
+      }
+      #ledgerModal #ledgerTable tbody td:last-child {
+        border-right: none !important;
+      }
+      #ledgerModal #ledgerTable tbody tr:nth-child(even) td {
+        background: rgba(0, 0, 0, 0.02) !important;
+      }
+      #ledgerModal #ledgerTable tbody tr:hover td {
+        background: rgba(59, 130, 246, 0.07) !important;
+      }
     }
-    #ledgerModal #ledgerTabContent {
-      display: flex !important;
-      flex-direction: column !important;
-      flex: 1 !important;
-      min-height: 0 !important;
-      overflow: hidden !important;
-    }
-    #ledgerModal #ledgerTabContent .table-container {
-      flex: 1 !important;
-      min-height: 250px !important;
-      overflow-y: auto !important;
-      overflow-x: auto !important;
-      position: relative !important;
-      border: 1px solid var(--brd) !important;
-      border-radius: 8px !important;
-      margin-bottom: 0 !important;
-    }
-    #ledgerModal #ledgerTable {
-      border-collapse: separate !important;
-      border-spacing: 0 !important;
-      width: 100% !important;
-      border: 1px solid var(--brd) !important;
-    }
-    #ledgerModal #ledgerTable th {
-      border-right: 1px solid var(--brd) !important;
-      border-bottom: 1px solid var(--brd) !important;
-      padding: 8px 10px !important;
-      font-size: 11.5px !important;
-      box-sizing: border-box !important;
-    }
-    #ledgerModal #ledgerTable th:last-child {
-      border-right: none !important;
-    }
-    #ledgerModal #ledgerTable thead tr:first-child th {
-      position: sticky !important;
-      top: 0 !important;
-      z-index: 35 !important;
-      background: #F1F5F9 !important;
-      height: 52px !important;
-      box-sizing: border-box !important;
-      border-bottom: 1px solid var(--brd) !important;
-    }
-    #ledgerModal #ledgerTable thead tr.ledger-filter-row th {
-      position: sticky !important;
-      top: 52px !important;
-      z-index: 34 !important;
-      background: #FFFFFF !important;
-      height: 38px !important;
-      box-sizing: border-box !important;
-      border-bottom: 2px solid var(--brd) !important;
-      box-shadow: 0 3px 6px rgba(0,0,0,0.06) !important;
-    }
-    #ledgerModal #ledgerTable tbody td {
-      border-right: 1px solid var(--brd) !important;
-      border-bottom: 1px solid var(--brd) !important;
-      padding: 7px 10px !important;
-      vertical-align: top !important;
-      background: var(--card) !important;
-      font-size: 12.5px !important;
-      color: var(--txt) !important;
-      box-sizing: border-box !important;
-    }
-    #ledgerModal #ledgerTable tbody td:last-child {
-      border-right: none !important;
-    }
-    #ledgerModal #ledgerTable tbody tr:nth-child(even) td {
-      background: rgba(0, 0, 0, 0.02) !important;
-    }
-    #ledgerModal #ledgerTable tbody tr:hover td {
-      background: rgba(59, 130, 246, 0.07) !important;
-    }
+
     body.dark-theme #ledgerModal #ledgerTable {
       border-color: #334155 !important;
     }
@@ -2248,16 +2504,18 @@
       background: #0F172A !important;
       border-color: #334155 !important;
     }
-    body.dark-theme #ledgerModal #ledgerTable tbody td {
-      border-color: #334155 !important;
-      background: #151F32 !important;
-      color: #F1F5F9 !important;
-    }
-    body.dark-theme #ledgerModal #ledgerTable tbody tr:nth-child(even) td {
-      background: #1B283F !important;
-    }
-    body.dark-theme #ledgerModal #ledgerTable tbody tr:hover td {
-      background: rgba(59, 130, 246, 0.15) !important;
+    @media (min-width: 769px) {
+      body.dark-theme #ledgerModal #ledgerTable tbody td {
+        border-color: #334155 !important;
+        background: #151F32 !important;
+        color: #F1F5F9 !important;
+      }
+      body.dark-theme #ledgerModal #ledgerTable tbody tr:nth-child(even) td {
+        background: #1B283F !important;
+      }
+      body.dark-theme #ledgerModal #ledgerTable tbody tr:hover td {
+        background: rgba(59, 130, 246, 0.15) !important;
+      }
     }
     /* Item Sub-row styles for multi-item alignment */
     .item-sub-row {
@@ -6111,16 +6369,16 @@
           </div>
         </div>
       </div>
-      <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <div style="display: flex; gap: 8px;">
+      <div class="modal-footer ledger-modal-footer">
+        <div class="ledger-primary-actions">
           <button class="btn btn-primary hide-for-party" id="ledgerAddSaleBtn"><i class="fa-solid fa-plus"></i> Add Sale</button>
           <button class="btn btn-success hide-for-party" id="ledgerAddPaymentBtn"><i class="fa-solid fa-wallet"></i> Add Receipt</button>
         </div>
-        <div style="display: flex; gap: 8px; margin-left: auto;">
+        <div class="ledger-secondary-actions">
           <button class="btn btn-success" onclick="exportPartyLedgerExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
           <button class="btn btn-primary" onclick="printPartyLedger()"><i class="fa-solid fa-print"></i> Print Statement</button>
-          <button class="btn btn-info hide-for-party" id="ledgerNoDuesBtn" onclick="printNoDuesLetter()"><i class="fa-solid fa-file-invoice"></i> No Dues Certificate</button>
-          <button class="btn btn-accent hide-for-party" id="ledgerNocBtn" onclick="printNocLetter()"><i class="fa-solid fa-shield-halved"></i> NOC Certificate</button>
+          <button class="btn btn-info hide-for-party" id="ledgerNoDuesBtn" onclick="printNoDuesLetter()"><i class="fa-solid fa-file-invoice"></i> No Dues</button>
+          <button class="btn btn-accent hide-for-party" id="ledgerNocBtn" onclick="printNocLetter()"><i class="fa-solid fa-shield-halved"></i> NOC</button>
           <button class="btn btn-secondary" onclick="closeModal('ledgerModal')">Close</button>
         </div>
       </div>
