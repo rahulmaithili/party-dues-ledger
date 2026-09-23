@@ -333,6 +333,86 @@
       background: #0F172A !important;
     }
 
+    /* ===== DARK MODE - ADDITIONAL COMPREHENSIVE OVERRIDES ===== */
+    /* Page headings & section titles */
+    body.dark-theme h1, body.dark-theme h2, body.dark-theme h3,
+    body.dark-theme h4, body.dark-theme h5, body.dark-theme h6 {
+      color: var(--txt) !important;
+    }
+    /* Hardcoded dark text in inline styles */
+    body.dark-theme [style*="color:#1E293B"],
+    body.dark-theme [style*="color: #1E293B"],
+    body.dark-theme [style*="color:#0F172A"],
+    body.dark-theme [style*="color: #0F172A"],
+    body.dark-theme [style*="color:#334155"],
+    body.dark-theme [style*="color: #334155"],
+    body.dark-theme [style*="color:#374151"],
+    body.dark-theme [style*="color: #374151"],
+    body.dark-theme [style*="color:#111827"],
+    body.dark-theme [style*="color: #111827"] {
+      color: var(--txt) !important;
+    }
+    /* Hardcoded light backgrounds in inline styles */
+    body.dark-theme [style*="background:#FFFFFF"],
+    body.dark-theme [style*="background: #FFFFFF"],
+    body.dark-theme [style*="background:#ffffff"],
+    body.dark-theme [style*="background-color:#FFFFFF"],
+    body.dark-theme [style*="background-color: #FFFFFF"],
+    body.dark-theme [style*="background-color:#ffffff"] {
+      background: var(--card) !important;
+      color: var(--txt) !important;
+    }
+    /* Filter/search row backgrounds */
+    body.dark-theme .light-form-control {
+      background: #0B0F19 !important;
+      color: var(--txt) !important;
+      border-color: var(--brd) !important;
+    }
+    /* KPI sub-text */
+    body.dark-theme .kpi-label,
+    body.dark-theme .kpi-sub,
+    body.dark-theme [class*="kpi-"] p,
+    body.dark-theme [class*="kpi-"] small {
+      color: rgba(241,245,249,0.7) !important;
+    }
+    /* Sidebar text */
+    body.dark-theme .sidebar-label,
+    body.dark-theme .nav-section-label {
+      color: #475569 !important;
+    }
+    /* Cards with hardcoded white BG */
+    body.dark-theme .dashboard-card,
+    body.dark-theme .table-container,
+    body.dark-theme .page-section,
+    body.dark-theme .settings-card {
+      background: var(--card) !important;
+      border-color: var(--brd) !important;
+    }
+    /* Strong / bold text */
+    body.dark-theme strong, body.dark-theme b {
+      color: inherit !important;
+    }
+    /* Badges readable in dark */
+    body.dark-theme .badge-primary { background: rgba(59,130,246,0.2) !important; color: #93C5FD !important; }
+    body.dark-theme .badge-success { background: rgba(16,185,129,0.2) !important; color: #6EE7B7 !important; }
+    body.dark-theme .badge-danger  { background: rgba(239,68,68,0.2)  !important; color: #FCA5A5 !important; }
+    body.dark-theme .badge-warning { background: rgba(245,158,11,0.2) !important; color: #FCD34D !important; }
+    body.dark-theme .badge-secondary { background: rgba(100,116,139,0.2) !important; color: #94A3B8 !important; }
+    /* Scrollbar */
+    body.dark-theme ::-webkit-scrollbar-track { background: #0B0F19 !important; }
+    body.dark-theme ::-webkit-scrollbar-thumb { background: #1E293B !important; }
+    /* Party ledger mobile cards */
+    body.dark-theme .lmc-card { background: #151F32 !important; border-color: #1E293B !important; }
+    body.dark-theme .lmc-voucher, body.dark-theme .lmc-date, body.dark-theme .lmc-item-name { color: var(--txt) !important; }
+    body.dark-theme .lmc-item-meta, body.dark-theme .lmc-label { color: var(--txt2) !important; }
+    body.dark-theme .lmc-bal-val { color: var(--txt) !important; }
+    /* Table search filter row */
+    body.dark-theme .filter-row input,
+    body.dark-theme .filter-row select,
+    body.dark-theme tr.filter-row td { background: #0B0F19 !important; color: var(--txt) !important; }
+    /* Monospace voucher text */
+    body.dark-theme strong[style*="font-family:monospace"] { color: #93C5FD !important; }
+
     * {
       margin: 0;
       padding: 0;
@@ -4169,7 +4249,7 @@
             <div style="display: flex; flex-direction: column; gap: 15px;">
               <!-- Top Row: Search and Bulk Delete -->
               <div style="display: flex; justify-content: space-between; align-items: center; gap: 15px; flex-wrap: wrap;">
-                <input type="text" id="salesSearch" class="light-form-control" placeholder="Search by Invoice No, Customer, Amount..." oninput="renderSales()" style="flex: 1; margin-bottom: 0; min-width: 250px;">
+                <input type="text" id="salesSearch" class="light-form-control" placeholder="Search by Invoice No, Customer, Amount..." oninput="window._salesPage=1; renderSales()" style="flex: 1; margin-bottom: 0; min-width: 250px;">
                 <button class="btn admin-only" id="btnBulkDeleteSales" onclick="bulkDeleteSales()" style="display: none; background: var(--dan); color: white; border: none; font-weight: 700; height: 38px; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; border-radius: var(--r); cursor: pointer; white-space: nowrap;">
                   <i class="fa-solid fa-trash-can"></i> Delete Selected (<span id="selectedSalesCount">0</span>)
                 </button>
@@ -4269,8 +4349,8 @@
             <div style="display: flex; flex-direction: column; gap: 15px;">
               <!-- Top Row: Search and Type Filter -->
               <div class="grid-2">
-                <input type="text" id="receiptSearch" class="light-form-control" placeholder="Search receipts/payments by voucher, party..." oninput="renderReceipts()" style="margin-bottom: 0;">
-                <select id="receiptFilterType" class="light-form-control" onchange="renderReceipts()" style="margin-bottom: 0;">
+                <input type="text" id="receiptSearch" class="light-form-control" placeholder="Search receipts/payments by voucher, party..." oninput="window._receiptsPage=1; renderReceipts()" style="margin-bottom: 0;">
+                <select id="receiptFilterType" class="light-form-control" onchange="window._receiptsPage=1; renderReceipts()" style="margin-bottom: 0;">
                   <option value="All">All Transactions</option>
                   <option value="Receipt">Only Receipts (In)</option>
                   <option value="Payment">Only Payments (Out)</option>
@@ -8748,7 +8828,7 @@
     // ===================================================================
     // Debounce helper for realtime listener UI refresh
     const _renderDebounce = {};
-    function _debouncedRender(key, fn, delay = 1200) {
+    function _debouncedRender(key, fn, delay = 2000) {
       clearTimeout(_renderDebounce[key]);
       _renderDebounce[key] = setTimeout(function() {
         // Use requestAnimationFrame to avoid blocking the UI thread
@@ -10132,7 +10212,7 @@
             recentBody.innerHTML += `
               <tr>
                 <td data-label="Date">${formatDate(t.date)}</td>
-                <td data-label="Voucher No"><strong>${t.voucherNo || t.id}</strong></td>
+                <td data-label="Voucher No"><strong title="${t.voucherNo || t.id}" style="font-family:monospace; font-size:12px;">${formatShortVoucherNo(t.voucherNo || t.id)}</strong></td>
                 <td data-label="Type"><span class="badge ${t.txnType === 'Sale' || t.txnType === 'Payment' ? 'badge-primary' : 'badge-success'}">${t.txnType}</span></td>
                 <td data-label="Debit (Dr)" class="text-right">${debit > 0 ? formatCurrency(debit) : '--'}</td>
                 <td data-label="Credit (Cr)" class="text-right">${credit > 0 ? formatCurrency(credit) : '--'}</td>
@@ -10323,7 +10403,7 @@
             recentTxnsBody.innerHTML += `
               <tr>
                 <td data-label="Date" class="text-center">${formatDate(t.date)}</td>
-                <td data-label="Voucher No" class="text-center"><strong>${t.voucherNo || t.id}</strong></td>
+                <td data-label="Voucher No" class="text-center"><strong title="${t.voucherNo || t.id}" style="font-family:monospace; font-size:12px;">${formatShortVoucherNo(t.voucherNo || t.id)}</strong></td>
                 <td data-label="Party Name">${t.partyName || 'Internal / Cash'}</td>
                 <td data-label="Type" class="text-center"><span class="badge badge-${badgeClass}">${t.txnType}</span></td>
                 <td data-label="Amount" class="text-center">${formatCurrency(grandTotal)}</td>
@@ -12377,17 +12457,26 @@
         return;
       }
 
-      let html = '';
-      list.forEach(t => {
-        const sub = t.totals && t.totals.subTotal ? parseFloat(t.totals.subTotal) : parseFloat(t.debit);
-        const tax = t.totals && t.totals.cgst ? (parseFloat(t.totals.cgst) + parseFloat(t.totals.sgst)) : 0;
-        const grand = t.totals && t.totals.grandTotal ? parseFloat(t.totals.grandTotal) : parseFloat(t.debit);
-        const due = t.totals && t.totals.balanceDue ? parseFloat(t.totals.balanceDue) : 0;
+      // Sort newest first
+      list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
 
+      const PAGE = 60;
+      const displayed = (window._salesPage || 1) * PAGE;
+      const slice = list.slice(0, displayed);
+
+      let html = '';
+      slice.forEach(t => {
+        const sub   = parseFloat(t.totals && t.totals.subTotal ? t.totals.subTotal : t.debit || 0);
+        const tax   = parseFloat(t.totals && t.totals.cgst ? t.totals.cgst : 0) + parseFloat(t.totals && t.totals.sgst ? t.totals.sgst : 0);
+        const grand = parseFloat(t.totals && t.totals.grandTotal ? t.totals.grandTotal : t.debit || 0);
+        const paid  = parseFloat(t.totals && t.totals.paidAmount ? t.totals.paidAmount : 0) + parseFloat(t.totals && t.totals.paidBank ? t.totals.paidBank : 0);
+        const due   = t.totals && t.totals.balanceDue !== undefined ? Math.max(0, parseFloat(t.totals.balanceDue)) : Math.max(0, grand - paid);
+
+        const sv = formatShortVoucherNo(t.voucherNo || t.id);
         html += `
           <tr>
             <td class="admin-only" style="text-align: center;"><input type="checkbox" class="sales-select-checkbox" data-id="${t.id}" onchange="updateSelectedSalesCount()" style="width: 16px; height: 16px; cursor: pointer;"></td>
-            <td><strong>${t.voucherNo}</strong></td>
+            <td title="${t.voucherNo || t.id}"><strong style="font-family:monospace; font-size:12px;">${sv}</strong></td>
             <td>${formatDate(t.date)}</td>
             <td><strong>${t.partyName}</strong></td>
             <td class="text-right">${formatCurrency(sub)}</td>
@@ -12405,6 +12494,14 @@
           </tr>
         `;
       });
+
+      if (list.length > displayed) {
+        const rem = list.length - displayed;
+        html += `<tr><td colspan="9" class="text-center" style="padding:12px;">
+          <button class="btn btn-secondary btn-sm" onclick="window._salesPage=(window._salesPage||1)+1; renderSales();">
+            <i class="fa-solid fa-arrow-down"></i> Show More (${rem} remaining)
+          </button></td></tr>`;
+      }
       body.innerHTML = html;
     }
 
@@ -12420,16 +12517,25 @@
         return;
       }
 
+      // Sort newest first
+      list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+      const PAGE = 60;
+      const displayed = (window._purchasesPage || 1) * PAGE;
+      const slice = list.slice(0, displayed);
+
       let html = '';
-      list.forEach(t => {
-        const sub = t.totals && t.totals.subTotal ? parseFloat(t.totals.subTotal) : parseFloat(t.credit);
-        const tax = t.totals && t.totals.cgst ? (parseFloat(t.totals.cgst) + parseFloat(t.totals.sgst)) : 0;
-        const grand = t.totals && t.totals.grandTotal ? parseFloat(t.totals.grandTotal) : parseFloat(t.credit);
-        const due = t.totals && t.totals.balanceDue ? parseFloat(t.totals.balanceDue) : 0;
+      slice.forEach(t => {
+        const sub   = parseFloat(t.totals && t.totals.subTotal ? t.totals.subTotal : t.credit || 0);
+        const tax   = parseFloat(t.totals && t.totals.cgst ? t.totals.cgst : 0) + parseFloat(t.totals && t.totals.sgst ? t.totals.sgst : 0);
+        const grand = parseFloat(t.totals && t.totals.grandTotal ? t.totals.grandTotal : t.credit || 0);
+        const paid  = parseFloat(t.totals && t.totals.paidAmount ? t.totals.paidAmount : 0) + parseFloat(t.totals && t.totals.paidBank ? t.totals.paidBank : 0);
+        const due   = t.totals && t.totals.balanceDue !== undefined ? Math.max(0, parseFloat(t.totals.balanceDue)) : Math.max(0, grand - paid);
+        const sv = formatShortVoucherNo(t.voucherNo || t.id);
 
         html += `
           <tr>
-            <td><strong>${t.voucherNo}</strong></td>
+            <td title="${t.voucherNo || t.id}"><strong style="font-family:monospace; font-size:12px;">${sv}</strong></td>
             <td>${formatDate(t.date)}</td>
             <td><strong>${t.partyName}</strong></td>
             <td class="text-right">${formatCurrency(sub)}</td>
@@ -12447,6 +12553,14 @@
           </tr>
         `;
       });
+
+      if (list.length > displayed) {
+        const rem = list.length - displayed;
+        html += `<tr><td colspan="8" class="text-center" style="padding:12px;">
+          <button class="btn btn-secondary btn-sm" onclick="window._purchasesPage=(window._purchasesPage||1)+1; renderPurchases();">
+            <i class="fa-solid fa-arrow-down"></i> Show More (${rem} remaining)
+          </button></td></tr>`;
+      }
       body.innerHTML = html;
     }
 
@@ -12913,13 +13027,21 @@
         return;
       }
 
+      // Sort newest first
+      list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+      const PAGE = 60;
+      const displayed = (window._receiptsPage || 1) * PAGE;
+      const slice = list.slice(0, displayed);
+
       let html = '';
-      list.forEach(t => {
+      slice.forEach(t => {
         const amt = t.txnType === 'Receipt' ? parseFloat(t.credit || 0) : parseFloat(t.debit || 0);
+        const sv = formatShortVoucherNo(t.voucherNo || t.id);
 
         html += `
           <tr>
-            <td><strong>${t.voucherNo || t.id}</strong></td>
+            <td title="${t.voucherNo || t.id}"><strong style="font-family:monospace; font-size:12px;">${sv}</strong></td>
             <td>${formatDate(t.date)}</td>
             <td><strong>${t.partyName}</strong></td>
             <td><span class="badge ${t.txnType === 'Receipt' ? 'badge-success' : 'badge-danger'}">${t.txnType}</span></td>
@@ -12931,7 +13053,7 @@
               <div class="flex-gap" style="justify-content: center;">
                 <button class="btn btn-icon" onclick="viewVoucher('${t.id}')" title="View Voucher"><i class="fa-solid fa-eye"></i></button>
                 <button class="btn btn-icon" onclick="printVoucher('${t.id}')" title="Print Voucher"><i class="fa-solid fa-print"></i></button>
-                ${t.proofUrl ? `<a href="javascript:void(0)" onclick="openDocumentViewer('${t.proofUrl}', 'Payment Proof - ${t.voucherNo || t.id}')" class="btn btn-icon" title="View Payment Proof" style="color:var(--acc);"><i class="fa-solid fa-file-image"></i></a>` : ''}
+                ${t.proofUrl ? `<a href="javascript:void(0)" onclick="openDocumentViewer('${t.proofUrl}', 'Payment Proof - ${sv}')" class="btn btn-icon" title="View Payment Proof" style="color:var(--acc);"><i class="fa-solid fa-file-image"></i></a>` : ''}
                 <button class="btn btn-icon admin-only" onclick="editReceipt('${t.id}')"><i class="fa-solid fa-pen-to-square"></i></button>
                 <button class="btn btn-icon admin-only" onclick="deleteTransaction('${t.id}')" style="color:var(--dan);"><i class="fa-solid fa-trash"></i></button>
               </div>
@@ -12939,6 +13061,14 @@
           </tr>
         `;
       });
+
+      if (list.length > displayed) {
+        const rem = list.length - displayed;
+        html += `<tr><td colspan="9" class="text-center" style="padding:12px;">
+          <button class="btn btn-secondary btn-sm" onclick="window._receiptsPage=(window._receiptsPage||1)+1; renderReceipts();">
+            <i class="fa-solid fa-arrow-down"></i> Show More (${rem} remaining)
+          </button></td></tr>`;
+      }
       body.innerHTML = html;
     }
 
