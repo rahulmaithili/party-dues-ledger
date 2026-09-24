@@ -3480,6 +3480,108 @@
       }
     }
     /* ─────────────────────────────────────────────────────────────────────── */
+
+    /* ── CRM FOLLOW-UPS TAB: HIDDEN ──────────────────────────────────────── */
+    #btnFollowupTab { display: none !important; }
+    .ledger-modal-tabs { display: none !important; }
+    #followupTabContent { display: none !important; }
+
+    /* ── PC LEDGER COMPACT: show 10-15 rows ──────────────────────────────── */
+    /* Compact party summary card */
+    .party-ledger-summary-card {
+      padding: 7px 12px !important;
+      margin-bottom: 6px !important;
+      border-radius: 8px !important;
+    }
+    .plsc-name { font-size: 14px !important; margin-bottom: 1px !important; }
+    .plsc-sub  { font-size: 10.5px !important; }
+    .plsc-label { font-size: 9px !important; margin-bottom: 1px !important; }
+    .plsc-closing-val { font-size: 14px !important; }
+    .plsc-bottom {
+      margin-top: 5px !important;
+      padding-top: 5px !important;
+      font-size: 10.5px !important;
+      gap: 4px !important;
+    }
+    /* Compact live stats bar */
+    .ledger-live-card { padding: 3px 8px !important; }
+    .ledger-live-card .live-label { font-size: 9px !important; }
+    .ledger-live-card .live-val   { font-size: 11.5px !important; }
+    /* Compact toolbar */
+    .ledger-toolbar { margin-bottom: 6px !important; gap: 6px !important; }
+    /* Compact modal body padding */
+    #ledgerModal.page-mode .modal-body { padding: 8px 14px !important; }
+    /* Compact table header */
+    #ledgerModal #ledgerTable thead th {
+      padding: 5px 7px !important;
+      font-size: 11px !important;
+    }
+    /* Compact table rows — more entries visible */
+    @media (min-width: 769px) {
+      #ledgerModal #ledgerTable tbody td {
+        padding: 4px 7px !important;
+        font-size: 11.5px !important;
+        vertical-align: middle !important;
+      }
+      #ledgerModal #ledgerTable tbody .item-sub-row {
+        font-size: 11.5px !important;
+        padding: 1px 0 !important;
+      }
+      /* Compact modal header */
+      #ledgerModal.page-mode .modal-header {
+        padding: 8px 16px !important;
+      }
+      #ledgerModal.page-mode .modal-header h3 {
+        font-size: 15px !important;
+      }
+      /* Make modal footer compact */
+      #ledgerModal .modal-footer {
+        padding: 8px 16px !important;
+        gap: 6px !important;
+      }
+      #ledgerModal .modal-footer .btn {
+        height: 32px !important;
+        padding: 0 12px !important;
+        font-size: 12px !important;
+      }
+    }
+
+    /* ── MOBILE: hide bottom nav when ledger is open ─────────────────────── */
+    #ledgerModal.page-mode ~ .mobile-bottom-bar,
+    body:has(#ledgerModal.page-mode) .mobile-bottom-bar {
+      display: none !important;
+    }
+
+    /* ── MOBILE: fix ledger page layout ─────────────────────────────────── */
+    @media (max-width: 768px) {
+      /* Ledger page-mode on mobile: flex column so footer sticks to bottom */
+      #ledgerModal.page-mode .modal-card {
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: 100dvh !important;
+      }
+      #ledgerModal.page-mode .modal-body {
+        flex: 1 !important;
+        padding: 8px !important;
+        overflow-y: auto !important;
+      }
+      #ledgerModal.page-mode .modal-footer.ledger-modal-footer {
+        position: sticky !important;
+        bottom: 0 !important;
+        z-index: 20 !important;
+        background: var(--card) !important;
+        box-shadow: 0 -2px 8px rgba(0,0,0,0.10) !important;
+      }
+      /* Compact mobile party card */
+      .party-ledger-summary-card {
+        padding: 6px 10px !important;
+        margin-bottom: 6px !important;
+      }
+      .plsc-top { gap: 6px !important; }
+      .plsc-name { font-size: 13px !important; }
+      .plsc-closing-val { font-size: 13px !important; }
+      .plsc-bottom { margin-top: 4px !important; padding-top: 4px !important; font-size: 10px !important; }
+    }
   </style>
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -9305,6 +9407,9 @@
       el.style.display = 'block';
       window._ledgerPageOpen = true;
       el.scrollTop = 0;
+      // Hide mobile bottom nav
+      const mobileNav = document.querySelector('.mobile-bottom-bar');
+      if (mobileNav) mobileNav.style.display = 'none';
     }
 
     function closeLedgerPage() {
@@ -9314,6 +9419,9 @@
       el.style.display = 'none';
       window._ledgerPageOpen = false;
       window._activeLedgerPartyId = null;
+      // Restore mobile bottom nav
+      const mobileNav = document.querySelector('.mobile-bottom-bar');
+      if (mobileNav) mobileNav.style.display = '';
     }
 
     function closeModal(id) {
