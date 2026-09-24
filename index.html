@@ -3434,154 +3434,96 @@
       padding-top: 14px;
     }
 
-    /* ── LEDGER PAGE MODE (inline, not popup) ─────────────────────────────── */
-    #ledgerModal.page-mode {
-      position: fixed !important;
-      display: block !important;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      bottom: 0 !important;
-      z-index: 200 !important;
-      background: var(--bg) !important;
-      backdrop-filter: none !important;
-      overflow-y: auto !important;
-      padding: 0 !important;
+    /* ── IN-DISPLAY ACCOUNT STATEMENT & LEDGER MODULE (#partyLedgerView) ── */
+    #partyLedgerView {
+      width: 100%;
     }
-    #ledgerModal.page-mode .modal-card {
-      max-width: 100% !important;
-      width: 100% !important;
-      margin: 0 !important;
-      border-radius: 0 !important;
-      box-shadow: none !important;
-      min-height: 100vh !important;
-      display: flex !important;
-      flex-direction: column !important;
-    }
-    #ledgerModal.page-mode .modal-header {
-      border-radius: 0 !important;
-      padding: 14px 20px !important;
-      position: sticky !important;
-      top: 0 !important;
-      z-index: 10 !important;
-    }
-    #ledgerModal.page-mode .modal-body {
-      flex: 1 !important;
-      overflow: visible !important;
-    }
-    /* Back button shown in page-mode header */
-    #ledgerBackBtn { display: none; }
-    #ledgerModal.page-mode #ledgerBackBtn { display: inline-flex; }
-    #ledgerModal.page-mode .fa-xmark.pointer { display: none !important; }
-    /* Sidebar offset when sidebar is open on desktop */
-    @media (min-width: 769px) {
-      #ledgerModal.page-mode {
-        left: var(--sidebar-width, 240px) !important;
-      }
-    }
-    /* ─────────────────────────────────────────────────────────────────────── */
 
-    /* ── CRM FOLLOW-UPS TAB: HIDDEN ──────────────────────────────────────── */
-    #btnFollowupTab { display: none !important; }
-    .ledger-modal-tabs { display: none !important; }
-    #followupTabContent { display: none !important; }
-
-    /* ── PC LEDGER COMPACT: show 10-15 rows ──────────────────────────────── */
-    /* Compact party summary card */
-    .party-ledger-summary-card {
-      padding: 7px 12px !important;
-      margin-bottom: 6px !important;
-      border-radius: 8px !important;
+    /* Party Summary Card */
+    #partyLedgerView .party-ledger-summary-card {
+      padding: 8px 14px !important;
+      margin-bottom: 8px !important;
+      border-radius: 10px !important;
+      background: var(--card) !important;
+      border: 1px solid var(--brd) !important;
     }
-    .plsc-name { font-size: 14px !important; margin-bottom: 1px !important; }
-    .plsc-sub  { font-size: 10.5px !important; }
-    .plsc-label { font-size: 9px !important; margin-bottom: 1px !important; }
-    .plsc-closing-val { font-size: 14px !important; }
-    .plsc-bottom {
-      margin-top: 5px !important;
-      padding-top: 5px !important;
-      font-size: 10.5px !important;
-      gap: 4px !important;
-    }
-    /* Compact live stats bar */
-    .ledger-live-card { padding: 3px 8px !important; }
-    .ledger-live-card .live-label { font-size: 9px !important; }
-    .ledger-live-card .live-val   { font-size: 11.5px !important; }
-    /* Compact toolbar */
-    .ledger-toolbar { margin-bottom: 6px !important; gap: 6px !important; }
-    /* Compact modal body padding */
-    #ledgerModal.page-mode .modal-body { padding: 8px 14px !important; }
-    /* Compact table header */
-    #ledgerModal #ledgerTable thead th {
-      padding: 5px 7px !important;
+    #partyLedgerView .plsc-name { font-size: 15px !important; font-weight: 800 !important; margin-bottom: 2px !important; }
+    #partyLedgerView .plsc-sub { font-size: 11px !important; }
+    #partyLedgerView .plsc-label { font-size: 9.5px !important; font-weight: 700 !important; text-transform: uppercase; margin-bottom: 1px !important; }
+    #partyLedgerView .plsc-closing-val { font-size: 16px !important; font-weight: 800 !important; }
+    #partyLedgerView .plsc-bottom {
+      margin-top: 6px !important;
+      padding-top: 6px !important;
       font-size: 11px !important;
+      gap: 6px !important;
     }
-    /* Compact table rows — more entries visible */
+
+    /* Dedicated Filter Card Inputs */
+    #partyLedgerView .dashboard-card {
+      border-radius: 10px !important;
+    }
+
+    /* Sleek Dark Table Header (Reference Image 2) */
+    #partyLedgerView #ledgerTable thead tr {
+      background: #0f172a !important;
+      color: #ffffff !important;
+    }
+    #partyLedgerView #ledgerTable thead th {
+      background: #0f172a !important;
+      color: #ffffff !important;
+      font-size: 11.5px !important;
+      font-weight: 700 !important;
+      padding: 7px 8px !important;
+      border: 1px solid #1e293b !important;
+      white-space: nowrap !important;
+      letter-spacing: 0.3px !important;
+    }
+    body.dark-theme #partyLedgerView #ledgerTable thead tr,
+    body.dark-theme #partyLedgerView #ledgerTable thead th {
+      background: #1e293b !important;
+      border-color: rgba(255, 255, 255, 0.1) !important;
+    }
+
+    /* Table Rows: Compact accounting software density (10-15 rows visible) */
     @media (min-width: 769px) {
-      #ledgerModal #ledgerTable tbody td {
-        padding: 4px 7px !important;
-        font-size: 11.5px !important;
+      #partyLedgerView #ledgerTable tbody td {
+        padding: 4px 8px !important;
+        font-size: 12px !important;
         vertical-align: middle !important;
+        border: 1px solid var(--brd) !important;
       }
-      #ledgerModal #ledgerTable tbody .item-sub-row {
+      #partyLedgerView #ledgerTable tbody tr:nth-child(even) td {
+        background: rgba(0, 0, 0, 0.015) !important;
+      }
+      #partyLedgerView #ledgerTable tbody tr:hover td {
+        background: rgba(59, 130, 246, 0.06) !important;
+      }
+      #partyLedgerView #ledgerTable tbody .item-sub-row {
         font-size: 11.5px !important;
         padding: 1px 0 !important;
       }
-      /* Compact modal header */
-      #ledgerModal.page-mode .modal-header {
-        padding: 8px 16px !important;
+      #partyLedgerView .ledger-mobile-cell {
+        display: none !important;
       }
-      #ledgerModal.page-mode .modal-header h3 {
-        font-size: 15px !important;
-      }
-      /* Make modal footer compact */
-      #ledgerModal .modal-footer {
-        padding: 8px 16px !important;
-        gap: 6px !important;
-      }
-      #ledgerModal .modal-footer .btn {
-        height: 32px !important;
-        padding: 0 12px !important;
-        font-size: 12px !important;
+      #partyLedgerView .ledger-desktop-cell {
+        display: table-cell !important;
       }
     }
 
-    /* ── MOBILE: hide bottom nav when ledger is open ─────────────────────── */
-    #ledgerModal.page-mode ~ .mobile-bottom-bar,
-    body:has(#ledgerModal.page-mode) .mobile-bottom-bar {
-      display: none !important;
-    }
-
-    /* ── MOBILE: fix ledger page layout ─────────────────────────────────── */
+    /* Mobile Styles */
     @media (max-width: 768px) {
-      /* Ledger page-mode on mobile: flex column so footer sticks to bottom */
-      #ledgerModal.page-mode .modal-card {
-        display: flex !important;
-        flex-direction: column !important;
-        min-height: 100dvh !important;
+      #partyLedgerView .ledger-desktop-cell {
+        display: none !important;
       }
-      #ledgerModal.page-mode .modal-body {
-        flex: 1 !important;
-        padding: 8px !important;
-        overflow-y: auto !important;
+      #partyLedgerView .ledger-mobile-cell {
+        display: table-cell !important;
+        padding: 6px !important;
       }
-      #ledgerModal.page-mode .modal-footer.ledger-modal-footer {
-        position: sticky !important;
-        bottom: 0 !important;
-        z-index: 20 !important;
-        background: var(--card) !important;
-        box-shadow: 0 -2px 8px rgba(0,0,0,0.10) !important;
+      #partyLedgerView #ledgerTable thead {
+        display: none !important;
       }
-      /* Compact mobile party card */
-      .party-ledger-summary-card {
-        padding: 6px 10px !important;
-        margin-bottom: 6px !important;
-      }
-      .plsc-top { gap: 6px !important; }
-      .plsc-name { font-size: 13px !important; }
-      .plsc-closing-val { font-size: 13px !important; }
-      .plsc-bottom { margin-top: 4px !important; padding-top: 4px !important; font-size: 10px !important; }
     }
+    /* ─────────────────────────────────────────────────────────────────────── */
   </style>
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -4274,6 +4216,184 @@
 
           <div class="kpi-grid" id="partiesGridContainer" style="display: none; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 20px;">
             <!-- Grid cards will be populated here -->
+          </div>
+        </section>
+
+        <!-- ==================== ACCOUNT STATEMENT & LEDGER IN-DISPLAY MODULE ==================== -->
+        <section id="partyLedgerView" class="page">
+          <!-- Page Header -->
+          <div class="page-header" style="margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <button class="btn btn-secondary btn-sm" onclick="goBackFromLedger()" style="padding: 6px 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-arrow-left"></i> Back
+              </button>
+              <div>
+                <h2 id="ledgerPageTitle" style="font-size: 20px; font-weight: 800; margin: 0; color: var(--txt);">Account Statement</h2>
+                <p style="margin: 0; font-size: 12px; color: var(--txt2);">Detailed running balance ledger and transaction log</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Hidden Followup party reference for print / export scripts -->
+          <input type="hidden" id="followupPartyId">
+
+          <!-- Party Quick Summary Card (Compact) -->
+          <div class="party-ledger-summary-card" style="margin-bottom: 12px;">
+            <div class="plsc-top">
+              <div class="plsc-left">
+                <h3 id="ledgerPartyName" class="plsc-name">Loading...</h3>
+                <div class="plsc-sub">
+                  <span><i class="fa-solid fa-phone" style="font-size:10px; margin-right:4px;"></i><span id="ledgerPartyMobile">--</span></span>
+                  <span class="gst-only" id="ledgerPartyGstinWrap" style="margin-left:8px; display:none;"><i class="fa-solid fa-receipt" style="font-size:10px; margin-right:4px;"></i><span id="ledgerPartyGstin">--</span></span>
+                </div>
+              </div>
+              <div class="plsc-right">
+                <span class="plsc-label">Closing Balance</span>
+                <div class="plsc-closing-val">
+                  <span id="ledgerClosingBalance">₹0.00</span>
+                </div>
+              </div>
+            </div>
+            <div class="plsc-bottom">
+              <div class="plsc-pill">
+                <span>Opening:</span>
+                <strong id="ledgerOpeningBalance" style="color:var(--txt);">₹0.00</strong>
+              </div>
+              <div class="plsc-pill plsc-cyl-pill">
+                <span><i class="fa-solid fa-gas-pump" style="margin-right:4px;"></i>Cylinders Holding:</span>
+                <span id="ledgerCylindersHolding">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- DEDICATED FILTERS CARD (Matches User Reference Design) -->
+          <div class="dashboard-card" style="margin-bottom: 14px; padding: 14px 18px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--brd); padding-bottom: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; color: var(--txt);">
+                <i class="fa-solid fa-filter" style="color: var(--pri);"></i> Filters
+              </div>
+              <button type="button" class="btn btn-secondary btn-sm" onclick="resetLedgerFilters()" style="border-radius: 20px; padding: 3px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
+                <i class="fa-solid fa-rotate-left"></i> Clear
+              </button>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
+              <!-- 1. Search Box -->
+              <div>
+                <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
+                  <i class="fa-solid fa-magnifying-glass" style="font-size: 10px;"></i> Search / Particulars
+                </label>
+                <input type="text" id="lfSearch" placeholder="Voucher, item, note..." oninput="filterLedgerTable()" class="light-form-control" style="height: 34px; font-size: 12px; margin: 0;">
+              </div>
+              <!-- 2. Type Dropdown -->
+              <div>
+                <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
+                  <i class="fa-solid fa-tag" style="font-size: 10px;"></i> Transaction Type
+                </label>
+                <select id="lfType" onchange="filterLedgerTable()" class="light-form-control" style="height: 34px; font-size: 12px; margin: 0;">
+                  <option value="All">All Types</option>
+                  <option value="Sale">Sale</option>
+                  <option value="Receipt">Receipt</option>
+                  <option value="Purchase">Purchase</option>
+                  <option value="Payment">Payment</option>
+                  <option value="Return">Return</option>
+                </select>
+              </div>
+              <!-- 3. From Date -->
+              <div>
+                <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
+                  <i class="fa-regular fa-calendar-days" style="font-size: 10px;"></i> From Date
+                </label>
+                <input type="date" id="lfFromDate" onchange="filterLedgerTable()" class="light-form-control" style="height: 34px; font-size: 12px; margin: 0;">
+              </div>
+              <!-- 4. To Date -->
+              <div>
+                <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
+                  <i class="fa-regular fa-calendar-days" style="font-size: 10px;"></i> To Date
+                </label>
+                <input type="date" id="lfToDate" onchange="filterLedgerTable()" class="light-form-control" style="height: 34px; font-size: 12px; margin: 0;">
+              </div>
+              <!-- 5. Min Amount -->
+              <div>
+                <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
+                  <i class="fa-solid fa-indian-rupee-sign" style="font-size: 10px;"></i> Min Amount
+                </label>
+                <input type="number" id="lfMinAmount" placeholder="Min ₹..." oninput="filterLedgerTable()" class="light-form-control" style="height: 34px; font-size: 12px; margin: 0;">
+              </div>
+              <!-- 6. Max Amount -->
+              <div>
+                <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
+                  <i class="fa-solid fa-indian-rupee-sign" style="font-size: 10px;"></i> Max Amount
+                </label>
+                <input type="number" id="lfMaxAmount" placeholder="Max ₹..." oninput="filterLedgerTable()" class="light-form-control" style="height: 34px; font-size: 12px; margin: 0;">
+              </div>
+            </div>
+          </div>
+
+          <!-- STATEMENT ENTRIES CARD (Matches User Reference Design) -->
+          <div class="dashboard-card" style="padding: 14px 18px;">
+            <!-- Card Header: Title + Counters + Action Buttons -->
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <h3 style="margin: 0; font-weight: 700; font-size: 15px; color: var(--txt); display: flex; align-items: center; gap: 6px;">
+                  <i class="fa-solid fa-book-open" style="color: var(--pri);"></i> Statement Entries
+                </h3>
+                <span id="ledgerFilteredCount" class="badge" style="background: rgba(59, 130, 246, 0.1); color: var(--pri); font-weight: 600; font-size: 11px; padding: 2px 8px; border: 1px solid rgba(59, 130, 246, 0.25);"></span>
+                <span id="ledgerCalcBadge" style="background: rgba(16, 185, 129, 0.1); color: var(--suc); border: 1px solid rgba(16, 185, 129, 0.25); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">Live: All</span>
+                <button class="btn admin-only" id="btnBulkDeleteLedger" onclick="bulkDeleteLedgerTransactions()" style="display: none; background: var(--dan); color: white; border: none; font-weight: 700; height: 28px; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border-radius: var(--r); cursor: pointer; font-size: 11px; white-space: nowrap;">
+                  <i class="fa-solid fa-trash-can"></i> Delete (<span id="selectedLedgerCount">0</span>)
+                </button>
+              </div>
+
+              <!-- Quick Actions -->
+              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+                <button class="btn btn-primary btn-sm hide-for-party" id="ledgerAddSaleBtn" style="height: 30px; font-size: 11.5px; padding: 0 10px;"><i class="fa-solid fa-plus"></i> Add Sale</button>
+                <button class="btn btn-success btn-sm hide-for-party" id="ledgerAddPaymentBtn" style="height: 30px; font-size: 11.5px; padding: 0 10px;"><i class="fa-solid fa-arrow-down-long"></i> Add Receipt</button>
+                <button class="btn btn-success btn-sm" onclick="exportPartyLedgerExcel()" style="height: 30px; font-size: 11.5px; padding: 0 10px;"><i class="fa-solid fa-file-excel"></i> Excel</button>
+                <button class="btn btn-primary btn-sm" onclick="printPartyLedger()" style="height: 30px; font-size: 11.5px; padding: 0 10px;"><i class="fa-solid fa-print"></i> Print</button>
+                <button class="btn btn-info btn-sm hide-for-party" id="ledgerNoDuesBtn" onclick="printNoDuesLetter()" style="height: 30px; font-size: 11.5px; padding: 0 10px;"><i class="fa-solid fa-file-invoice"></i> No Dues</button>
+                <button class="btn btn-accent btn-sm hide-for-party" id="ledgerNocBtn" onclick="printNocLetter()" style="height: 30px; font-size: 11.5px; padding: 0 10px;"><i class="fa-solid fa-shield-halved"></i> NOC</button>
+              </div>
+            </div>
+
+            <!-- Live Totals Bar -->
+            <div class="ledger-live-bar" style="margin-bottom: 10px;">
+              <div class="ledger-live-card card-debit">
+                <span class="live-label">Debit (Sale)</span>
+                <strong id="barDebitTotal" class="live-val text-danger">₹0.00</strong>
+              </div>
+              <div class="ledger-live-card card-credit">
+                <span class="live-label">Credit (Receipt)</span>
+                <strong id="barCreditTotal" class="live-val text-success">₹0.00</strong>
+              </div>
+              <div class="ledger-live-card card-net">
+                <span class="live-label">Net Balance</span>
+                <strong id="barNetTotal" class="live-val text-primary">₹0.00</strong>
+              </div>
+            </div>
+
+            <!-- Table with Dark / Sleek Header (Matches User Reference Image 2) -->
+            <div class="table-container" style="border: 1px solid var(--brd); border-radius: 8px; overflow: auto; max-height: calc(100vh - 340px);">
+              <table id="ledgerTable" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                  <tr style="background: #0f172a; color: #ffffff;">
+                    <th class="admin-only text-center" style="width: 38px; min-width: 38px; vertical-align: middle; background: #0f172a; color: #fff;">
+                      <input type="checkbox" id="selectAllLedger" onchange="toggleSelectAllLedger(this)" title="Select All" style="cursor: pointer; width: 16px; height: 16px;">
+                    </th>
+                    <th style="width: 105px; min-width: 105px; white-space: nowrap; vertical-align: middle; background: #0f172a; color: #fff;">Date</th>
+                    <th style="width: 120px; min-width: 120px; white-space: nowrap; vertical-align: middle; background: #0f172a; color: #fff;">Voucher No</th>
+                    <th style="vertical-align: middle; min-width: 160px; background: #0f172a; color: #fff;">Product / Particulars</th>
+                    <th class="text-center" style="width: 75px; min-width: 75px; vertical-align: middle; background: #0f172a; color: #fff;">Qty</th>
+                    <th class="text-right" style="width: 95px; min-width: 95px; vertical-align: middle; background: #0f172a; color: #fff;">Rate (₹)</th>
+                    <th class="text-center" style="width: 75px; min-width: 75px; vertical-align: middle; background: #0f172a; color: #fff;">Type</th>
+                    <th class="text-right" style="width: 105px; min-width: 105px; vertical-align: middle; background: #0f172a; color: #fff;">Debit (₹)</th>
+                    <th class="text-right" style="width: 105px; min-width: 105px; vertical-align: middle; background: #0f172a; color: #fff;">Credit (₹)</th>
+                    <th class="text-right" style="width: 115px; min-width: 115px; vertical-align: middle; background: #0f172a; color: #fff;">Running Balance</th>
+                    <th class="text-center" style="width: 100px; min-width: 100px; vertical-align: middle; background: #0f172a; color: #fff;">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="ledgerTableBody"></tbody>
+              </table>
+            </div>
           </div>
         </section>
 
@@ -6827,277 +6947,8 @@
   </div>
 
   <!-- PARTY LEDGER HISTORY MODAL -->
-  <div class="modal-backdrop" id="ledgerModal">
-    <div class="modal-card large" style="max-width: 1140px; width: 92%;">
-      <div class="modal-header">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <button id="ledgerBackBtn" class="btn btn-secondary btn-sm" onclick="closeLedgerPage()" style="align-items:center; gap:6px; padding:5px 12px;">
-            <i class="fa-solid fa-arrow-left"></i> Back
-          </button>
-          <h3 id="ledgerModalTitle">Party Statement Ledger</h3>
-        </div>
-        <i class="fa-solid fa-xmark pointer" onclick="closeLedgerPage()"></i>
-      </div>
-      <div class="modal-body" style="min-width: 0; overflow-x: hidden;">
-        <!-- Party Quick Summary Card -->
-        <div class="party-ledger-summary-card">
-          <div class="plsc-top">
-            <div class="plsc-left">
-              <h3 id="ledgerPartyName" class="plsc-name">Loading...</h3>
-              <div class="plsc-sub">
-                <span><i class="fa-solid fa-phone" style="font-size:10px; margin-right:4px;"></i><span id="ledgerPartyMobile">--</span></span>
-                <span class="gst-only" id="ledgerPartyGstinWrap" style="margin-left:8px; display:none;"><i class="fa-solid fa-receipt" style="font-size:10px; margin-right:4px;"></i><span id="ledgerPartyGstin">--</span></span>
-              </div>
-            </div>
-            <div class="plsc-right">
-              <span class="plsc-label">Closing Balance</span>
-              <div class="plsc-closing-val">
-                <span id="ledgerClosingBalance">₹0.00</span>
-              </div>
-            </div>
-          </div>
-          <div class="plsc-bottom">
-            <div class="plsc-pill">
-              <span>Opening:</span>
-              <strong id="ledgerOpeningBalance" style="color:var(--txt);">₹0.00</strong>
-            </div>
-            <div class="plsc-pill plsc-cyl-pill">
-              <span><i class="fa-solid fa-gas-pump" style="margin-right:4px;"></i>Cylinders Holding:</span>
-              <span id="ledgerCylindersHolding">0</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="tabs ledger-modal-tabs">
-          <button class="btn btn-primary" id="btnLedgerTab" onclick="switchLedgerTab('ledger')"><i class="fa-solid fa-file-invoice" style="margin-right:5px;"></i>Account Statement</button>
-          <button class="btn btn-secondary hide-for-party" id="btnFollowupTab" onclick="switchLedgerTab('followup')"><i class="fa-solid fa-comments" style="margin-right:5px;"></i>CRM Follow-ups</button>
-        </div>
-
-        <div id="ledgerTabContent">
-          <!-- Ledger Toolbar: Bulk Actions, Live Calculation Badges & Counters -->
-          <div class="ledger-toolbar">
-            <div class="ledger-toolbar-top">
-              <div style="display: flex; align-items: center; gap: 8px;">
-                <span id="ledgerFilteredCount" style="font-size: 12.5px; color: var(--txt2); font-weight: 600;"></span>
-                <span id="ledgerCalcBadge" style="background: rgba(59, 130, 246, 0.1); color: var(--pri); border: 1px solid rgba(59, 130, 246, 0.25); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">Live: All</span>
-              </div>
-              <div style="display: flex; align-items: center; gap: 6px;">
-                <button type="button" class="btn btn-secondary btn-sm" id="btnToggleMobileLedgerFilters" onclick="toggleMobileLedgerFilters()" style="display: none; height: 30px; font-size: 12px; align-items: center; gap: 6px;">
-                  <i class="fa-solid fa-filter"></i> Filters
-                </button>
-                <button class="btn admin-only" id="btnBulkDeleteLedger" onclick="bulkDeleteLedgerTransactions()" style="display: none; background: var(--dan); color: white; border: none; font-weight: 700; height: 30px; align-items: center; justify-content: center; gap: 6px; padding: 0 10px; border-radius: var(--r); cursor: pointer; font-size: 11.5px; white-space: nowrap;">
-                  <i class="fa-solid fa-trash-can"></i> Delete (<span id="selectedLedgerCount">0</span>)
-                </button>
-              </div>
-            </div>
-            <div class="ledger-live-bar">
-              <div class="ledger-live-card card-debit">
-                <span class="live-label">Debit (Sale)</span>
-                <strong id="barDebitTotal" class="live-val text-danger">₹0.00</strong>
-              </div>
-              <div class="ledger-live-card card-credit">
-                <span class="live-label">Credit (Receipt)</span>
-                <strong id="barCreditTotal" class="live-val text-success">₹0.00</strong>
-              </div>
-              <div class="ledger-live-card card-net">
-                <span class="live-label">Net Balance</span>
-                <strong id="barNetTotal" class="live-val text-primary">₹0.00</strong>
-              </div>
-            </div>
-          </div>
-
-          <!-- Mobile-only Filter Panel (collapsible on small screens) -->
-          <div id="ledgerMobileFilterPanel" style="display: none; background: var(--card); border: 1px solid var(--brd); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
-            <div style="font-size: 12px; font-weight: 700; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
-              <span><i class="fa-solid fa-filter"></i> Column Filters</span>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="resetLedgerFilters()" style="padding: 2px 8px; font-size: 11px;"><i class="fa-solid fa-rotate-left"></i> Reset</button>
-            </div>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-              <div>
-                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Date</label>
-                <input type="text" id="lfDateMob" placeholder="Filter date..." oninput="syncAndFilterLedger('date', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
-              </div>
-              <div>
-                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Voucher No</label>
-                <input type="text" id="lfVoucherMob" placeholder="Voucher no..." oninput="syncAndFilterLedger('voucher', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
-              </div>
-              <div style="grid-column: span 2;">
-                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Product / Particulars</label>
-                <input type="text" id="lfProductMob" placeholder="Product name or details..." oninput="syncAndFilterLedger('product', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
-              </div>
-              <div>
-                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Quantity (Qty)</label>
-                <input type="text" id="lfQtyMob" placeholder="Qty..." oninput="syncAndFilterLedger('qty', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
-              </div>
-              <div>
-                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Rate (₹)</label>
-                <input type="text" id="lfRateMob" placeholder="Rate..." oninput="syncAndFilterLedger('rate', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
-              </div>
-              <div>
-                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Type</label>
-                <select id="lfTypeMob" onchange="syncAndFilterLedger('type', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
-                  <option value="All">All Types</option>
-                  <option value="Sale">Sale</option>
-                  <option value="Receipt">Receipt</option>
-                  <option value="Payment">Payment</option>
-                  <option value="Purchase">Purchase</option>
-                  <option value="Return">Return</option>
-                </select>
-              </div>
-              <div>
-                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Debit (₹)</label>
-                <input type="text" id="lfDebitMob" placeholder="Debit..." oninput="syncAndFilterLedger('debit', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
-              </div>
-              <div>
-                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Credit (₹)</label>
-                <input type="text" id="lfCreditMob" placeholder="Credit..." oninput="syncAndFilterLedger('credit', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
-              </div>
-              <div>
-                <label style="font-size: 11px; font-weight: 600; color: var(--txt2);">Running Balance (₹)</label>
-                <input type="text" id="lfBalanceMob" placeholder="Balance..." oninput="syncAndFilterLedger('balance', this.value)" class="light-form-control" style="font-size: 12px; height: 32px; margin: 0;">
-              </div>
-            </div>
-          </div>
-
-          <div class="table-container">
-            <table id="ledgerTable" style="width: 100%;">
-              <thead>
-                <tr>
-                  <th class="admin-only text-center" style="width: 38px; min-width: 38px; vertical-align: middle;">
-                    <input type="checkbox" id="selectAllLedger" onchange="toggleSelectAllLedger(this)" title="Select All" style="cursor: pointer; width: 16px; height: 16px;">
-                  </th>
-                  <th style="width: 105px; min-width: 105px; white-space: nowrap; vertical-align: middle;">Date</th>
-                  <th style="width: 120px; min-width: 120px; white-space: nowrap; vertical-align: middle;">Voucher No</th>
-                  <th style="vertical-align: middle; min-width: 160px;">Product / Particulars</th>
-                  <th class="text-center" style="width: 75px; min-width: 75px; vertical-align: middle;">Qty</th>
-                  <th class="text-right" style="width: 95px; min-width: 95px; vertical-align: middle;">Rate (₹)</th>
-                  <th class="text-center" style="width: 75px; min-width: 75px; vertical-align: middle;">Type</th>
-                  <th class="text-right" style="width: 105px; min-width: 105px; vertical-align: middle;">
-                    <div style="font-size: 11px; font-weight: 700; color: var(--txt);">Debit (₹)</div>
-                    <div id="liveDebitHeaderTotal" style="font-size: 12.5px; font-weight: 800; color: var(--dan); white-space: nowrap; margin-top: 2px;">₹0.00</div>
-                  </th>
-                  <th class="text-right" style="width: 105px; min-width: 105px; vertical-align: middle;">
-                    <div style="font-size: 11px; font-weight: 700; color: var(--txt);">Credit (₹)</div>
-                    <div id="liveCreditHeaderTotal" style="font-size: 12.5px; font-weight: 800; color: var(--suc); white-space: nowrap; margin-top: 2px;">₹0.00</div>
-                  </th>
-                  <th class="text-right" style="width: 115px; min-width: 115px; vertical-align: middle;">
-                    <div style="font-size: 11px; font-weight: 700; color: var(--txt);">Running Balance</div>
-                    <div id="liveBalanceHeaderTotal" style="font-size: 11.5px; font-weight: 700; color: var(--pri); white-space: nowrap; margin-top: 2px;">Net: ₹0.00</div>
-                  </th>
-                  <th class="text-center" style="width: 100px; min-width: 100px; vertical-align: middle;">Action</th>
-                </tr>
-                <tr class="ledger-filter-row" style="background: rgba(0,0,0,0.02);">
-                  <th class="admin-only text-center" style="padding: 4px; width: 38px; min-width: 38px;">
-                    <i class="fa-solid fa-filter" style="color: var(--txt2); font-size: 11px;" title="Column Filters"></i>
-                  </th>
-                  <th style="padding: 4px; width: 105px; min-width: 105px;">
-                    <input type="text" id="lfDate" placeholder="Date..." oninput="syncAndFilterLedger('date', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 80px;">
-                  </th>
-                  <th style="padding: 4px; width: 120px; min-width: 120px;">
-                    <input type="text" id="lfVoucher" placeholder="Voucher..." oninput="syncAndFilterLedger('voucher', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 80px;">
-                  </th>
-                  <th style="padding: 4px; min-width: 160px;">
-                    <input type="text" id="lfProduct" placeholder="Product name..." oninput="syncAndFilterLedger('product', this.value)" class="light-form-control" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 110px;">
-                  </th>
-                  <th style="padding: 4px; width: 75px; min-width: 75px;">
-                    <input type="text" id="lfQty" placeholder="Qty..." oninput="syncAndFilterLedger('qty', this.value)" class="light-form-control text-center" style="font-size: 11px; padding: 3px 4px; height: 26px; width: 100%; margin: 0; min-width: 55px;">
-                  </th>
-                  <th style="padding: 4px; width: 95px; min-width: 95px;">
-                    <input type="text" id="lfRate" placeholder="Rate..." oninput="syncAndFilterLedger('rate', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 4px; height: 26px; width: 100%; margin: 0; min-width: 65px;">
-                  </th>
-                  <th style="padding: 4px; width: 75px; min-width: 75px;">
-                    <select id="lfType" onchange="syncAndFilterLedger('type', this.value)" class="light-form-control" style="font-size: 11px; padding: 2px 4px; height: 26px; width: 100%; margin: 0; min-width: 65px;">
-                      <option value="All">All</option>
-                      <option value="Sale">Sale</option>
-                      <option value="Receipt">Receipt</option>
-                      <option value="Payment">Payment</option>
-                      <option value="Purchase">Purchase</option>
-                      <option value="Return">Return</option>
-                    </select>
-                  </th>
-                  <th style="padding: 4px; width: 105px; min-width: 105px;">
-                    <input type="text" id="lfDebit" placeholder="Debit..." oninput="syncAndFilterLedger('debit', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 70px;">
-                  </th>
-                  <th style="padding: 4px; width: 105px; min-width: 105px;">
-                    <input type="text" id="lfCredit" placeholder="Credit..." oninput="syncAndFilterLedger('credit', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 70px;">
-                  </th>
-                  <th style="padding: 4px; width: 115px; min-width: 115px;">
-                    <input type="text" id="lfBalance" placeholder="Balance..." oninput="syncAndFilterLedger('balance', this.value)" class="light-form-control text-right" style="font-size: 11px; padding: 3px 6px; height: 26px; width: 100%; margin: 0; min-width: 75px;">
-                  </th>
-                  <th class="text-center" style="padding: 4px; width: 100px; min-width: 100px;">
-                    <button type="button" class="btn btn-secondary btn-sm" onclick="resetLedgerFilters()" title="Reset All Filters" style="font-size: 11px; padding: 3px 8px; height: 26px; border-radius: 4px; white-space: nowrap;">
-                      <i class="fa-solid fa-rotate-left"></i> Reset
-                    </button>
-                  </th>
-                </tr>
-              </thead>
-              <tbody id="ledgerTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div id="followupTabContent" style="display: none;">
-          <!-- Follow-up Form for Admin/Staff only -->
-          <div class="card hide-for-party" style="background: var(--bg); border: 1px solid var(--brd); padding: 16px; border-radius: var(--r); margin-bottom: 16px;">
-            <h4 style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: var(--txt);">Record New Follow-up</h4>
-            <form id="followupForm" onsubmit="saveFollowupForm(event)" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; align-items: flex-end;">
-              <input type="hidden" id="followupPartyId">
-              <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 11px; font-weight: 600; text-transform: uppercase;">Interaction Type</label>
-                <select id="followupType" class="light-form-control" style="height: 38px;" required>
-                  <option value="Call">Phone Call</option>
-                  <option value="Email">Email Sent</option>
-                  <option value="Meeting">Meeting / Visit</option>
-                  <option value="SMS">SMS / WhatsApp</option>
-                </select>
-              </div>
-              <div class="form-group" style="margin-bottom: 0;">
-                <label style="font-size: 11px; font-weight: 600; text-transform: uppercase;">Next Follow-up Date</label>
-                <input type="date" id="followupNextDate" class="light-form-control" style="height: 38px;">
-              </div>
-              <button type="submit" class="btn btn-primary" style="height: 38px;"><i class="fa-solid fa-plus"></i> Save Followup</button>
-              <div class="form-group" style="grid-column: span 3; margin-bottom: 0; margin-top: 8px;">
-                <label style="font-size: 11px; font-weight: 600; text-transform: uppercase;">Interaction Notes *</label>
-                <input type="text" id="followupNotes" class="light-form-control" placeholder="Describe the outcome of the conversation (e.g. promised payment next Monday)..." required style="height: 38px;">
-              </div>
-            </form>
-          </div>
-
-          <!-- Follow-up Log History Table -->
-          <div class="table-container">
-            <table>
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Type</th>
-                  <th>Notes</th>
-                  <th>Next Follow-up</th>
-                  <th>Recorded By</th>
-                  <th class="text-center">Action</th>
-                </tr>
-              </thead>
-              <tbody id="followupTableBody">
-                <tr><td colspan="6" class="text-center">No follow-ups recorded yet.</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer ledger-modal-footer">
-        <div class="ledger-primary-actions">
-          <button class="btn btn-primary hide-for-party" id="ledgerAddSaleBtn"><i class="fa-solid fa-plus"></i> Add Sale</button>
-          <button class="btn btn-success hide-for-party" id="ledgerAddPaymentBtn"><i class="fa-solid fa-wallet"></i> Add Receipt</button>
-        </div>
-        <div class="ledger-secondary-actions">
-          <button class="btn btn-success" onclick="exportPartyLedgerExcel()"><i class="fa-solid fa-file-excel"></i> Export Excel</button>
-          <button class="btn btn-primary" onclick="printPartyLedger()"><i class="fa-solid fa-print"></i> Print Statement</button>
-          <button class="btn btn-info hide-for-party" id="ledgerNoDuesBtn" onclick="printNoDuesLetter()"><i class="fa-solid fa-file-invoice"></i> No Dues</button>
-          <button class="btn btn-accent hide-for-party" id="ledgerNocBtn" onclick="printNocLetter()"><i class="fa-solid fa-shield-halved"></i> NOC</button>
-          <button class="btn btn-secondary" onclick="closeLedgerPage()">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <!-- Old ledgerModal replaced by in-display page section #partyLedgerView -->
+  <div id="ledgerModal" style="display: none;"></div>
 
   <!-- NOTIFICATIONS MODAL -->
   <div class="modal-backdrop" id="notifModal">
@@ -9396,32 +9247,25 @@
       document.getElementById(id).style.display = 'flex';
     }
 
-    // Open ledger as full inline page (not popup)
+    // Open ledger as full in-display page (not popup)
     function openLedgerPage() {
-      const el = document.getElementById('ledgerModal');
-      if (!el) return;
-      const sidebar = document.querySelector('.sidebar');
-      const sidebarW = sidebar ? sidebar.offsetWidth : 240;
-      el.style.setProperty('--sidebar-width', sidebarW + 'px');
-      el.classList.add('page-mode');
-      el.style.display = 'block';
+      navigateTo('partyLedgerView');
       window._ledgerPageOpen = true;
-      el.scrollTop = 0;
-      // Hide mobile bottom nav
-      const mobileNav = document.querySelector('.mobile-bottom-bar');
-      if (mobileNav) mobileNav.style.display = 'none';
+      window.scrollTo(0, 0);
     }
 
     function closeLedgerPage() {
-      const el = document.getElementById('ledgerModal');
-      if (!el) return;
-      el.classList.remove('page-mode');
-      el.style.display = 'none';
+      goBackFromLedger();
+    }
+
+    function goBackFromLedger() {
       window._ledgerPageOpen = false;
       window._activeLedgerPartyId = null;
-      // Restore mobile bottom nav
-      const mobileNav = document.querySelector('.mobile-bottom-bar');
-      if (mobileNav) mobileNav.style.display = '';
+      if (App.currentUser && App.currentUser.role === 'Party') {
+        navigateTo('dashboard');
+      } else {
+        navigateTo('parties');
+      }
     }
 
     function closeModal(id) {
@@ -15482,7 +15326,8 @@
       const p = App.data.parties.find(x => x.id === id);
       if (!p) return;
 
-      document.getElementById('ledgerModalTitle').textContent = `Account Ledger: ${p.name}`;
+      const titleEl = document.getElementById('ledgerPageTitle') || document.getElementById('ledgerModalTitle');
+      if (titleEl) titleEl.textContent = `Account Statement: ${p.name}`;
       document.getElementById('ledgerPartyName').textContent = p.name;
       document.getElementById('ledgerPartyMobile').textContent = p.mobile || '--';
       document.getElementById('ledgerPartyGstin').textContent = p.gstin || '--';
@@ -15694,12 +15539,15 @@
         body.innerHTML += `
           <tr class="ledger-row"
               data-id="${t.id}"
+              data-rawdate="${rawDate}"
               data-date="${dateFormatted.toLowerCase()} ${rawDate}"
               data-voucher="${voucherFilterText}"
               data-product="${productSearchText.toLowerCase().replace(/"/g, '&quot;')}"
+              data-search="${(fullVoucherNo + ' ' + displayVoucherNo + ' ' + (t.description || '') + ' ' + productSearchText + ' ' + dateFormatted).toLowerCase().replace(/"/g, '&quot;')}"
               data-qty="${qtySearchText.toLowerCase().replace(/"/g, '&quot;')}"
               data-rate="${rateSearchText.toLowerCase().replace(/"/g, '&quot;')}"
               data-type="${txnType.toLowerCase()}"
+              data-amount="${Math.max(debit, credit)}"
               data-debit="${debit}"
               data-credit="${credit}"
               data-balance="${runningBal.toFixed(2)}">
@@ -15812,33 +15660,20 @@
         };
       }
 
-      switchLedgerTab('ledger');
+      if (typeof switchLedgerTab === 'function') {
+        try { switchLedgerTab('ledger'); } catch (e) {}
+      }
+      filterLedgerTable();
       openLedgerPage();
     }
 
-    function syncAndFilterLedger(field, val) {
-      const capField = field.charAt(0).toUpperCase() + field.slice(1);
-      const deskId = 'lf' + capField;
-      const mobId = 'lf' + capField + 'Mob';
-      const deskElem = document.getElementById(deskId);
-      const mobElem = document.getElementById(mobId);
-      if (deskElem && deskElem.value !== val) deskElem.value = val;
-      if (mobElem && mobElem.value !== val) mobElem.value = val;
-      filterLedgerTable();
-    }
-
     function resetLedgerFilters(runFilter = true) {
-      ['lfDate', 'lfVoucher', 'lfProduct', 'lfQty', 'lfRate', 'lfDebit', 'lfCredit', 'lfBalance'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-        const mobEl = document.getElementById(id + 'Mob');
-        if (mobEl) mobEl.value = '';
-      });
-      const typeEl = document.getElementById('lfType');
-      if (typeEl) typeEl.value = 'All';
-      const typeMobEl = document.getElementById('lfTypeMob');
-      if (typeMobEl) typeMobEl.value = 'All';
-
+      if (document.getElementById('lfSearch')) document.getElementById('lfSearch').value = '';
+      if (document.getElementById('lfType')) document.getElementById('lfType').value = 'All';
+      if (document.getElementById('lfFromDate')) document.getElementById('lfFromDate').value = '';
+      if (document.getElementById('lfToDate')) document.getElementById('lfToDate').value = '';
+      if (document.getElementById('lfMinAmount')) document.getElementById('lfMinAmount').value = '';
+      if (document.getElementById('lfMaxAmount')) document.getElementById('lfMaxAmount').value = '';
       if (runFilter) {
         filterLedgerTable();
       }
@@ -15967,59 +15802,47 @@
     }
 
     function filterLedgerTable() {
-      const fDate = (document.getElementById('lfDate')?.value || '').trim().toLowerCase();
-      const fVoucher = (document.getElementById('lfVoucher')?.value || '').trim().toLowerCase();
-      const fProduct = (document.getElementById('lfProduct')?.value || '').trim().toLowerCase();
-      const fQty = (document.getElementById('lfQty')?.value || '').trim().toLowerCase();
-      const fRate = (document.getElementById('lfRate')?.value || '').trim().toLowerCase();
+      const fSearch = (document.getElementById('lfSearch')?.value || '').trim().toLowerCase();
       const fType = (document.getElementById('lfType')?.value || 'All').trim().toLowerCase();
-      const fDebit = (document.getElementById('lfDebit')?.value || '').trim();
-      const fCredit = (document.getElementById('lfCredit')?.value || '').trim();
-      const fBalance = (document.getElementById('lfBalance')?.value || '').trim();
+      const fFrom = document.getElementById('lfFromDate')?.value || '';
+      const fTo = document.getElementById('lfToDate')?.value || '';
+      const fMinAmt = parseFloat(document.getElementById('lfMinAmount')?.value || '') || 0;
+      const fMaxAmt = parseFloat(document.getElementById('lfMaxAmount')?.value || '') || 0;
 
       const rows = document.querySelectorAll('#ledgerTableBody tr.ledger-row');
       let visibleCount = 0;
 
-      function matchNumeric(valStr, filterStr) {
-        if (!filterStr) return true;
-        const val = parseFloat(valStr) || 0;
-        const cleanFilter = filterStr.replace(/,/g, '');
-        if (cleanFilter.startsWith('>=')) {
-          return val >= (parseFloat(cleanFilter.slice(2).trim()) || 0);
-        } else if (cleanFilter.startsWith('<=')) {
-          return val <= (parseFloat(cleanFilter.slice(2).trim()) || 0);
-        } else if (cleanFilter.startsWith('>')) {
-          return val > (parseFloat(cleanFilter.slice(1).trim()) || 0);
-        } else if (cleanFilter.startsWith('<')) {
-          return val < (parseFloat(cleanFilter.slice(1).trim()) || 0);
-        } else if (cleanFilter.startsWith('=')) {
-          return val === (parseFloat(cleanFilter.slice(1).trim()) || 0);
-        }
-        return valStr.includes(cleanFilter) || val.toString().includes(cleanFilter);
-      }
-
       rows.forEach(tr => {
-        const dDate = tr.dataset.date || '';
-        const dVoucher = tr.dataset.voucher || '';
-        const dProduct = tr.dataset.product || '';
-        const dQty = tr.dataset.qty || '';
-        const dRate = tr.dataset.rate || '';
-        const dType = tr.dataset.type || '';
-        const dDebit = tr.dataset.debit || '0';
-        const dCredit = tr.dataset.credit || '0';
-        const dBalance = tr.dataset.balance || '0';
+        const dSearch = (tr.dataset.search || tr.dataset.product || '') + ' ' + (tr.dataset.voucher || '') + ' ' + (tr.dataset.date || '');
+        const dRawDate = tr.dataset.rawdate || '';
+        const dType = (tr.dataset.type || '').toLowerCase();
+        const dDebit = parseFloat(tr.dataset.debit || 0) || 0;
+        const dCredit = parseFloat(tr.dataset.credit || 0) || 0;
+        const dAmt = Math.max(dDebit, dCredit);
 
-        const matchDate = !fDate || dDate.includes(fDate);
-        const matchVoucher = !fVoucher || dVoucher.includes(fVoucher);
-        const matchProduct = !fProduct || dProduct.includes(fProduct);
-        const matchQty = !fQty || dQty.includes(fQty);
-        const matchRate = !fRate || dRate.includes(fRate);
-        const matchType = !fType || fType === 'all' || dType === fType;
-        const matchDebit = matchNumeric(dDebit, fDebit);
-        const matchCredit = matchNumeric(dCredit, fCredit);
-        const matchBalance = matchNumeric(dBalance, fBalance);
+        // 1. Search text match
+        let matchSearch = true;
+        if (fSearch) {
+          matchSearch = dSearch.toLowerCase().includes(fSearch);
+        }
 
-        if (matchDate && matchVoucher && matchProduct && matchQty && matchRate && matchType && matchDebit && matchCredit && matchBalance) {
+        // 2. Transaction Type match
+        let matchType = true;
+        if (fType && fType !== 'all') {
+          matchType = (dType === fType);
+        }
+
+        // 3. Date range match
+        let matchDate = true;
+        if (fFrom && dRawDate && dRawDate < fFrom) matchDate = false;
+        if (fTo && dRawDate && dRawDate > fTo) matchDate = false;
+
+        // 4. Amount range match
+        let matchAmount = true;
+        if (fMinAmt > 0 && dAmt < fMinAmt) matchAmount = false;
+        if (fMaxAmt > 0 && dAmt > fMaxAmt) matchAmount = false;
+
+        if (matchSearch && matchType && matchDate && matchAmount) {
           tr.style.display = '';
           visibleCount++;
         } else {
@@ -16033,7 +15856,7 @@
       if (visibleCount === 0 && rows.length > 0) {
         const noMatchRow = document.createElement('tr');
         noMatchRow.id = 'ledgerNoMatchRow';
-        noMatchRow.innerHTML = `<td colspan="11" class="text-center" style="padding: 24px; color: var(--txt2); font-style: italic;"><i class="fa-solid fa-filter-circle-xmark" style="font-size: 20px; margin-bottom: 6px; display: block;"></i>No matching ledger entries found.</td>`;
+        noMatchRow.innerHTML = `<td colspan="11" class="text-center" style="padding: 24px; color: var(--txt2); font-style: italic;"><i class="fa-solid fa-filter-circle-xmark" style="font-size: 20px; margin-bottom: 6px; display: block; color: var(--pri);"></i>No matching ledger entries found for selected filters.</td>`;
         document.getElementById('ledgerTableBody').appendChild(noMatchRow);
       }
 
@@ -16049,6 +15872,7 @@
       }
 
       updateSelectedLedgerCount();
+      updateLedgerLiveCalculations();
     }
 
     function editLedgerTransaction(txnId, txnType, partyId) {
