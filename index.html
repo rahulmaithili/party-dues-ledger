@@ -3512,15 +3512,84 @@
 
     /* Mobile Styles */
     @media (max-width: 768px) {
+      #btnToggleLedgerFiltersMobile {
+        display: inline-flex !important;
+      }
+      #ledgerFilterCollapse {
+        display: none;
+      }
+      .ledger-actions-scroll {
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch !important;
+        width: 100% !important;
+        padding-bottom: 6px !important;
+        flex-wrap: nowrap !important;
+      }
+      .ledger-actions-scroll .btn {
+        flex-shrink: 0 !important;
+        font-size: 11px !important;
+        padding: 0 9px !important;
+        height: 28px !important;
+      }
+      #partyLedgerView .table-container {
+        max-height: none !important;
+        border: none !important;
+      }
+      #partyLedgerView .dashboard-card {
+        padding: 10px 12px !important;
+        margin-bottom: 10px !important;
+      }
       #partyLedgerView .ledger-desktop-cell {
         display: none !important;
       }
       #partyLedgerView .ledger-mobile-cell {
         display: table-cell !important;
-        padding: 6px !important;
+        padding: 4px 0 !important;
       }
       #partyLedgerView #ledgerTable thead {
         display: none !important;
+      }
+      #partyLedgerView .ledger-live-bar {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 4px !important;
+      }
+      #partyLedgerView .ledger-live-card {
+        padding: 4px 6px !important;
+      }
+      #partyLedgerView .ledger-live-card .live-label {
+        font-size: 8.5px !important;
+      }
+      #partyLedgerView .ledger-live-card .live-val {
+        font-size: 11px !important;
+      }
+
+      /* Mobile Topbar Clean Spacing (Prevents Icon Overlap) */
+      #topbar {
+        padding: 0 10px !important;
+      }
+      .topbar-left {
+        min-width: 0 !important;
+        flex: 1 1 auto !important;
+        gap: 8px !important;
+        overflow: hidden !important;
+      }
+      #currentLocationName {
+        font-size: 14px !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 140px !important;
+      }
+      .topbar-right {
+        flex-shrink: 0 !important;
+        gap: 2px !important;
+      }
+      .topbar-action {
+        padding: 5px 6px !important;
+        font-size: 15px !important;
+        margin-right: 0 !important;
       }
     }
     /* ─────────────────────────────────────────────────────────────────────── */
@@ -4266,25 +4335,34 @@
             </div>
           </div>
 
-          <!-- DEDICATED FILTERS CARD (Matches User Reference Design) -->
-          <div class="dashboard-card" style="margin-bottom: 14px; padding: 14px 18px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--brd); padding-bottom: 8px;">
+          <!-- DEDICATED FILTERS CARD (Matches User Reference Design, Collapsible on Mobile) -->
+          <div class="dashboard-card" style="margin-bottom: 12px; padding: 12px 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
               <div style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; color: var(--txt);">
                 <i class="fa-solid fa-filter" style="color: var(--pri);"></i> Filters
+                <span id="activeFilterBadge" class="badge" style="display: none; background: rgba(59, 130, 246, 0.15); color: var(--pri); font-size: 10.5px; padding: 2px 7px;">Active</span>
               </div>
-              <button type="button" class="btn btn-secondary btn-sm" onclick="resetLedgerFilters()" style="border-radius: 20px; padding: 3px 14px; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;">
-                <i class="fa-solid fa-rotate-left"></i> Clear
-              </button>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <button type="button" class="btn btn-secondary btn-sm" id="btnToggleLedgerFiltersMobile" onclick="toggleLedgerFilterCollapse()" style="border-radius: 20px; padding: 3px 12px; font-size: 11.5px; display: none; align-items: center; gap: 5px;">
+                  <i class="fa-solid fa-sliders"></i> <span id="btnFilterToggleLabel">Options ▼</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="resetLedgerFilters()" style="border-radius: 20px; padding: 3px 14px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px;">
+                  <i class="fa-solid fa-rotate-left"></i> Clear
+                </button>
+              </div>
             </div>
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px;">
-              <!-- 1. Search Box -->
-              <div>
-                <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
-                  <i class="fa-solid fa-magnifying-glass" style="font-size: 10px;"></i> Search / Particulars
-                </label>
-                <input type="text" id="lfSearch" placeholder="Voucher, item, note..." oninput="filterLedgerTable()" class="light-form-control" style="height: 34px; font-size: 12px; margin: 0;">
+
+            <!-- Instant Search (Always visible on PC and Mobile) -->
+            <div style="margin-top: 8px; margin-bottom: 4px;">
+              <div style="position: relative;">
+                <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--txt2); font-size: 12px;"></i>
+                <input type="text" id="lfSearch" placeholder="Quick search voucher, product, note..." oninput="filterLedgerTable()" class="light-form-control" style="height: 35px; font-size: 12.5px; padding-left: 34px; margin: 0; width: 100%;">
               </div>
-              <!-- 2. Type Dropdown -->
+            </div>
+
+            <!-- Detailed Criteria Grid (Always visible on PC, collapsible on Mobile) -->
+            <div id="ledgerFilterCollapse" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 10px; border-top: 1px solid var(--brd); padding-top: 10px;">
+              <!-- 1. Type Dropdown -->
               <div>
                 <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
                   <i class="fa-solid fa-tag" style="font-size: 10px;"></i> Transaction Type
@@ -4298,28 +4376,28 @@
                   <option value="Return">Return</option>
                 </select>
               </div>
-              <!-- 3. From Date -->
+              <!-- 2. From Date -->
               <div>
                 <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
                   <i class="fa-regular fa-calendar-days" style="font-size: 10px;"></i> From Date
                 </label>
                 <input type="date" id="lfFromDate" onchange="filterLedgerTable()" class="light-form-control" style="height: 34px; font-size: 12px; margin: 0;">
               </div>
-              <!-- 4. To Date -->
+              <!-- 3. To Date -->
               <div>
                 <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
                   <i class="fa-regular fa-calendar-days" style="font-size: 10px;"></i> To Date
                 </label>
                 <input type="date" id="lfToDate" onchange="filterLedgerTable()" class="light-form-control" style="height: 34px; font-size: 12px; margin: 0;">
               </div>
-              <!-- 5. Min Amount -->
+              <!-- 4. Min Amount -->
               <div>
                 <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
                   <i class="fa-solid fa-indian-rupee-sign" style="font-size: 10px;"></i> Min Amount
                 </label>
                 <input type="number" id="lfMinAmount" placeholder="Min ₹..." oninput="filterLedgerTable()" class="light-form-control" style="height: 34px; font-size: 12px; margin: 0;">
               </div>
-              <!-- 6. Max Amount -->
+              <!-- 5. Max Amount -->
               <div>
                 <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--txt2); margin-bottom: 4px; display: flex; align-items: center; gap: 5px;">
                   <i class="fa-solid fa-indian-rupee-sign" style="font-size: 10px;"></i> Max Amount
@@ -4344,8 +4422,8 @@
                 </button>
               </div>
 
-              <!-- Quick Actions -->
-              <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <!-- Quick Actions (Swipeable single-row on mobile) -->
+              <div class="ledger-actions-scroll" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
                 <button class="btn btn-primary btn-sm hide-for-party" id="ledgerAddSaleBtn" style="height: 30px; font-size: 11.5px; padding: 0 10px;"><i class="fa-solid fa-plus"></i> Add Sale</button>
                 <button class="btn btn-success btn-sm hide-for-party" id="ledgerAddPaymentBtn" style="height: 30px; font-size: 11.5px; padding: 0 10px;"><i class="fa-solid fa-arrow-down-long"></i> Add Receipt</button>
                 <button class="btn btn-success btn-sm" onclick="exportPartyLedgerExcel()" style="height: 30px; font-size: 11.5px; padding: 0 10px;"><i class="fa-solid fa-file-excel"></i> Excel</button>
@@ -15674,8 +15752,24 @@
       if (document.getElementById('lfToDate')) document.getElementById('lfToDate').value = '';
       if (document.getElementById('lfMinAmount')) document.getElementById('lfMinAmount').value = '';
       if (document.getElementById('lfMaxAmount')) document.getElementById('lfMaxAmount').value = '';
+      const badge = document.getElementById('activeFilterBadge');
+      if (badge) badge.style.display = 'none';
       if (runFilter) {
         filterLedgerTable();
+      }
+    }
+
+    function toggleLedgerFilterCollapse() {
+      const el = document.getElementById('ledgerFilterCollapse');
+      const label = document.getElementById('btnFilterToggleLabel');
+      if (!el) return;
+      const isHidden = (el.style.display === 'none' || window.getComputedStyle(el).display === 'none');
+      if (isHidden) {
+        el.style.display = 'grid';
+        if (label) label.textContent = 'Options ▲';
+      } else {
+        el.style.display = 'none';
+        if (label) label.textContent = 'Options ▼';
       }
     }
 
@@ -15869,6 +15963,12 @@
         } else {
           counterElem.textContent = `Showing ${visibleCount} of ${rows.length} entries`;
         }
+      }
+
+      const activeBadge = document.getElementById('activeFilterBadge');
+      const isAnyActive = !!(fSearch || (fType && fType !== 'all') || fFrom || fTo || fMinAmt > 0 || fMaxAmt > 0);
+      if (activeBadge) {
+        activeBadge.style.display = isAnyActive ? 'inline-block' : 'none';
       }
 
       updateSelectedLedgerCount();
@@ -20163,8 +20263,11 @@
     }
 
     function renderFollowupList() {
-      const pid = document.getElementById('followupPartyId').value;
+      const pidElem = document.getElementById('followupPartyId');
+      if (!pidElem) return;
+      const pid = pidElem.value;
       const body = document.getElementById('followupTableBody');
+      if (!body) return;
       body.innerHTML = '';
       
       const list = (App.data.crmFollowups || []).filter(f => f.partyId === pid);
