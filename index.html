@@ -3433,6 +3433,53 @@
       border-top: 1px solid var(--brd);
       padding-top: 14px;
     }
+
+    /* ── LEDGER PAGE MODE (inline, not popup) ─────────────────────────────── */
+    #ledgerModal.page-mode {
+      position: fixed !important;
+      display: block !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      z-index: 200 !important;
+      background: var(--bg) !important;
+      backdrop-filter: none !important;
+      overflow-y: auto !important;
+      padding: 0 !important;
+    }
+    #ledgerModal.page-mode .modal-card {
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      min-height: 100vh !important;
+      display: flex !important;
+      flex-direction: column !important;
+    }
+    #ledgerModal.page-mode .modal-header {
+      border-radius: 0 !important;
+      padding: 14px 20px !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 10 !important;
+    }
+    #ledgerModal.page-mode .modal-body {
+      flex: 1 !important;
+      overflow: visible !important;
+    }
+    /* Back button shown in page-mode header */
+    #ledgerBackBtn { display: none; }
+    #ledgerModal.page-mode #ledgerBackBtn { display: inline-flex; }
+    #ledgerModal.page-mode .fa-xmark.pointer { display: none !important; }
+    /* Sidebar offset when sidebar is open on desktop */
+    @media (min-width: 769px) {
+      #ledgerModal.page-mode {
+        left: var(--sidebar-width, 240px) !important;
+      }
+    }
+    /* ─────────────────────────────────────────────────────────────────────── */
   </style>
   <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 </head>
@@ -6681,8 +6728,13 @@
   <div class="modal-backdrop" id="ledgerModal">
     <div class="modal-card large" style="max-width: 1140px; width: 92%;">
       <div class="modal-header">
-        <h3 id="ledgerModalTitle">Party Statement Ledger</h3>
-        <i class="fa-solid fa-xmark pointer" onclick="closeModal('ledgerModal')"></i>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button id="ledgerBackBtn" class="btn btn-secondary btn-sm" onclick="closeLedgerPage()" style="align-items:center; gap:6px; padding:5px 12px;">
+            <i class="fa-solid fa-arrow-left"></i> Back
+          </button>
+          <h3 id="ledgerModalTitle">Party Statement Ledger</h3>
+        </div>
+        <i class="fa-solid fa-xmark pointer" onclick="closeLedgerPage()"></i>
       </div>
       <div class="modal-body" style="min-width: 0; overflow-x: hidden;">
         <!-- Party Quick Summary Card -->
@@ -6939,7 +6991,7 @@
           <button class="btn btn-primary" onclick="printPartyLedger()"><i class="fa-solid fa-print"></i> Print Statement</button>
           <button class="btn btn-info hide-for-party" id="ledgerNoDuesBtn" onclick="printNoDuesLetter()"><i class="fa-solid fa-file-invoice"></i> No Dues</button>
           <button class="btn btn-accent hide-for-party" id="ledgerNocBtn" onclick="printNocLetter()"><i class="fa-solid fa-shield-halved"></i> NOC</button>
-          <button class="btn btn-secondary" onclick="closeModal('ledgerModal')">Close</button>
+          <button class="btn btn-secondary" onclick="closeLedgerPage()">Close</button>
         </div>
       </div>
     </div>
@@ -9240,6 +9292,28 @@
     // Modal Helpers
     function openModal(id) {
       document.getElementById(id).style.display = 'flex';
+    }
+
+    // Open ledger as full inline page (not popup)
+    function openLedgerPage() {
+      const el = document.getElementById('ledgerModal');
+      if (!el) return;
+      const sidebar = document.querySelector('.sidebar');
+      const sidebarW = sidebar ? sidebar.offsetWidth : 240;
+      el.style.setProperty('--sidebar-width', sidebarW + 'px');
+      el.classList.add('page-mode');
+      el.style.display = 'block';
+      window._ledgerPageOpen = true;
+      el.scrollTop = 0;
+    }
+
+    function closeLedgerPage() {
+      const el = document.getElementById('ledgerModal');
+      if (!el) return;
+      el.classList.remove('page-mode');
+      el.style.display = 'none';
+      window._ledgerPageOpen = false;
+      window._activeLedgerPartyId = null;
     }
 
     function closeModal(id) {
@@ -15294,6 +15368,8 @@
 
     // Party statement print popup
     function viewPartyLedger(id) {
+      const prevId = window._activeLedgerPartyId;
+      const isNewParty = (prevId !== id);
       window._activeLedgerPartyId = id;
       const p = App.data.parties.find(x => x.id === id);
       if (!p) return;
@@ -15308,14 +15384,16 @@
       // Set followup party reference
       document.getElementById('followupPartyId').value = p.id;
 
-      // Reset selection and filters
-      resetLedgerFilters(false);
-      const selectAll = document.getElementById('selectAllLedger');
-      if (selectAll) selectAll.checked = false;
-      const btnBulkDel = document.getElementById('btnBulkDeleteLedger');
-      if (btnBulkDel) btnBulkDel.style.display = 'none';
-      const selCount = document.getElementById('selectedLedgerCount');
-      if (selCount) selCount.textContent = '0';
+      // Reset filters ONLY when switching to a different party
+      if (isNewParty) {
+        resetLedgerFilters(false);
+        const selectAll = document.getElementById('selectAllLedger');
+        if (selectAll) selectAll.checked = false;
+        const btnBulkDel = document.getElementById('btnBulkDeleteLedger');
+        if (btnBulkDel) btnBulkDel.style.display = 'none';
+        const selCount = document.getElementById('selectedLedgerCount');
+        if (selCount) selCount.textContent = '0';
+      }
 
       // Calculate ledger client-side instantly!
       const ledger = App.data.transactions.filter(t => t.partyId === p.id);
@@ -15600,34 +15678,34 @@
         addSaleBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Sale';
         addSaleBtn.onclick = () => {
           reopenLedgerPartyId = p.id;
-          closeModal('ledgerModal');
+          closeLedgerPage();
           openInvoiceModal('Sale', p.id);
         };
         addPaymentBtn.innerHTML = '<i class="fa-solid fa-arrow-down-long"></i> Add Receipt';
         addPaymentBtn.className = 'btn btn-success hide-for-party';
         addPaymentBtn.onclick = () => {
           reopenLedgerPartyId = p.id;
-          closeModal('ledgerModal');
+          closeLedgerPage();
           openReceiptModal('Receipt', p.id);
         };
       } else {
         addSaleBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add Purchase';
         addSaleBtn.onclick = () => {
           reopenLedgerPartyId = p.id;
-          closeModal('ledgerModal');
+          closeLedgerPage();
           openInvoiceModal('Purchase', p.id);
         };
         addPaymentBtn.innerHTML = '<i class="fa-solid fa-arrow-up-long"></i> Add Payment';
         addPaymentBtn.className = 'btn btn-danger hide-for-party';
         addPaymentBtn.onclick = () => {
           reopenLedgerPartyId = p.id;
-          closeModal('ledgerModal');
+          closeLedgerPage();
           openReceiptModal('Payment', p.id);
         };
       }
 
       switchLedgerTab('ledger');
-      openModal('ledgerModal');
+      openLedgerPage();
     }
 
     function syncAndFilterLedger(field, val) {
@@ -15867,7 +15945,7 @@
 
     function editLedgerTransaction(txnId, txnType, partyId) {
       reopenLedgerPartyId = partyId;
-      closeModal('ledgerModal');
+      closeModal('ledgerModal'); closeLedgerPage();
       if (txnType === 'Sale' || txnType === 'Purchase' || txnType === 'Return') {
         editInvoice(txnId);
       } else if (txnType === 'Receipt' || txnType === 'Payment') {
