@@ -4502,7 +4502,49 @@
                   </div>
                 </div>
               </div>
-              <button class="btn btn-success" onclick="exportAllPartiesExcel()" style="margin-right: 8px;"><i class="fa-solid fa-file-excel"></i> Export Parties Excel</button>
+              <!-- Export Dropdown -->
+              <div style="position:relative; display:inline-block; margin-right: 8px;">
+                <button class="btn btn-success" onclick="toggleExportMenu()" id="exportMenuBtn" style="display:flex; align-items:center; gap:6px;">
+                  <i class="fa-solid fa-file-excel"></i> Export Excel <i class="fa-solid fa-chevron-down" style="font-size:11px; margin-left:2px;"></i>
+                </button>
+                <div id="exportDropdownMenu" style="display:none; position:absolute; top:calc(100% + 6px); right:0; background:var(--card); border:1px solid var(--brd); border-radius:10px; min-width:320px; box-shadow:0 10px 30px rgba(0,0,0,0.15); z-index:999; overflow:hidden;">
+                  <div style="padding:10px 14px 6px; font-size:11px; font-weight:700; color:var(--txt2); text-transform:uppercase; letter-spacing:0.5px;">Export Data Options</div>
+                  
+                  <a onclick="exportAllPartiesExcel(false, false)" style="display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; color:var(--txt); font-size:13px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+                    <i class="fa-solid fa-users" style="color:#10B981; width:16px;"></i>
+                    <div>
+                      <div>Export All Parties (Master - Full Dues)</div>
+                      <div style="font-size:11px; font-weight:400; color:var(--txt2);">Sabhi customer, school, supplier (Unfiltered)</div>
+                    </div>
+                  </a>
+
+                  <a onclick="exportAllPartiesExcel(false, true)" style="display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; color:var(--txt); font-size:13px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+                    <i class="fa-solid fa-filter" style="color:#3B82F6; width:16px;"></i>
+                    <div>
+                      <div>Export Current Filtered View</div>
+                      <div style="font-size:11px; font-weight:400; color:var(--txt2);">Only search or category filtered parties</div>
+                    </div>
+                  </a>
+
+                  <a onclick="exportAllPartiesExcel(true, false)" style="display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; color:var(--txt); font-size:13px; font-weight:600; transition:background 0.2s;" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+                    <i class="fa-solid fa-check-double" style="color:#F59E0B; width:16px;"></i>
+                    <div>
+                      <div>Export Selected Parties Only</div>
+                      <div style="font-size:11px; font-weight:400; color:var(--txt2);">Jinke checkbox tick kiye gaye hain</div>
+                    </div>
+                  </a>
+
+                  <div style="height:1px; background:var(--brd); margin:4px 10px;"></div>
+
+                  <a onclick="exportFullSystemBackupExcel()" style="display:flex; align-items:center; gap:10px; padding:10px 14px; cursor:pointer; color:var(--txt); font-size:13px; font-weight:600; background:rgba(16,185,129,0.08); transition:background 0.2s;" onmouseover="this.style.background='rgba(16,185,129,0.15)'" onmouseout="this.style.background='rgba(16,185,129,0.08)'">
+                    <i class="fa-solid fa-database" style="color:#059669; width:16px;"></i>
+                    <div>
+                      <div style="color:#059669;">Full Backup Excel (Parties + Transactions)</div>
+                      <div style="font-size:11px; font-weight:400; color:var(--txt2);">All parties, live dues & every single transaction ledger</div>
+                    </div>
+                  </a>
+                </div>
+              </div>
               <button class="btn btn-secondary" onclick="printPartyList()" style="margin-right: 8px;"><i class="fa-solid fa-print"></i> Print Party List</button>
               <button class="btn btn-secondary" onclick="openEmptyCylinderReturnModal()" style="margin-right: 8px;">Record Empty Return</button>
               <button class="btn btn-accent" onclick="openPartyModal()"><i class="fa-solid fa-user-plus"></i> Add New Party</button>
@@ -5786,15 +5828,23 @@
               </div>
               <hr style="border:none; border-top: 1px solid var(--brd); margin-bottom: 20px;">
               <h3 style="font-size: 15px; margin-bottom: 12px; font-weight:600;">Data Backup & Restore</h3>
-              <p style="font-size: 13.5px; color: var(--txt2); margin-bottom: 20px; line-height: 1.5;">
-                Export all system data (Parties, Transactions, Products, Settings) to a JSON file, or restore from a previous backup.
+              <p style="font-size: 13.5px; color: var(--txt2); margin-bottom: 16px; line-height: 1.5;">
+                Export complete system data (All Customers, Schools, Suppliers, Transactions Ledger, Stock & Balances) directly to an Excel (.xlsx) file or JSON backup file, or restore from a previous backup.
               </p>
-              <div class="grid-2" style="margin-bottom: 20px;">
-                <button class="btn btn-secondary" onclick="exportDatabaseBackup()"><i class="fa-solid fa-cloud-arrow-down"></i> Export Backup (JSON)</button>
-                <label class="btn btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 0;">
-                  <i class="fa-solid fa-cloud-arrow-up"></i> Restore Backup (JSON)
-                  <input type="file" id="restoreBackupInput" accept=".json" style="display: none;" onchange="importDatabaseBackup(event)">
-                </label>
+              <div style="display:flex; flex-direction:column; gap:10px; margin-bottom: 20px;">
+                <button class="btn btn-success" onclick="exportFullSystemBackupExcel()" style="padding: 12px 18px; font-size: 13.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; background: linear-gradient(135deg, #10B981, #059669); border: none; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);">
+                  <i class="fa-solid fa-file-excel" style="font-size: 18px;"></i>
+                  <span>Export Full System Backup (Excel .xlsx - All Parties & Transactions)</span>
+                </button>
+                <div class="grid-2">
+                  <button class="btn btn-secondary" onclick="exportDatabaseBackup()" style="display:flex; align-items:center; justify-content:center; gap:6px;">
+                    <i class="fa-solid fa-cloud-arrow-down"></i> Export Backup (JSON)
+                  </button>
+                  <label class="btn btn-secondary" style="cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 0;">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> Restore Backup (JSON)
+                    <input type="file" id="restoreBackupInput" accept=".json" style="display: none;" onchange="importDatabaseBackup(event)">
+                  </label>
+                </div>
               </div>
               <hr style="border:none; border-top: 1px solid var(--brd); margin-bottom: 20px;">
               <h3 style="font-size: 15px; margin-bottom: 12px; font-weight:600;">Activity History</h3>
@@ -11292,6 +11342,25 @@
           document.addEventListener('click', function closeMenu(e) {
             if (!document.getElementById('importMenuBtn').contains(e.target) &&
                 !menu.contains(e.target)) {
+              menu.style.display = 'none';
+              document.removeEventListener('click', closeMenu);
+            }
+          });
+        }, 50);
+      }
+    }
+
+    // ---- EXPORT DROPDOWN TOGGLE ----
+    function toggleExportMenu() {
+      const menu = document.getElementById('exportDropdownMenu');
+      if (!menu) return;
+      menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+      // Close when clicking outside
+      if (menu.style.display === 'block') {
+        setTimeout(() => {
+          document.addEventListener('click', function closeMenu(e) {
+            const btn = document.getElementById('exportMenuBtn');
+            if (btn && !btn.contains(e.target) && !menu.contains(e.target)) {
               menu.style.display = 'none';
               document.removeEventListener('click', closeMenu);
             }
@@ -17417,46 +17486,63 @@
       }
     }
 
-    function exportAllPartiesExcel(onlySelected = false) {
+    function exportAllPartiesExcel(onlySelected = false, applyFilter = false) {
+      if (document.getElementById('exportDropdownMenu')) {
+        document.getElementById('exportDropdownMenu').style.display = 'none';
+      }
       if (!App.data.parties || App.data.parties.length === 0) {
         showToast('No party records found to export', 'warning');
         return;
       }
 
-      const search = (document.getElementById('partySearch') ? document.getElementById('partySearch').value : '').toLowerCase();
+      const search = (document.getElementById('partySearch') ? document.getElementById('partySearch').value : '').toLowerCase().trim();
       const filter = document.getElementById('partyFilterType') ? document.getElementById('partyFilterType').value : 'All';
 
       const partyBalance = {};
+      const partyDebits = {};
+      const partyCredits = {};
+
       App.data.parties.forEach(p => {
         partyBalance[p.id] = parseFloat(p.openingBalance || 0);
+        partyDebits[p.id] = 0;
+        partyCredits[p.id] = 0;
       });
+
       (App.data.transactions || []).forEach(t => {
-        if (partyBalance[t.partyId] !== undefined) {
-          partyBalance[t.partyId] += parseFloat(t.debit || 0) - parseFloat(t.credit || 0);
+        const pid = t.partyId;
+        const d = parseFloat(t.debit || 0);
+        const c = parseFloat(t.credit || 0);
+        if (partyBalance[pid] !== undefined) {
+          partyBalance[pid] += (d - c);
+          partyDebits[pid] = (partyDebits[pid] || 0) + d;
+          partyCredits[pid] = (partyCredits[pid] || 0) + c;
         }
       });
 
-      let list = App.data.parties.filter(p => {
-        const matchesSearch = String(p.name || '').toLowerCase().includes(search) || 
-                              String(p.mobile || '').includes(search) || 
-                              String(p.gstin || '').toLowerCase().includes(search);
-        let matchesType = true;
-        if (filter === 'Customer' || filter === 'Supplier') {
-          matchesType = getPartyBaseType(p) === filter;
-        } else if (filter !== 'All') {
-          matchesType = p.type === filter;
-        }
-        return matchesSearch && matchesType;
-      });
+      let list = [...App.data.parties];
 
       if (onlySelected) {
         const checkedBoxes = document.querySelectorAll('.party-select-checkbox:checked');
         const checkedIds = new Set(Array.from(checkedBoxes).map(cb => cb.dataset.id));
         list = list.filter(p => checkedIds.has(p.id));
+      } else if (applyFilter) {
+        list = list.filter(p => {
+          const matchesSearch = !search || 
+                                String(p.name || '').toLowerCase().includes(search) || 
+                                String(p.mobile || '').includes(search) || 
+                                String(p.gstin || '').toLowerCase().includes(search);
+          let matchesType = true;
+          if (filter === 'Customer' || filter === 'Supplier') {
+            matchesType = getPartyBaseType(p) === filter;
+          } else if (filter !== 'All') {
+            matchesType = p.type === filter;
+          }
+          return matchesSearch && matchesType;
+        });
       }
 
       if (list.length === 0) {
-        showToast('No parties match your current search/selection', 'warning');
+        showToast('No parties match your selection', 'warning');
         return;
       }
 
@@ -17465,22 +17551,34 @@
       const company = App.data.companyProfile || {};
       const companyTitle = company.companyName || 'Mr.Rahul ERP';
 
+      let exportScope = 'ALL PARTIES & LEDGER DIRECTORY (UNFILTERED MASTER)';
+      let filePrefix = 'All_Parties_Master_Dues_Export';
+      if (onlySelected) {
+        exportScope = 'SELECTED PARTIES DIRECTORY EXPORT';
+        filePrefix = 'Selected_Parties_Export';
+      } else if (applyFilter) {
+        exportScope = `FILTERED PARTIES EXPORT (Category: ${filter}${search ? ', Search: ' + search : ''})`;
+        filePrefix = `Filtered_Parties_${filter}_Export`;
+      }
+
       const rows = [];
       rows.push([companyTitle]);
-      rows.push([onlySelected ? 'SELECTED PARTIES & LEDGER DIRECTORY EXPORT' : 'ALL PARTIES & LEDGER DIRECTORY EXPORT']);
-      rows.push([`Generated On: ${formatDate(new Date())}`, `Total Parties: ${list.length}`, `Filter: ${filter}`]);
+      rows.push([exportScope]);
+      rows.push([`Generated On: ${formatDate(new Date())}`, `Total Parties: ${list.length}`, `Scope: ${onlySelected ? 'Selected' : (applyFilter ? 'Filtered' : 'All Parties (Master)')}`]);
       rows.push([]);
 
       rows.push([
         'S.No',
         'Party ID',
         'Party Name',
-        'Party Type',
+        'Party Type / Category',
         'Mobile Number',
         'Email Address',
         'GSTIN',
         'Full Address',
         'Opening Balance (₹)',
+        'Total Debits / Invoices (₹)',
+        'Total Credits / Receipts (₹)',
         'Current Balance Due (₹)',
         'Balance Status',
         'Cylinders Holding',
@@ -17488,12 +17586,24 @@
         'Credit Limit (₹)'
       ]);
 
+      let totalOpening = 0;
+      let totalDebitsSum = 0;
+      let totalCreditsSum = 0;
       let totalDues = 0;
       let totalAdvance = 0;
       let totalCylinders = 0;
+      let totalSecurity = 0;
 
       list.forEach((p, idx) => {
-        const bal = partyBalance[p.id] !== undefined ? partyBalance[p.id] : parseFloat(p.openingBalance || 0);
+        const opening = parseFloat(p.openingBalance || 0);
+        const bal = partyBalance[p.id] !== undefined ? partyBalance[p.id] : opening;
+        const deb = partyDebits[p.id] || 0;
+        const cred = partyCredits[p.id] || 0;
+
+        totalOpening += opening;
+        totalDebitsSum += deb;
+        totalCreditsSum += cred;
+
         let status = 'Settled (Nil)';
         if (bal > 0) {
           status = 'Receivable (Due)';
@@ -17519,6 +17629,7 @@
           }
         } catch (e) {}
         totalCylinders += cylCount;
+        totalSecurity += parseFloat(p.securityDeposit || 0);
 
         rows.push([
           idx + 1,
@@ -17529,7 +17640,9 @@
           p.email || '',
           p.gstin || '',
           p.address || '',
-          parseFloat(p.openingBalance || 0),
+          opening,
+          deb,
+          cred,
           bal,
           status,
           cylDesc,
@@ -17548,16 +17661,18 @@
         '',
         '',
         '',
-        '',
+        totalOpening,
+        totalDebitsSum,
+        totalCreditsSum,
         totalDues - totalAdvance,
         `Total Dues: ₹${totalDues.toFixed(2)} | Advance: ₹${totalAdvance.toFixed(2)}`,
         `Total Cylinders: ${totalCylinders}`,
-        '',
+        totalSecurity,
         ''
       ]);
 
-      const colWidths = [8, 14, 28, 16, 16, 24, 18, 30, 18, 20, 18, 25, 18, 16];
-      exportToExcelOrCsv('Parties_List_Export', 'Parties List', rows, colWidths);
+      const colWidths = [8, 14, 28, 18, 16, 24, 18, 30, 18, 20, 20, 22, 18, 24, 18, 16];
+      exportToExcelOrCsv(filePrefix, 'Parties Master', rows, colWidths);
     }
 
     function exportPartyLedgerExcel(partyId) {
@@ -20267,12 +20382,561 @@
       });
     }
 
-    function exportDatabaseBackup() {
-      showLoading(true, 'Generating backup file...');
+    // ==================== FULL SYSTEM BACKUP ENGINE (EXCEL & JSON) ====================
+
+    async function exportFullSystemBackupExcel() {
+      if (document.getElementById('exportDropdownMenu')) {
+        document.getElementById('exportDropdownMenu').style.display = 'none';
+      }
+      if (typeof XLSX === 'undefined' || !XLSX.utils || !XLSX.writeFile) {
+        showToast('SheetJS Excel library not available. Please check internet connection.', 'error');
+        return;
+      }
+
+      showLoading(true, 'Fetching full database collections for complete backup...');
       try {
+        // Refresh live data directly from Firestore
+        await new Promise((resolve) => {
+          syncAllData(resolve);
+          setTimeout(resolve, 4000);
+        });
+
+        const company = App.data.companyProfile || {};
+        const companyName = company.companyName || 'Shiv Shakti Enterprise';
+        const exportedDateStr = formatDate(new Date());
+
+        // 1. Calculate live party balances & metrics
+        const parties = Array.isArray(App.data.parties) ? [...App.data.parties] : [];
+        const transactions = Array.isArray(App.data.transactions) ? [...App.data.transactions] : [];
+        const products = Array.isArray(App.data.products) ? [...App.data.products] : [];
+        const quotations = Array.isArray(App.data.quotations) ? [...App.data.quotations] : [];
+        const purchaseOrders = Array.isArray(App.data.purchaseOrders) ? [...App.data.purchaseOrders] : [];
+        const deliveryChallans = Array.isArray(App.data.deliveryChallans) ? [...App.data.deliveryChallans] : [];
+        const cylinderSecurity = Array.isArray(App.data.cylinderSecurity) ? [...App.data.cylinderSecurity] : [];
+        const bankAccounts = Array.isArray(App.data.bankAccounts) ? [...App.data.bankAccounts] : [];
+
+        const partyMap = {};
+        const partyBalance = {};
+        const partyDebits = {};
+        const partyCredits = {};
+        const partyTxnCount = {};
+        const partyLastDate = {};
+
+        parties.forEach(p => {
+          partyMap[p.id] = p;
+          partyBalance[p.id] = parseFloat(p.openingBalance || 0);
+          partyDebits[p.id] = 0;
+          partyCredits[p.id] = 0;
+          partyTxnCount[p.id] = 0;
+          partyLastDate[p.id] = '';
+        });
+
+        // Chronologically sort transactions
+        const sortedTxns = [...transactions].sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+
+        sortedTxns.forEach(t => {
+          const pid = t.partyId;
+          const debit = parseFloat(t.debit || 0);
+          const credit = parseFloat(t.credit || 0);
+          if (partyBalance[pid] !== undefined) {
+            partyBalance[pid] += (debit - credit);
+            partyDebits[pid] = (partyDebits[pid] || 0) + debit;
+            partyCredits[pid] = (partyCredits[pid] || 0) + credit;
+            partyTxnCount[pid] = (partyTxnCount[pid] || 0) + 1;
+            partyLastDate[pid] = t.date || partyLastDate[pid];
+          }
+        });
+
+        // Alphabetically sort parties
+        parties.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+
+        // ==================== SHEET 1: PARTIES & DUES MASTER ====================
+        const partiesSheetData = [];
+        partiesSheetData.push([companyName]);
+        partiesSheetData.push(['MASTER PARTIES DIRECTORY & LIVE DUES LEDGER (ALL CATEGORIES)']);
+        partiesSheetData.push([
+          `Exported On: ${exportedDateStr}`,
+          `Total Registered Parties: ${parties.length}`,
+          'Includes: Customers, Schools, Suppliers, Vendors & Others'
+        ]);
+        partiesSheetData.push([]);
+
+        partiesSheetData.push([
+          'S.No',
+          'Party ID',
+          'Party Name',
+          'Party Category / Type',
+          'Mobile Number',
+          'Email Address',
+          'GSTIN',
+          'Full Address',
+          'Opening Balance (₹)',
+          'Total Debits / Invoices (₹)',
+          'Total Credits / Receipts (₹)',
+          'Current Balance Due (₹)',
+          'Balance Status',
+          'Empty Cylinders Holding',
+          'Security Deposit (₹)',
+          'Credit Limit (₹)',
+          'Total Transactions Count',
+          'Last Transaction Date'
+        ]);
+
+        let sumOpening = 0;
+        let sumDebits = 0;
+        let sumCredits = 0;
+        let sumReceivableDue = 0;
+        let sumPayableAdvance = 0;
+        let sumCylinders = 0;
+        let sumSecurity = 0;
+
+        parties.forEach((p, idx) => {
+          const opening = parseFloat(p.openingBalance || 0);
+          const deb = partyDebits[p.id] || 0;
+          const cred = partyCredits[p.id] || 0;
+          const bal = partyBalance[p.id] !== undefined ? partyBalance[p.id] : opening;
+
+          sumOpening += opening;
+          sumDebits += deb;
+          sumCredits += cred;
+
+          let status = 'Settled (Nil)';
+          if (bal > 0) {
+            status = 'Receivable (Due)';
+            sumReceivableDue += bal;
+          } else if (bal < 0) {
+            status = 'Payable (Advance)';
+            sumPayableAdvance += Math.abs(bal);
+          }
+
+          let cylCount = 0;
+          let cylDesc = '0';
+          try {
+            const holding = getPartyCylinderHolding(p.id);
+            const parts = [];
+            Object.keys(holding).forEach(k => {
+              if (holding[k] > 0) {
+                parts.push(`${k}: ${holding[k]}`);
+                cylCount += holding[k];
+              }
+            });
+            if (parts.length > 0) cylDesc = `${cylCount} (${parts.join(', ')})`;
+          } catch (e) {}
+          sumCylinders += cylCount;
+          sumSecurity += parseFloat(p.securityDeposit || 0);
+
+          partiesSheetData.push([
+            idx + 1,
+            p.id || '',
+            p.name || '',
+            p.type || 'Customer',
+            p.mobile || '',
+            p.email || '',
+            p.gstin || '',
+            p.address || '',
+            opening,
+            deb,
+            cred,
+            bal,
+            status,
+            cylDesc,
+            parseFloat(p.securityDeposit || 0),
+            parseFloat(p.creditLimit || 0),
+            partyTxnCount[p.id] || 0,
+            partyLastDate[p.id] ? formatDate(partyLastDate[p.id]) : '--'
+          ]);
+        });
+
+        partiesSheetData.push([]);
+        partiesSheetData.push([
+          'GRAND TOTAL',
+          '',
+          `Total Parties: ${parties.length}`,
+          '',
+          '',
+          '',
+          '',
+          '',
+          sumOpening,
+          sumDebits,
+          sumCredits,
+          sumReceivableDue - sumPayableAdvance,
+          `Total Dues: ₹${sumReceivableDue.toFixed(2)} | Advance: ₹${sumPayableAdvance.toFixed(2)}`,
+          `Total Cylinders: ${sumCylinders}`,
+          sumSecurity,
+          '',
+          transactions.length,
+          ''
+        ]);
+
+        // ==================== SHEET 2: ALL TRANSACTIONS LEDGER ====================
+        const txnsSheetData = [];
+        txnsSheetData.push([companyName]);
+        txnsSheetData.push(['MASTER TRANSACTIONS & VOUCHERS LEDGER (ALL PARTIES)']);
+        txnsSheetData.push([
+          `Exported On: ${exportedDateStr}`,
+          `Total Transactions: ${sortedTxns.length}`,
+          'All Invoices, Receipts, Payments, Purchases, Returns & Notes'
+        ]);
+        txnsSheetData.push([]);
+
+        txnsSheetData.push([
+          'S.No',
+          'Date',
+          'Voucher / Bill No',
+          'Party ID',
+          'Party Name',
+          'Party Type',
+          'Txn Type',
+          'Particulars / Items Description',
+          'Quantity',
+          'Rate (₹)',
+          'Bill Amount (₹)',
+          'Debit / Dr (₹)',
+          'Credit / Cr (₹)',
+          'Payment Mode',
+          'Cylinders Out',
+          'Cylinders In',
+          'Notes / Narration',
+          'Recorded By'
+        ]);
+
+        let sumTxnBill = 0;
+        let sumTxnDebit = 0;
+        let sumTxnCredit = 0;
+        let sumTxnCylOut = 0;
+        let sumTxnCylIn = 0;
+
+        sortedTxns.forEach((t, idx) => {
+          const debit = parseFloat(t.debit || 0);
+          const credit = parseFloat(t.credit || 0);
+          let billAmt = 0;
+          if (t.totals && t.totals.grandTotal !== undefined) {
+            billAmt = parseFloat(t.totals.grandTotal || 0);
+          } else if (t.amount !== undefined && t.amount !== null && t.amount !== '') {
+            billAmt = parseFloat(t.amount || 0);
+          } else {
+            billAmt = debit > 0 ? debit : credit;
+          }
+
+          const cylOut = parseInt(t.cylinderOut || 0, 10);
+          const cylIn = parseInt(t.cylinderIn || 0, 10);
+
+          sumTxnBill += billAmt;
+          sumTxnDebit += debit;
+          sumTxnCredit += credit;
+          sumTxnCylOut += cylOut;
+          sumTxnCylIn += cylIn;
+
+          let itemsDesc = '';
+          let qtyText = '--';
+          let rateText = '--';
+          if (t.items && Array.isArray(t.items) && t.items.length > 0) {
+            itemsDesc = t.items.map(it => `${it.productName || it.name || 'Item'}`).join(', ');
+            if (t.description) itemsDesc += ` | ${t.description}`;
+            qtyText = t.items.map(it => `${it.quantity || 1}${it.unit ? ' ' + it.unit : ''}`).join(', ');
+            rateText = t.items.map(it => (it.rate || it.price || 0)).join(', ');
+          } else {
+            itemsDesc = t.description || t.notes || (t.txnType === 'Payment' ? 'Payment Made' : (t.txnType === 'Receipt' ? 'Payment Receipt' : t.txnType || 'General Transaction'));
+          }
+
+          const p = partyMap[t.partyId] || {};
+          const pName = t.partyName || p.name || 'Unknown Party';
+          const pType = p.type || '--';
+          const fullVoucherNo = t.voucherNo || t.id || '--';
+
+          txnsSheetData.push([
+            idx + 1,
+            formatDate(t.date || new Date()),
+            fullVoucherNo,
+            t.partyId || '',
+            pName,
+            pType,
+            t.txnType || 'Txn',
+            itemsDesc,
+            qtyText,
+            rateText,
+            billAmt,
+            debit > 0 ? debit : 0,
+            credit > 0 ? credit : 0,
+            t.paymentMode || 'Cash',
+            cylOut,
+            cylIn,
+            t.notes || t.description || '',
+            t.createdBy || t.user || 'Admin'
+          ]);
+        });
+
+        txnsSheetData.push([]);
+        txnsSheetData.push([
+          'GRAND TOTAL',
+          '',
+          `Total: ${sortedTxns.length} Vouchers`,
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          sumTxnBill,
+          sumTxnDebit,
+          sumTxnCredit,
+          `Net Dues: ₹${(sumTxnDebit - sumTxnCredit).toFixed(2)}`,
+          sumTxnCylOut,
+          sumTxnCylIn,
+          '',
+          ''
+        ]);
+
+        // ==================== SHEET 3: PRODUCTS & INVENTORY ====================
+        const productSheetData = [];
+        productSheetData.push([companyName]);
+        productSheetData.push(['PRODUCTS CATALOG & STOCK INVENTORY']);
+        productSheetData.push([`Exported On: ${exportedDateStr}`, `Total Products: ${products.length}`]);
+        productSheetData.push([]);
+
+        productSheetData.push([
+          'S.No',
+          'Product ID',
+          'Product Name',
+          'Category',
+          'Unit',
+          'HSN Code',
+          'GST Rate (%)',
+          'Purchase Rate (₹)',
+          'Sale Rate (₹)',
+          'Opening Stock',
+          'Current Stock',
+          'Min Alert Stock',
+          'Stock Valuation (Purchase) (₹)',
+          'Stock Valuation (Sale) (₹)',
+          'LPG Cylinder Product'
+        ]);
+
+        let sumStockQty = 0;
+        let sumPurchaseValuation = 0;
+        let sumSaleValuation = 0;
+
+        products.forEach((prod, idx) => {
+          const pRate = parseFloat(prod.purchaseRate || 0);
+          const sRate = parseFloat(prod.saleRate || 0);
+          const stock = parseFloat(prod.stock || 0);
+          const pVal = stock * pRate;
+          const sVal = stock * sRate;
+
+          sumStockQty += stock;
+          sumPurchaseValuation += pVal;
+          sumSaleValuation += sVal;
+
+          productSheetData.push([
+            idx + 1,
+            prod.id || '',
+            prod.name || '',
+            prod.category || 'General',
+            prod.unit || 'Pcs',
+            prod.hsn || '',
+            parseFloat(prod.gstRate || prod.gst || 0),
+            pRate,
+            sRate,
+            parseFloat(prod.openingStock || 0),
+            stock,
+            parseFloat(prod.minStock || 0),
+            pVal,
+            sVal,
+            prod.isCylinder ? 'Yes' : 'No'
+          ]);
+        });
+
+        productSheetData.push([]);
+        productSheetData.push([
+          'GRAND TOTAL',
+          '',
+          `Total Products: ${products.length}`,
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          '',
+          sumStockQty,
+          '',
+          sumPurchaseValuation,
+          sumSaleValuation,
+          ''
+        ]);
+
+        // ==================== SHEET 4: ORDERS & QUOTES ====================
+        const ordersSheetData = [];
+        ordersSheetData.push([companyName]);
+        ordersSheetData.push(['QUOTATIONS, PURCHASE ORDERS & DELIVERY CHALLANS']);
+        ordersSheetData.push([`Exported On: ${exportedDateStr}`]);
+        ordersSheetData.push([]);
+
+        ordersSheetData.push([
+          'S.No',
+          'Doc Type',
+          'Document Number',
+          'Date',
+          'Party Name',
+          'Mobile Number',
+          'Items Summary',
+          'Total Amount (₹)',
+          'Status',
+          'Notes / Validity'
+        ]);
+
+        let orderIdx = 1;
+        quotations.forEach(q => {
+          let itmSummary = Array.isArray(q.items) ? q.items.map(i => `${i.productName || 'Item'} (x${i.quantity || 1})`).join(', ') : '';
+          ordersSheetData.push([
+            orderIdx++,
+            'Quotation',
+            q.quotationNo || q.id || '',
+            formatDate(q.date || new Date()),
+            q.partyName || '',
+            q.mobile || '',
+            itmSummary,
+            parseFloat(q.totalAmount || 0),
+            q.status || 'Active',
+            q.validTill ? `Valid till ${formatDate(q.validTill)}` : ''
+          ]);
+        });
+
+        purchaseOrders.forEach(po => {
+          let itmSummary = Array.isArray(po.items) ? po.items.map(i => `${i.productName || 'Item'} (x${i.quantity || 1})`).join(', ') : '';
+          ordersSheetData.push([
+            orderIdx++,
+            'Purchase Order',
+            po.poNo || po.id || '',
+            formatDate(po.date || new Date()),
+            po.partyName || '',
+            po.mobile || '',
+            itmSummary,
+            parseFloat(po.totalAmount || 0),
+            po.status || 'Active',
+            po.expectedDate ? `Expected: ${formatDate(po.expectedDate)}` : ''
+          ]);
+        });
+
+        deliveryChallans.forEach(dc => {
+          let itmSummary = Array.isArray(dc.items) ? dc.items.map(i => `${i.productName || 'Item'} (x${i.quantity || 1})`).join(', ') : '';
+          ordersSheetData.push([
+            orderIdx++,
+            'Delivery Challan',
+            dc.challanNo || dc.id || '',
+            formatDate(dc.date || new Date()),
+            dc.partyName || '',
+            dc.vehicleNo ? `Vehicle: ${dc.vehicleNo}` : '',
+            itmSummary,
+            parseFloat(dc.totalAmount || 0),
+            dc.status || 'Delivered',
+            dc.notes || ''
+          ]);
+        });
+
+        // ==================== SHEET 5: SECURITY & BANKING ====================
+        const secSheetData = [];
+        secSheetData.push([companyName]);
+        secSheetData.push(['CYLINDER SECURITY DEPOSITS & BANK ACCOUNTS']);
+        secSheetData.push([`Exported On: ${exportedDateStr}`]);
+        secSheetData.push([]);
+
+        secSheetData.push(['--- CYLINDER SECURITY DEPOSITS ---']);
+        secSheetData.push(['S.No', 'Date', 'Party Name', 'Cylinder Type', 'Quantity', 'Deposit Amount (₹)', 'Slip No', 'Status']);
+        cylinderSecurity.forEach((cs, idx) => {
+          secSheetData.push([
+            idx + 1,
+            formatDate(cs.date || new Date()),
+            cs.partyName || '',
+            cs.cylinderType || '',
+            cs.quantity || 1,
+            parseFloat(cs.depositAmount || 0),
+            cs.slipNo || '',
+            cs.status || 'Active'
+          ]);
+        });
+
+        secSheetData.push([]);
+        secSheetData.push(['--- BANK ACCOUNTS & BALANCES ---']);
+        secSheetData.push(['S.No', 'Account Name', 'Bank Name', 'Account Number', 'IFSC Code', 'Branch', 'Opening Balance (₹)', 'Current Balance (₹)']);
+        bankAccounts.forEach((b, idx) => {
+          secSheetData.push([
+            idx + 1,
+            b.accountName || '',
+            b.bankName || '',
+            b.accountNumber || '',
+            b.ifsc || '',
+            b.branch || '',
+            parseFloat(b.openingBalance || 0),
+            parseFloat(b.currentBalance || 0)
+          ]);
+        });
+
+        // ==================== BUILD MULTI-SHEET WORKBOOK ====================
+        const wb = XLSX.utils.book_new();
+
+        // 1. Parties Master Sheet
+        const wsParties = XLSX.utils.aoa_to_sheet(partiesSheetData);
+        wsParties['!cols'] = [8, 14, 28, 18, 16, 24, 18, 32, 18, 20, 20, 22, 18, 24, 18, 16, 18, 16].map(w => ({ wch: w }));
+        XLSX.utils.book_append_sheet(wb, wsParties, 'Parties & Dues Master');
+
+        // 2. All Transactions Sheet
+        const wsTxns = XLSX.utils.aoa_to_sheet(txnsSheetData);
+        wsTxns['!cols'] = [8, 14, 20, 14, 28, 16, 16, 32, 14, 14, 18, 18, 18, 16, 12, 12, 26, 16].map(w => ({ wch: w }));
+        XLSX.utils.book_append_sheet(wb, wsTxns, 'All Transactions Ledger');
+
+        // 3. Products & Stock
+        const wsProducts = XLSX.utils.aoa_to_sheet(productSheetData);
+        wsProducts['!cols'] = [8, 14, 28, 16, 10, 12, 12, 16, 16, 14, 14, 14, 22, 22, 16].map(w => ({ wch: w }));
+        XLSX.utils.book_append_sheet(wb, wsProducts, 'Products & Inventory');
+
+        // 4. Orders & Quotes
+        if (ordersSheetData.length > 5) {
+          const wsOrders = XLSX.utils.aoa_to_sheet(ordersSheetData);
+          wsOrders['!cols'] = [8, 18, 18, 14, 26, 16, 32, 18, 14, 22].map(w => ({ wch: w }));
+          XLSX.utils.book_append_sheet(wb, wsOrders, 'Orders & Quotes');
+        }
+
+        // 5. Security & Banking
+        if (secSheetData.length > 6) {
+          const wsSec = XLSX.utils.aoa_to_sheet(secSheetData);
+          wsSec['!cols'] = [8, 18, 26, 18, 12, 18, 18, 18].map(w => ({ wch: w }));
+          XLSX.utils.book_append_sheet(wb, wsSec, 'Security & Banking');
+        }
+
+        const dateSlug = new Date().toISOString().split('T')[0];
+        const safeCompanyName = companyName.replace(/[^a-zA-Z0-9_\u0900-\u097F-]/g, '_');
+        const filename = `${safeCompanyName}_Full_System_Backup_${dateSlug}.xlsx`;
+
+        XLSX.writeFile(wb, filename);
+
+        showLoading(false);
+        showToast(`Full System Backup exported! ${parties.length} Parties & ${sortedTxns.length} Transactions included.`, 'success');
+      } catch (err) {
+        showLoading(false);
+        console.error('Full system backup error:', err);
+        showToast('Backup export failed: ' + err.message, 'error');
+      }
+    }
+
+    async function exportDatabaseBackup() {
+      showLoading(true, 'Fetching latest database records for JSON backup...');
+      try {
+        await new Promise((resolve) => {
+          syncAllData(resolve);
+          setTimeout(resolve, 3500);
+        });
         const backup = {
-          version: "1.0",
+          version: "2.0",
           timestamp: new Date().toISOString(),
+          exportedAt: new Date().toLocaleString('en-IN'),
+          summary: {
+            partiesCount: (App.data.parties || []).length,
+            transactionsCount: (App.data.transactions || []).length,
+            productsCount: (App.data.products || []).length
+          },
           data: App.data
         };
         const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
@@ -20286,7 +20950,7 @@
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
         showLoading(false);
-        showToast('Database backup exported successfully!', 'success');
+        showToast(`Database backup (JSON) exported! ${(App.data.parties || []).length} parties & ${(App.data.transactions || []).length} transactions saved.`, 'success');
       } catch (e) {
         showLoading(false);
         console.error("Backup failed:", e);
