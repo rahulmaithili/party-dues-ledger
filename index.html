@@ -2,11 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Mr.Rahul ERP - Party Dues Ledger</title>
+
+  <!-- ===== Progressive Web App (PWA) Meta & Links ===== -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#1E3A8A">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Party Ledger">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- FontAwesome Icons -->
@@ -59,6 +71,14 @@
   </script>
   
   <style>
+    @keyframes slideUpPwaBanner {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideDownPwaBanner {
+      from { opacity: 1; transform: translateY(0); }
+      to { opacity: 0; transform: translateY(30px); }
+    }
     body.gst-disabled .gst-only {
       display: none !important;
     }
@@ -4072,6 +4092,14 @@
             <i class="fa-solid fa-gears"></i> App Settings
           </a>
         </div>
+
+        <div class="menu-section" id="sidebarPwaSection" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--brd);">
+          <a class="menu-item pointer" id="sidebarInstallAppBtn" onclick="triggerPwaInstallPrompt()" style="display: flex; align-items: center; gap: 10px; color: #10B981; font-weight: 600; background: rgba(16, 185, 129, 0.08); border-radius: var(--r); margin: 0 4px;">
+            <i class="fa-solid fa-mobile-screen-button" style="color: #10B981; font-size: 15px;"></i>
+            <span>Install App</span>
+            <span class="badge" style="background: #10B981; color: #fff; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px; margin-left: auto;">1-Click</span>
+          </a>
+        </div>
       </div>
       
       <div class="sidebar-footer pointer" onclick="openMyProfileModal()" title="Edit My Profile / Change Password">
@@ -4104,6 +4132,10 @@
           <i class="fa-solid fa-wand-magic-sparkles" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--acc); cursor: pointer;" onclick="runAiCommandCenter()"></i>
         </div>
         <div class="topbar-right">
+          <!-- PWA 1-Click Install Button -->
+          <button id="topbarInstallAppBtn" class="btn btn-sm" onclick="triggerPwaInstallPrompt()" title="Install App to Home Screen" style="display:none; align-items:center; gap:6px; background:linear-gradient(135deg, #10B981, #059669); color:#fff; border:none; border-radius:20px; padding:5px 12px; font-weight:700; font-size:12px; box-shadow:0 2px 10px rgba(16,185,129,0.3); margin-right:8px; cursor:pointer; transition:transform 0.15s ease;" onmouseenter="this.style.transform='scale(1.05)'" onmouseleave="this.style.transform='scale(1)'">
+            <i class="fa-solid fa-mobile-screen-button"></i> <span>Install App</span>
+          </button>
           <!-- Theme & Palette Button (Available to all users: Admin, Staff, Party) -->
           <div class="topbar-action" id="themePaletteBtn" onclick="toggleThemePanel(event)" title="App Theme & Color Palette" style="margin-right: 8px; position: relative;">
             <i class="fa-solid fa-palette" style="color: var(--pri);"></i>
@@ -5850,6 +5882,33 @@
               <h3 style="font-size: 15px; margin-bottom: 12px; font-weight:600;">Activity History</h3>
               <div style="max-height: 300px; overflow-y:auto;" id="activityLogList">
                 <!-- Activity list -->
+              </div>
+            </div>
+
+            <!-- PWA MOBILE & DESKTOP APP CARD -->
+            <div class="dashboard-card" id="settingsPwaCard" style="border-color: rgba(16,185,129,0.3); background: linear-gradient(180deg, var(--card) 0%, rgba(16,185,129,0.03) 100%);">
+              <div class="card-header" style="display:flex; justify-content:space-between; align-items:center;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                  <div style="width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg, #10B981, #059669); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px;">
+                    <i class="fa-solid fa-mobile-screen-button"></i>
+                  </div>
+                  <div>
+                    <h3 style="margin:0; font-size:15px; font-weight:700;">Mobile & Desktop App (PWA)</h3>
+                    <div style="font-size:11.5px; color:var(--txt2);">Install as a standalone native app on Android, iOS, Windows or Mac</div>
+                  </div>
+                </div>
+                <span id="pwaStatusBadge" class="badge" style="background:rgba(16,185,129,0.15); color:#10B981; font-weight:700; padding:4px 10px; border-radius:8px;">Ready to Install</span>
+              </div>
+              <p style="font-size: 13.5px; color: var(--txt2); margin: 14px 0; line-height: 1.5;">
+                Aap is ERP software ko bina kisi Play Store ke seedhe apne mobile phone ya computer ki Home Screen par 1-click me install kar sakte hain. Yeh full screen me ek native mobile app ki tarah chalta hai aur internet weak hone par bhi tez khulta hai.
+              </p>
+              <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <button class="btn btn-success" id="btnSettingsInstallPwa" onclick="triggerPwaInstallPrompt()" style="display:inline-flex; align-items:center; gap:8px; padding:10px 18px; font-weight:700; font-size:13.5px; box-shadow:0 4px 12px rgba(16,185,129,0.25);">
+                  <i class="fa-solid fa-download"></i> Install App on This Device
+                </button>
+                <button class="btn btn-secondary" onclick="openIosInstallGuideModal()" style="display:inline-flex; align-items:center; gap:8px; padding:10px 14px; font-weight:600; font-size:13px;">
+                  <i class="fa-brands fa-apple"></i> iPhone / iPad Guide
+                </button>
               </div>
             </div>
 
@@ -22103,6 +22162,181 @@
       }
     }
 
+    // ==================== PROGRESSIVE WEB APP (PWA) ENGINE ====================
+    window.deferredPwaPrompt = null;
+    window._isPwaStandalone = false;
+
+    function checkPwaStandalone() {
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                           window.navigator.standalone || 
+                           document.referrer.includes('android-app://');
+      window._isPwaStandalone = !!isStandalone;
+      return window._isPwaStandalone;
+    }
+
+    function initPwaEngine() {
+      // 1. Register Service Worker
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then((reg) => {
+              console.log('[PWA] Service Worker registered successfully with scope:', reg.scope);
+              reg.onupdatefound = () => {
+                const installingWorker = reg.installing;
+                if (!installingWorker) return;
+                installingWorker.onstatechange = () => {
+                  if (installingWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                    console.log('[PWA] New version of Party Ledger available.');
+                  }
+                };
+              };
+            })
+            .catch((err) => {
+              console.warn('[PWA] Service Worker registration failed:', err);
+            });
+        });
+      }
+
+      // 2. Check if already running in standalone app mode
+      if (checkPwaStandalone()) {
+        console.log('[PWA] Running in Standalone Installed App Mode');
+        updatePwaUiInstalled();
+        return;
+      }
+
+      // 3. Listen for native install prompt (Android, Chrome, Edge)
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        window.deferredPwaPrompt = e;
+        console.log('[PWA] beforeinstallprompt event captured');
+        showPwaInstallUi();
+      });
+
+      // 4. Listen for app installed event
+      window.addEventListener('appinstalled', () => {
+        console.log('[PWA] App successfully installed on device');
+        window.deferredPwaPrompt = null;
+        updatePwaUiInstalled();
+        dismissPwaBanner(true);
+        showToast('Party Ledger App installed successfully on your home screen!', 'success');
+      });
+
+      // 5. Initial UI setup (if iOS or on mobile devices after short delay)
+      setTimeout(() => {
+        if (!checkPwaStandalone()) {
+          const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+          const dismissedRecently = localStorage.getItem('pwa_banner_dismissed');
+          const isDismissed = dismissedRecently && (Date.now() - parseInt(dismissedRecently, 10) < 24 * 60 * 60 * 1000);
+
+          if ((window.deferredPwaPrompt || isIos) && !isDismissed) {
+            showPwaInstallUi(isIos);
+          }
+        }
+      }, 2500);
+    }
+
+    function showPwaInstallUi(isIos = false) {
+      if (checkPwaStandalone()) return;
+
+      // Show topbar button
+      const topbarBtn = document.getElementById('topbarInstallAppBtn');
+      if (topbarBtn) topbarBtn.style.display = 'inline-flex';
+
+      // Show sidebar button
+      const sidebarBtn = document.getElementById('sidebarInstallAppBtn');
+      if (sidebarBtn) sidebarBtn.style.display = 'flex';
+
+      // Update Settings Badge
+      const badge = document.getElementById('pwaStatusBadge');
+      if (badge) {
+        badge.textContent = 'Ready to Install';
+        badge.style.background = 'rgba(16,185,129,0.15)';
+        badge.style.color = '#10B981';
+      }
+
+      // Show mobile bottom banner
+      const isMobile = window.innerWidth <= 768;
+      const banner = document.getElementById('pwaInstallMobileBanner');
+      const dismissedRecently = localStorage.getItem('pwa_banner_dismissed');
+      const isDismissed = dismissedRecently && (Date.now() - parseInt(dismissedRecently, 10) < 24 * 60 * 60 * 1000);
+
+      if (isMobile && banner && !isDismissed) {
+        banner.style.display = 'block';
+      }
+    }
+
+    function updatePwaUiInstalled() {
+      // Hide banner
+      const banner = document.getElementById('pwaInstallMobileBanner');
+      if (banner) banner.style.display = 'none';
+
+      // Hide topbar button
+      const topbarBtn = document.getElementById('topbarInstallAppBtn');
+      if (topbarBtn) topbarBtn.style.display = 'none';
+
+      // Update Settings Badge
+      const badge = document.getElementById('pwaStatusBadge');
+      if (badge) {
+        badge.textContent = 'App Active (Installed)';
+        badge.style.background = 'rgba(59,130,246,0.15)';
+        badge.style.color = '#3B82F6';
+      }
+
+      const settingsBtn = document.getElementById('btnSettingsInstallPwa');
+      if (settingsBtn) {
+        settingsBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> Already Installed';
+        settingsBtn.classList.remove('btn-success');
+        settingsBtn.classList.add('btn-secondary');
+        settingsBtn.disabled = true;
+      }
+    }
+
+    async function triggerPwaInstallPrompt() {
+      if (checkPwaStandalone()) {
+        showToast('App is already installed and running in App Mode!', 'info');
+        return;
+      }
+
+      const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+
+      if (window.deferredPwaPrompt) {
+        window.deferredPwaPrompt.prompt();
+        const { outcome } = await window.deferredPwaPrompt.userChoice;
+        console.log(`[PWA] User choice outcome: ${outcome}`);
+        if (outcome === 'accepted') {
+          showToast('Installing Party Ledger App to Home Screen...', 'info');
+          dismissPwaBanner(true);
+        }
+        window.deferredPwaPrompt = null;
+      } else if (isIos) {
+        openIosInstallGuideModal();
+      } else {
+        showToast('Browser menu (⋮ ya Share) me jakar "Add to Home screen" ya "Install App" par tap karein.', 'info');
+      }
+    }
+
+    function dismissPwaBanner(permanent = false) {
+      const banner = document.getElementById('pwaInstallMobileBanner');
+      if (banner) {
+        banner.style.animation = 'slideDownBanner 0.25s ease forwards';
+        setTimeout(() => {
+          banner.style.display = 'none';
+          banner.style.animation = '';
+        }, 250);
+      }
+      if (!permanent) {
+        localStorage.setItem('pwa_banner_dismissed', Date.now().toString());
+      }
+    }
+
+    function openIosInstallGuideModal() {
+      const modal = document.getElementById('iosInstallModal');
+      if (modal) modal.style.display = 'flex';
+    }
+
+    // Initialize PWA engine
+    initPwaEngine();
+
   </script>
 
   <!-- DIRECT LOGIN MODAL -->
@@ -22135,6 +22369,55 @@
         <i class="fa-solid fa-shield-halved" style="color:#F59E0B; margin-right:4px;"></i>
         Admin session is saved. Click <strong>Return to Admin</strong> in the yellow banner to go back.
       </div>
+    </div>
+  </div>
+
+  <!-- PWA MOBILE INSTALL BAR (Bottom Floating Notification) -->
+  <div id="pwaInstallMobileBanner" style="display:none; position:fixed; bottom:74px; left:12px; right:12px; max-width:440px; margin:0 auto; z-index:99998; background:var(--card); border:1px solid rgba(16,185,129,0.35); border-radius:16px; padding:12px 14px; box-shadow:0 12px 35px rgba(0,0,0,0.25); animation:slideUpPwaBanner 0.3s ease;">
+    <div style="display:flex; align-items:center; gap:12px;">
+      <div style="width:44px; height:44px; border-radius:12px; overflow:hidden; flex-shrink:0; box-shadow:0 4px 10px rgba(0,0,0,0.15); background:#1E3A8A; display:flex; align-items:center; justify-content:center;">
+        <img src="icons/icon-192.png" style="width:100%; height:100%; object-fit:cover;" alt="App Icon">
+      </div>
+      <div style="flex:1; min-width:0;">
+        <div style="font-weight:700; font-size:13.5px; color:var(--txt); display:flex; align-items:center; gap:6px;">
+          Install Mobile App <span style="font-size:10px; background:#10B981; color:#fff; font-weight:700; padding:1px 6px; border-radius:4px;">1-Click</span>
+        </div>
+        <div style="font-size:11.5px; color:var(--txt2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px;">
+          Home screen par add karein, app ki tarah tez chalayein
+        </div>
+      </div>
+      <button class="btn btn-sm btn-success" onclick="triggerPwaInstallPrompt()" style="padding:6px 12px; font-size:12px; font-weight:700; border-radius:8px; flex-shrink:0; display:flex; align-items:center; gap:5px;">
+        <i class="fa-solid fa-download"></i> Install
+      </button>
+      <button onclick="dismissPwaBanner()" style="background:none; border:none; color:var(--txt2); cursor:pointer; padding:6px; font-size:14px; flex-shrink:0; line-height:1;" title="Dismiss">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- IOS INSTALL INSTRUCTION MODAL -->
+  <div class="modal-backdrop" id="iosInstallModal" style="display:none; z-index:100030;" onclick="if(event.target===this)closeModal('iosInstallModal')">
+    <div class="modal-card" style="max-width:390px; text-align:center; padding:24px; border-radius:16px;">
+      <div style="width:58px; height:58px; border-radius:14px; margin:0 auto 12px; overflow:hidden; box-shadow:0 6px 18px rgba(0,0,0,0.2); background:#1E3A8A;">
+        <img src="icons/icon-192.png" style="width:100%; height:100%; object-fit:cover;" alt="Party Ledger Icon">
+      </div>
+      <h3 style="font-size:17px; font-weight:700; color:var(--txt); margin-bottom:6px;">Install on iPhone / iPad</h3>
+      <p style="font-size:12.5px; color:var(--txt2); line-height:1.5; margin-bottom:18px;">
+        Apple Safari me is ERP app ko direct home screen par add karne ke liye yeh 2 steps karein:
+      </p>
+      <div style="text-align:left; background:var(--bg); border:1px solid var(--brd); border-radius:12px; padding:14px; margin-bottom:20px; font-size:13px; display:flex; flex-direction:column; gap:12px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:28px; height:28px; border-radius:50%; background:var(--pri); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;">1</div>
+          <div style="color:var(--txt);">Safari ke bottom bar me <b>Share button <i class="fa-solid fa-arrow-up-from-bracket" style="color:var(--pri);"></i></b> tap karein</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:28px; height:28px; border-radius:50%; background:var(--pri); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; flex-shrink:0;">2</div>
+          <div style="color:var(--txt);">Scroll karke <b>'Add to Home Screen' <i class="fa-regular fa-square-plus" style="color:#10B981;"></i></b> par tap karein</div>
+        </div>
+      </div>
+      <button class="btn btn-secondary" onclick="closeModal('iosInstallModal')" style="width:100%; justify-content:center; font-weight:600; height:40px;">
+        Samajh Gaya (Done)
+      </button>
     </div>
   </div>
 
