@@ -1214,7 +1214,7 @@
       inset: 0;
       background: rgba(15, 23, 42, 0.6);
       backdrop-filter: blur(4px);
-      z-index: 100000;
+      z-index: 2000000;
       display: none;
       align-items: center;
       justify-content: center;
@@ -3757,9 +3757,16 @@
         border: none !important;
       }
 
-      /* Body scroll lock when modal open */
+      /* Body scroll lock and hide bottom navigation bar when modal open */
       body.modal-open {
         overflow: hidden !important;
+      }
+      body.modal-open .mobile-bottom-bar,
+      .modal-open .mobile-bottom-bar,
+      body.modal-open #pwaInstallMobileBanner {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
       }
 
       /* Mobile Modals (Full-screen Sheet Experience - Optimized for iPhone & Curved Screens) */
@@ -3782,7 +3789,7 @@
         display: none;
         align-items: stretch !important;
         justify-content: stretch !important;
-        z-index: 100000 !important;
+        z-index: 2000000 !important; /* Always above .mobile-bottom-bar (999999) */
         background: rgba(15, 23, 42, 0.75) !important;
         touch-action: none;
       }
@@ -3811,6 +3818,7 @@
         overflow: hidden !important; /* CRITICAL: Card itself NEVER scrolls */
         box-shadow: none !important;
         box-sizing: border-box !important;
+        z-index: 2000001 !important;
       }
 
       .modal-card form {
@@ -3827,7 +3835,7 @@
         flex: 0 0 auto !important;
         position: sticky !important;
         top: 0 !important;
-        z-index: 100 !important;
+        z-index: 2000005 !important;
         background: var(--card) !important;
         /* Safe Area for iPhone Notch / Dynamic Island & Curved Screen Edge Protection */
         padding-top: max(16px, calc(10px + env(safe-area-inset-top, 0px))) !important;
@@ -3876,7 +3884,7 @@
         flex: 0 0 auto !important;
         position: sticky !important;
         bottom: 0 !important;
-        z-index: 100 !important;
+        z-index: 2000005 !important;
         background: var(--card) !important;
         /* Safe Area for iPhone Home Indicator & Curved Screen Edge Protection */
         padding-top: 12px !important;
@@ -7282,8 +7290,15 @@
   <div class="modal-backdrop" id="returnModal">
     <div class="modal-card large">
       <div class="modal-header">
-        <h3>Create Return Entry</h3>
-        <i class="fa-solid fa-xmark pointer" onclick="closeModal('returnModal')"></i>
+        <div style="display:flex; align-items:center; gap:10px; min-width:0; flex:1;">
+          <button type="button" class="btn-modal-back-touch" onclick="closeModal('returnModal')" title="Back">
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+          <h3 id="returnModalTitle" style="margin:0; font-size:16px; font-weight:700;">Create Return Entry</h3>
+        </div>
+        <button type="button" class="btn-modal-close-touch" onclick="closeModal('returnModal')" title="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
       <form id="returnForm" onsubmit="saveReturnForm(event)">
         <input type="hidden" id="returnId">
@@ -7306,7 +7321,12 @@
             </div>
           </div>
 
-          <h4 style="margin-bottom:12px; font-weight:700;">Line Items</h4>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <h4 style="margin:0; font-weight:700;">Line Items</h4>
+            <span class="mobile-table-scroll-hint hide-on-desktop" style="font-size:11px; color:var(--txt2); background:var(--bg2); padding:3px 8px; border-radius:12px; border:1px solid var(--brd);">
+              <i class="fa-solid fa-arrows-left-right"></i> Scroll table
+            </span>
+          </div>
           <div class="table-container" style="margin-bottom:16px;">
             <table id="returnItemsTable">
               <thead>
@@ -7341,8 +7361,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('returnModal')">Cancel</button>
-          <button type="submit" class="btn btn-accent">Save Return</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal('returnModal')"><i class="fa-solid fa-xmark"></i> Cancel</button>
+          <button type="submit" class="btn btn-accent"><i class="fa-solid fa-check"></i> Save Return</button>
         </div>
       </form>
     </div>
@@ -7352,8 +7372,15 @@
   <div class="modal-backdrop" id="emptyCylinderReturnModal">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>Record Empty Cylinder Return</h3>
-        <i class="fa-solid fa-xmark pointer" onclick="closeModal('emptyCylinderReturnModal')"></i>
+        <div style="display:flex; align-items:center; gap:10px; min-width:0; flex:1;">
+          <button type="button" class="btn-modal-back-touch" onclick="closeModal('emptyCylinderReturnModal')" title="Back">
+            <i class="fa-solid fa-arrow-left"></i>
+          </button>
+          <h3 style="margin:0; font-size:16px; font-weight:700;">Record Empty Cylinder Return</h3>
+        </div>
+        <button type="button" class="btn-modal-close-touch" onclick="closeModal('emptyCylinderReturnModal')" title="Close">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
       </div>
       <form id="emptyCylinderReturnForm" onsubmit="saveEmptyCylinderReturnForm(event)">
         <div class="modal-body">
@@ -7381,8 +7408,8 @@
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" onclick="closeModal('emptyCylinderReturnModal')">Cancel</button>
-          <button type="submit" class="btn btn-accent">Record Return</button>
+          <button type="button" class="btn btn-secondary" onclick="closeModal('emptyCylinderReturnModal')"><i class="fa-solid fa-xmark"></i> Cancel</button>
+          <button type="submit" class="btn btn-accent"><i class="fa-solid fa-check"></i> Record Return</button>
         </div>
       </form>
     </div>
@@ -9931,6 +9958,10 @@
         if (body) body.scrollTop = 0;
       }
       document.body.classList.add('modal-open');
+      const bottomBar = document.querySelector('.mobile-bottom-bar');
+      if (bottomBar) bottomBar.style.setProperty('display', 'none', 'important');
+      const pwaBanner = document.getElementById('pwaInstallMobileBanner');
+      if (pwaBanner) pwaBanner.style.setProperty('display', 'none', 'important');
     }
 
     // Open ledger as full in-display page (not popup)
@@ -9968,6 +9999,10 @@
       });
       if (!anyOpen) {
         document.body.classList.remove('modal-open');
+        const bottomBar = document.querySelector('.mobile-bottom-bar');
+        if (bottomBar && document.body.classList.contains('logged-in')) {
+          bottomBar.style.removeProperty('display');
+        }
       }
 
       if (id === 'ledgerModal') {
