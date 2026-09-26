@@ -1,14 +1,20 @@
 // Shiv Shakti / Mr.Rahul ERP - PWA Service Worker
-const CACHE_NAME = 'mr-rahul-erp-v1.1';
+const CACHE_NAME = 'mr-rahul-erp-v1.2';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
+  './favicon.png',
+  './icons/icon-48.png',
+  './icons/icon-72.png',
+  './icons/icon-96.png',
+  './icons/icon-128.png',
+  './icons/icon-144.png',
   './icons/icon-192.png',
+  './icons/icon-256.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
-  './icons/apple-touch-icon.png',
-  './icons/icon.svg'
+  './icons/apple-touch-icon.png'
 ];
 
 // Install: Pre-cache core shell

@@ -8,6 +8,14 @@
   <meta http-equiv="Expires" content="0">
   <title>Mr.Rahul ERP - Party Dues Ledger</title>
 
+  <!-- ===== Favicons & Brand Icons ===== -->
+  <link rel="icon" type="image/png" sizes="48x48" href="icons/icon-48.png">
+  <link rel="icon" type="image/png" sizes="96x96" href="icons/icon-96.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+  <link rel="shortcut icon" href="favicon.png" type="image/png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/apple-touch-icon.png">
+
   <!-- ===== Progressive Web App (PWA) Meta & Links ===== -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1E3A8A">
@@ -15,9 +23,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Party Ledger">
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
 
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -3926,8 +3931,8 @@
       <!-- Left Panel: Features and App Showroom (Desktop only) -->
       <div class="login-showroom">
         <div class="showroom-content">
-          <div class="showroom-brand">
-            <i class="fa-solid fa-fire-flame-simple brand-logo-icon"></i>
+          <div class="showroom-brand" style="display: flex; align-items: center; gap: 12px;">
+            <img src="icons/icon-96.png" style="width: 38px; height: 38px; border-radius: 10px; object-fit: contain; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);" alt="Brand Logo">
             <span class="brand-name">Shiv Shakti Gas ERP</span>
           </div>
           
@@ -3974,7 +3979,7 @@
       <div class="login-form-panel">
         <div class="login-card">
           <div class="login-header">
-            <img id="loginLogoImg" style="display: none; max-height: 70px; max-width: 180px; object-fit: contain; margin: 0 auto 16px; filter: drop-shadow(0px 4px 6px rgba(0, 0, 0, 0.15));">
+            <img id="loginLogoImg" src="icons/icon-192.png" style="display: block; width: 68px; height: 68px; border-radius: 16px; object-fit: contain; margin: 0 auto 14px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);" alt="App Logo">
             <h2 id="loginCompanyName">Mr.Rahul ERP</h2>
             <p>Sign in to manage Ledger & Dues</p>
           </div>
@@ -4011,7 +4016,7 @@
     <aside id="sidebar">
       <div class="sidebar-header" style="position: relative;">
         <div class="sidebar-brand-wrapper" style="display: flex; align-items: center; gap: 10px;">
-          <img id="sidebarLogoImg" class="sidebar-logo" style="max-height: 32px; max-width: 32px; object-fit: contain; display: none;">
+          <img id="sidebarLogoImg" src="icons/icon-96.png" class="sidebar-logo" style="max-height: 34px; max-width: 34px; border-radius: 8px; object-fit: contain; display: block;" alt="Logo">
           <h1 id="sidebarTitle" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">Mr.Rahul ERP</h1>
         </div>
         <i class="fa-solid fa-chevron-left desktop-toggle-btn hide-on-mobile pointer" onclick="toggleSidebarDesktop()" id="sidebarToggleIcon" style="font-size: 14px; color: var(--txt2); padding: 6px 8px; border-radius: 6px; border: 1px solid var(--brd); display: inline-block;"></i>
@@ -7824,8 +7829,8 @@
           loginLogoImg.src = logo;
           loginLogoImg.style.display = 'block';
         } else {
-          loginLogoImg.style.display = 'none';
-          loginLogoImg.src = '';
+          loginLogoImg.src = 'icons/icon-192.png';
+          loginLogoImg.style.display = 'block';
         }
       }
     }
@@ -10607,7 +10612,7 @@
           const name = App.data.companyProfile.companyName || 'Mr.Rahul ERP';
           sidebarTitle.textContent = name;
           if (logo) { sidebarLogo.src = logo; sidebarLogo.style.display = 'block'; }
-          else { sidebarLogo.src = ''; sidebarLogo.style.display = 'none'; }
+          else { sidebarLogo.src = 'icons/icon-96.png'; sidebarLogo.style.display = 'block'; }
         }
 
         const showGst = (App.data.companyProfile.enableGst !== false && App.data.companyProfile.enableGst !== 'false');
