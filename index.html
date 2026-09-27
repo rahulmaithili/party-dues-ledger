@@ -7074,7 +7074,7 @@
             <label id="receiptPartyLabel">Select Customer *</label>
             <select id="receiptPartyId" class="light-form-control" onchange="populateLinkedInvoicesForSelectedParty()"></select>
           </div>
-          <div class="grid-2">
+          <div class="grid-3">
             <div class="form-group">
               <label>Amount *</label>
               <input type="number" id="receiptAmount" class="light-form-control" step="0.01" required>
@@ -7082,6 +7082,10 @@
             <div class="form-group">
               <label>Date *</label>
               <input type="date" id="receiptDate" class="light-form-control" required>
+            </div>
+            <div class="form-group">
+              <label>Voucher / Receipt No</label>
+              <input type="text" id="receiptVoucherNo" class="light-form-control" placeholder="Auto-generated">
             </div>
           </div>
           <div class="grid-2">
@@ -7764,20 +7768,111 @@
 
     function parseDate(dateStr) {
       if (!dateStr) return new Date();
-      if (typeof dateStr === 'string' && dateStr.includes('-')) {
-        const parts = dateStr.split('-');
-        if (parts.length === 3) {
-          if (parts[2].length === 4) {
-            // DD-MM-YYYY
-            return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
-          } else if (parts[0].length === 4) {
-            // YYYY-MM-DD
-            return new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-          }
+      if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? new Date() : dateStr;
+      if (typeof dateStr === 'number') {
+        const d = new Date(dateStr);
+        return isNaN(d.getTime()) ? new Date() : d;
+      }
+      if (typeof dateStr === 'string') {
+        const trimmed = dateStr.trim();
+        // Check for DD-MM-YYYY or DD/MM/YYYY (with optional time)
+        const dmyMatch = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:[T\s](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+        if (dmyMatch) {
+          return new Date(
+            parseInt(dmyMatch[3], 10),
+            parseInt(dmyMatch[2], 10) - 1,
+            parseInt(dmyMatch[1], 10),
+            dmyMatch[4] ? parseInt(dmyMatch[4], 10) : 0,
+            dmyMatch[5] ? parseInt(dmyMatch[5], 10) : 0,
+            dmyMatch[6] ? parseInt(dmyMatch[6], 10) : 0
+          );
+        }
+        // Check for YYYY-MM-DD or YYYY/MM/DD (with optional time)
+        const ymdMatch = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})(?:[T\s](\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?/);
+        if (ymdMatch) {
+          return new Date(
+            parseInt(ymdMatch[1], 10),
+            parseInt(ymdMatch[2], 10) - 1,
+            parseInt(ymdMatch[3], 10),
+            ymdMatch[4] ? parseInt(ymdMatch[4], 10) : 0,
+            ymdMatch[5] ? parseInt(ymdMatch[5], 10) : 0,
+            ymdMatch[6] ? parseInt(ymdMatch[6], 10) : 0
+          );
         }
       }
       const d = new Date(dateStr);
-      return isNaN(d.getTime()) ? new Date() : d;
+      return isNaN(d.getTime()) ? new Date(0) : d;
+    }
+
+    function sortTransactionsByDate(a, b, ascending = true) {
+      const timeA = parseDate(a && a.date).getTime();
+      const timeB = parseDate(b && b.date).getTime();
+      let diff = ascending ? (timeA - timeB) : (timeB - timeA);
+
+      // Secondary sort: enteredOn timestamp / createdAt / id to guarantee deterministic order
+      if (diff === 0) {
+        const timeEnteredA = (a && a.enteredOn) ? parseDate(a.enteredOn).getTime() : 0;
+        const timeEnteredB = (b && b.enteredOn) ? parseDate(b.enteredOn).getTime() : 0;
+        diff = ascending ? (timeEnteredA - timeEnteredB) : (timeEnteredB - timeEnteredA);
+      }
+
+      // Tertiary sort: id / voucherNo string comparison
+      if (diff === 0) {
+        const idA = String((a && (a.id || a.voucherNo)) || '');
+        const idB = String((b && (b.id || b.voucherNo)) || '');
+        diff = ascending ? idA.localeCompare(idB) : idB.localeCompare(idA);
+      }
+      return diff;
+    }
+
+    function getParty4LetterCode(partyName) {
+      if (!partyName) return 'XXXX';
+      const cleanLetters = partyName.replace(/[^a-zA-Z]/g, '').toUpperCase();
+      return (cleanLetters.padEnd(4, 'X')).slice(0, 4);
+    }
+
+    function generatePartyVoucherNumber(partyId, txnDate, currentTxnId) {
+      if (!partyId) return '';
+      const party = (App.data.parties || []).find(p => p.id === partyId);
+      if (!party) return '';
+
+      const alpha = getParty4LetterCode(party.name);
+      const d = parseDate(txnDate || new Date());
+      const yr = String(d.getFullYear()).slice(-2);
+
+      let maxSeq = 0;
+      (App.data.transactions || []).forEach(t => {
+        if (currentTxnId && t.id === currentTxnId) return;
+        if (t.partyId !== partyId) return;
+
+        const tDate = parseDate(t.date);
+        const tYr = String(tDate.getFullYear()).slice(-2);
+        if (tYr !== yr) return;
+
+        if (t.voucherNo) {
+          const vStr = String(t.voucherNo).trim();
+          const regexExact = new RegExp(`^${alpha}[-_]?${yr}[-_]?(\\d+)$`, 'i');
+          const mExact = vStr.match(regexExact);
+          if (mExact) {
+            const num = parseInt(mExact[1], 10);
+            if (!isNaN(num) && num > maxSeq) maxSeq = num;
+          } else {
+            const mEnd = vStr.match(/(\d+)$/);
+            if (mEnd) {
+              const num = parseInt(mEnd[1], 10);
+              if (!isNaN(num) && num > maxSeq && num < 10000) {
+                if (vStr.toUpperCase().includes(alpha)) {
+                  maxSeq = num;
+                }
+              }
+            }
+          }
+        }
+      });
+
+      const nextSeq = maxSeq + 1;
+      const seqStr = String(nextSeq).padStart(2, '0');
+      return `${alpha}-${yr}-${seqStr}`;
     }
 
     function toIsoDateString(dateStr) {
@@ -8113,6 +8208,27 @@
     }
 
     // ---- SEARCHABLE COMBOBOX COMPONENT ----
+    // Single global click listener to close all comboboxes when clicking outside (prevents memory leak & UI freeze)
+    if (!window._comboboxGlobalClickBound) {
+      window._comboboxGlobalClickBound = true;
+      document.addEventListener('click', (e) => {
+        document.querySelectorAll('.combobox-wrapper').forEach(wrapper => {
+          if (!wrapper.contains(e.target)) {
+            const dropdown = wrapper.querySelector('.combobox-dropdown');
+            if (dropdown && dropdown.style.display !== 'none') {
+              dropdown.style.display = 'none';
+              const select = wrapper.previousElementSibling;
+              const input = wrapper.querySelector('.combobox-input');
+              if (select && input) {
+                const selectedOpt = select.options[select.selectedIndex];
+                input.value = (selectedOpt && selectedOpt.value) ? selectedOpt.text : '';
+              }
+            }
+          }
+        });
+      });
+    }
+
     function initSearchableDropdown(selectId, onChangeCallback) {
       const select = document.getElementById(selectId);
       if (!select) return;
@@ -8120,6 +8236,7 @@
       // Check if combobox is already initialized
       let wrapper = select.nextElementSibling;
       if (wrapper && wrapper.classList.contains('combobox-wrapper')) {
+        wrapper._onChangeCallback = onChangeCallback;
         refreshSearchableDropdown(selectId);
         return;
       }
@@ -8130,6 +8247,7 @@
       // Create wrapper container
       wrapper = document.createElement('div');
       wrapper.className = 'combobox-wrapper';
+      wrapper._onChangeCallback = onChangeCallback;
       
       // Create input field
       const inputWrapper = document.createElement('div');
@@ -8191,7 +8309,7 @@
             
             // Trigger change event on original select
             select.dispatchEvent(new Event('change'));
-            if (onChangeCallback) onChangeCallback(opt.value);
+            if (wrapper._onChangeCallback) wrapper._onChangeCallback(opt.value);
           };
           dropdown.appendChild(item);
         });
@@ -8220,14 +8338,6 @@
         activeIndex = -1;
         renderOptions(input.value);
       };
-
-      // Close dropdown on click outside
-      document.addEventListener('click', (e) => {
-        if (!wrapper.contains(e.target)) {
-          dropdown.style.display = 'none';
-          syncInputDisplay();
-        }
-      });
 
       // Key navigation
       input.onkeydown = (e) => {
@@ -8663,7 +8773,7 @@
           else if (storedDue === -1) due = debit;
 
           if (due > 0) {
-            const ageDays = Math.floor((today - new Date(t.date)) / (1000 * 60 * 60 * 24));
+            const ageDays = Math.floor((today - parseDate(t.date)) / (1000 * 60 * 60 * 24));
             if (ageDays > 30) {
               hasVeryOldDues = true;
             }
@@ -9478,7 +9588,7 @@
           const toD = new Date(payload.dateTo + 'T23:59:59');
           const isDateInRange = (dateStr) => {
             if (!dateStr) return false;
-            const d = new Date(dateStr);
+            const d = parseDate(dateStr);
             return d >= fromD && d <= toD;
           };
 
@@ -9486,7 +9596,7 @@
           
           if (type === 'daybook') {
             const txns = App.data.transactions.filter(t => isDateInRange(t.date));
-            txns.sort((a, b) => new Date(a.date) - new Date(b.date));
+            txns.sort((a, b) => sortTransactionsByDate(a, b, true));
             success({ success: true, type: 'daybook', data: txns });
             return;
           }
@@ -9536,12 +9646,12 @@
             
             const partyTxns = App.data.transactions
               .filter(t => t.partyId === pid)
-              .sort((a, b) => new Date(a.date) - new Date(b.date));
+              .sort((a, b) => sortTransactionsByDate(a, b, true));
               
             partyTxns.forEach(t => {
               const debit = parseFloat(t.debit || 0);
               const credit = parseFloat(t.credit || 0);
-              const txnDate = new Date(t.date);
+              const txnDate = parseDate(t.date);
               
               if (txnDate < fromD) {
                 runningBal += debit - credit;
@@ -9583,7 +9693,7 @@
           if (type === 'sales' || type === 'purchase') {
             const targetType = type === 'sales' ? 'Sale' : 'Purchase';
             const txns = App.data.transactions.filter(t => t.txnType === targetType && isDateInRange(t.date));
-            txns.sort((a, b) => new Date(b.date) - new Date(b.date));
+            txns.sort((a, b) => sortTransactionsByDate(a, b, false));
             success({ success: true, type: type, data: txns });
             return;
           }
@@ -10933,14 +11043,16 @@
     function populateGlobalDropdowns() {
       // Party selects
       const custSelects = ['invoicePartyId', 'receiptPartyId', 'docPartyId', 'returnPartyId', 'reportPartySelect'];
+      const sortedParties = [...App.data.parties].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      let partyOptionsHtml = '<option value="">-- Choose Party --</option>';
+      sortedParties.forEach(p => {
+        partyOptionsHtml += `<option value="${p.id}">${p.name} (${p.type})</option>`;
+      });
+
       custSelects.forEach(id => {
         const select = document.getElementById(id);
         if (!select) return;
-        select.innerHTML = '<option value="">-- Choose Party --</option>';
-        const sortedParties = [...App.data.parties].sort((a, b) => a.name.localeCompare(b.name));
-        sortedParties.forEach(p => {
-          select.innerHTML += `<option value="${p.id}">${p.name} (${p.type})</option>`;
-        });
+        select.innerHTML = partyOptionsHtml;
         
         // Convert to searchable combobox
         initSearchableDropdown(id);
@@ -10950,10 +11062,11 @@
       // Populate Product select in Price History Page
       const historyProdSelect = document.getElementById('historyProductId');
       if (historyProdSelect) {
-        historyProdSelect.innerHTML = '<option value="">-- Choose Cylinder / Product --</option>';
+        let prodOptionsHtml = '<option value="">-- Choose Cylinder / Product --</option>';
         App.data.products.forEach(p => {
-          historyProdSelect.innerHTML += `<option value="${p.id}">${p.name} (${p.category})</option>`;
+          prodOptionsHtml += `<option value="${p.id}">${p.name} (${p.category})</option>`;
         });
+        historyProdSelect.innerHTML = prodOptionsHtml;
       }
     }
 
@@ -10974,7 +11087,7 @@
         let lastDateStr = '--';
         
         const myTxns = App.data.transactions.filter(t => t.partyId === pid);
-        myTxns.sort((a, b) => new Date(a.date) - new Date(b.date));
+        myTxns.sort((a, b) => sortTransactionsByDate(a, b, true));
         
         myTxns.forEach(t => {
           const debit = parseFloat(t.debit || 0);
@@ -11242,7 +11355,7 @@
         // Recent Transactions table
         const recentTxnsBody = document.getElementById('recentTxnsBody');
         recentTxnsBody.innerHTML = '';
-        const recentTxns = [...App.data.transactions].sort((a,b) => parseDate(b.date) - parseDate(a.date)).slice(0, 8);
+        const recentTxns = [...App.data.transactions].sort((a,b) => sortTransactionsByDate(a, b, false)).slice(0, 8);
         
         if (recentTxns.length === 0) {
           recentTxnsBody.innerHTML = '<tr><td colspan="6" class="text-center">No transactions recorded yet.</td></tr>';
@@ -13538,7 +13651,7 @@
       }
 
       // Sort newest first
-      list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      list.sort((a, b) => sortTransactionsByDate(a, b, false));
 
       const PAGE = 60;
       const displayed = (window._salesPage || 1) * PAGE;
@@ -13634,7 +13747,7 @@
       }
 
       // Sort newest first
-      list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      list.sort((a, b) => sortTransactionsByDate(a, b, false));
 
       const PAGE = 60;
       const displayed = (window._purchasesPage || 1) * PAGE;
@@ -13730,10 +13843,12 @@
       document.getElementById('invoicePartyLabel').textContent = isSale ? 'Customer Name *' : 'Supplier Name *';
       document.getElementById('invoiceDate').value = new Date().toISOString().split('T')[0];
 
-      // Auto generate voucher no
-      const prefix = isSale ? (App.data.companyProfile.invoicePrefix || 'INV') : (App.data.companyProfile.purchasePrefix || 'PUR');
-      const count = App.data.transactions.filter(t => t.txnType === type).length + 1;
-      document.getElementById('invoiceVoucherNo').value = `${prefix}-${new Date().getFullYear()}-${count.toString().padStart(3, '0')}`;
+      // Auto generate voucher no if preselected party is provided
+      if (preselectedPartyId) {
+        document.getElementById('invoiceVoucherNo').value = generatePartyVoucherNumber(preselectedPartyId, document.getElementById('invoiceDate').value);
+      } else {
+        document.getElementById('invoiceVoucherNo').value = '';
+      }
 
       // Populate Party selector
       const pSelect = document.getElementById('invoicePartyId');
@@ -13744,7 +13859,25 @@
       if (preselectedPartyId) {
         pSelect.value = preselectedPartyId;
       }
-      initSearchableDropdown('invoicePartyId');
+      pSelect.onchange = function() {
+        const invId = document.getElementById('invoiceId').value;
+        if (!invId && this.value) {
+          document.getElementById('invoiceVoucherNo').value = generatePartyVoucherNumber(this.value, document.getElementById('invoiceDate').value);
+        }
+      };
+      document.getElementById('invoiceDate').onchange = function() {
+        const invId = document.getElementById('invoiceId').value;
+        const pId = document.getElementById('invoicePartyId').value;
+        if (!invId && pId) {
+          document.getElementById('invoiceVoucherNo').value = generatePartyVoucherNumber(pId, this.value);
+        }
+      };
+      initSearchableDropdown('invoicePartyId', function(newPartyId) {
+        const invId = document.getElementById('invoiceId').value;
+        if (!invId && newPartyId) {
+          document.getElementById('invoiceVoucherNo').value = generatePartyVoucherNumber(newPartyId, document.getElementById('invoiceDate').value);
+        }
+      });
 
       activeInvoiceItems = [];
       document.getElementById('invoiceItemsBody').innerHTML = '';
@@ -13938,7 +14071,7 @@
       const payload = {
         id: id,
         date: document.getElementById('invoiceDate').value,
-        voucherNo: document.getElementById('invoiceVoucherNo').value,
+        voucherNo: (document.getElementById('invoiceVoucherNo').value || '').trim() || generatePartyVoucherNumber(party.id, document.getElementById('invoiceDate').value, id),
         partyId: party.id,
         partyName: party.name,
         description: document.getElementById('invoiceDescription').value,
@@ -14179,7 +14312,7 @@
       }
 
       // Sort newest first
-      list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      list.sort((a, b) => sortTransactionsByDate(a, b, false));
 
       const PAGE = 60;
       const displayed = (window._receiptsPage || 1) * PAGE;
@@ -14277,6 +14410,14 @@
       document.getElementById('receiptPartyLabel').textContent = isReceipt ? 'Select Customer *' : 'Select Supplier *';
       document.getElementById('receiptDate').value = new Date().toISOString().split('T')[0];
 
+      // Auto generate voucher no if preselected party is provided
+      const vEl = document.getElementById('receiptVoucherNo');
+      if (preselectedPartyId) {
+        if (vEl) vEl.value = generatePartyVoucherNumber(preselectedPartyId, document.getElementById('receiptDate').value);
+      } else {
+        if (vEl) vEl.value = '';
+      }
+
       // Populate Party selector
       const pSelect = document.getElementById('receiptPartyId');
       pSelect.innerHTML = '<option value="">-- Choose Party --</option>';
@@ -14286,7 +14427,30 @@
       if (preselectedPartyId) {
         pSelect.value = preselectedPartyId;
       }
-      initSearchableDropdown('receiptPartyId');
+      pSelect.onchange = function() {
+        populateLinkedInvoicesForSelectedParty();
+        const rId = document.getElementById('receiptId').value;
+        const voucherEl = document.getElementById('receiptVoucherNo');
+        if (!rId && this.value && voucherEl) {
+          voucherEl.value = generatePartyVoucherNumber(this.value, document.getElementById('receiptDate').value);
+        }
+      };
+      document.getElementById('receiptDate').onchange = function() {
+        const rId = document.getElementById('receiptId').value;
+        const pId = document.getElementById('receiptPartyId').value;
+        const voucherEl = document.getElementById('receiptVoucherNo');
+        if (!rId && pId && voucherEl) {
+          voucherEl.value = generatePartyVoucherNumber(pId, this.value);
+        }
+      };
+      initSearchableDropdown('receiptPartyId', function(newPartyId) {
+        populateLinkedInvoicesForSelectedParty();
+        const rId = document.getElementById('receiptId').value;
+        const voucherEl = document.getElementById('receiptVoucherNo');
+        if (!rId && newPartyId && voucherEl) {
+          voucherEl.value = generatePartyVoucherNumber(newPartyId, document.getElementById('receiptDate').value);
+        }
+      });
 
       // Populate Linked Invoice with fallback placeholder
       if (preselectedPartyId) {
@@ -14365,9 +14529,8 @@
         const amt = parseFloat(document.getElementById('receiptAmount').value || 0);
 
         const existingTxn = id ? App.data.transactions.find(t => t.id === id) : null;
-        const prefix = type === 'Receipt' ? (App.data.companyProfile.receiptPrefix || 'REC') : 'PAY';
-        const count = App.data.transactions.filter(t => t.txnType === type).length + 1;
-        const vNo = (existingTxn && existingTxn.voucherNo) ? existingTxn.voucherNo : `${prefix}-${new Date().getFullYear()}-${count.toString().padStart(3, '0')}`;
+        const inputVoucher = (document.getElementById('receiptVoucherNo')?.value || '').trim();
+        const vNo = inputVoucher || (existingTxn && existingTxn.voucherNo) || generatePartyVoucherNumber(party.id, document.getElementById('receiptDate').value, id);
         const finalId = id || ('TXN_' + _fbId());
 
         const payload = {
@@ -14443,6 +14606,8 @@
       document.getElementById('receiptTxnType').value = t.txnType;
       document.getElementById('receiptModalTitle').textContent = `Edit ${t.txnType}`;
       document.getElementById('receiptDate').value = toIsoDateString(t.date);
+      const vEl = document.getElementById('receiptVoucherNo');
+      if (vEl) vEl.value = t.voucherNo || '';
       document.getElementById('receiptAmount').value = t.txnType === 'Receipt' ? t.credit : t.debit;
       document.getElementById('receiptMode').value = t.paymentMode || 'Cash';
       
@@ -15134,9 +15299,13 @@
         body.innerHTML = '<tr><td colspan="6" class="text-center">No return entries recorded.</td></tr>';
         return;
       }
+      // Sort newest first
+      list.sort((a, b) => sortTransactionsByDate(a, b, false));
+
+      let retHtml = '';
       list.forEach(t => {
         const val = t.totals && t.totals.grandTotal || (parseFloat(t.debit) || parseFloat(t.credit));
-        body.innerHTML += `
+        retHtml += `
           <tr>
             <!-- MOBILE NATIVE CARD VIEW -->
             <td class="mobile-txn-cell returns-mobile-cell" colspan="6">
@@ -15179,6 +15348,7 @@
           </tr>
         `;
       });
+      body.innerHTML = retHtml;
     }
 
     function handleReturnPartyToggle() {
@@ -15304,8 +15474,7 @@
       let grandTotal = 0;
       items.forEach(x => grandTotal += x.amount);
 
-      const count = App.data.transactions.filter(t => t.txnType === 'Return').length + 1;
-      const voucherNo = `${retType === 'Sales' ? 'CN' : 'DN'}-${new Date().getFullYear()}-${count.toString().padStart(3, '0')}`;
+      const voucherNo = generatePartyVoucherNumber(party.id, document.getElementById('returnDate').value);
 
       const payload = {
         id: 'TXN' + Date.now(),
@@ -15866,7 +16035,7 @@
       allTxns.push(...refundTxns);
 
       // Sort by date ascending
-      allTxns.sort((a, b) => new Date(a.date) - new Date(b.date));
+      allTxns.sort((a, b) => sortTransactionsByDate(a, b, true));
 
       if (allTxns.length === 0) {
         body.innerHTML = '<tr><td colspan="8" class="text-center">No transaction history found for this record.</td></tr>';
@@ -16554,11 +16723,11 @@
       const openingBal = parseFloat(p.openingBalance || 0);
       let runningBal = openingBal;
       
-      // Sort transactions by date ascending
-      const sortedLedger = ledger.sort((a, b) => new Date(a.date) - new Date(b.date));
+      // Sort transactions by date ascending with deterministic tie-breaker
+      const sortedLedger = [...ledger].sort((a, b) => sortTransactionsByDate(a, b, true));
       
       const body = document.getElementById('ledgerTableBody');
-      body.innerHTML = '';
+      let ledgerRowsHtml = '';
       
       sortedLedger.forEach(t => {
         const debit = parseFloat(t.debit || 0);
@@ -16737,7 +16906,7 @@
           </div>
         `;
         
-        body.innerHTML += `
+        ledgerRowsHtml += `
           <tr class="ledger-row"
               data-id="${t.id}"
               data-rawdate="${rawDate}"
@@ -16803,6 +16972,7 @@
           </tr>
         `;
       });
+      body.innerHTML = ledgerRowsHtml;
       
       const wsapBtn = runningBal > 0 ? `<button class="btn btn-secondary btn-icon text-success" onclick="sendWhatsAppReminder('${p.id}')" title="Send WhatsApp Reminder" style="margin-left:8px; padding: 2px 6px; height: auto; border: 1px solid var(--brd); border-radius: 4px; color:#25D366 !important;"><i class="fa-brands fa-whatsapp"></i></button>` : '';
 
@@ -17051,8 +17221,15 @@
 
         // 3. Date range match
         let matchDate = true;
-        if (fFrom && dRawDate && dRawDate < fFrom) matchDate = false;
-        if (fTo && dRawDate && dRawDate > fTo) matchDate = false;
+        if (dRawDate && (fFrom || fTo)) {
+          const dTime = parseDate(dRawDate).getTime();
+          if (fFrom && dTime < parseDate(fFrom).getTime()) matchDate = false;
+          if (fTo) {
+            const toDateObj = parseDate(fTo);
+            toDateObj.setHours(23, 59, 59, 999);
+            if (dTime > toDateObj.getTime()) matchDate = false;
+          }
+        }
 
         // 4. Amount range match
         let matchAmount = true;
@@ -17475,7 +17652,7 @@
       if (!p) return;
 
       const ledger = App.data.transactions.filter(t => t.partyId === p.id);
-      const sortedLedger = ledger.sort((a, b) => new Date(a.date) - new Date(b.date));
+      const sortedLedger = [...ledger].sort((a, b) => sortTransactionsByDate(a, b, true));
       
       const openingBal = parseFloat(p.openingBalance || 0);
       let runningBal = openingBal;
@@ -18026,7 +18203,7 @@
       const openingBal = parseFloat(p.openingBalance || 0);
       let runningBal = openingBal;
       
-      const sortedLedger = [...ledger].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const sortedLedger = [...ledger].sort((a, b) => sortTransactionsByDate(a, b, true));
 
       const rows = [];
       rows.push([companyTitle]);
@@ -18158,7 +18335,7 @@
         return;
       }
 
-      list.sort((a, b) => new Date(a.date) - new Date(b.date));
+      list.sort((a, b) => sortTransactionsByDate(a, b, true));
 
       const rows = [];
       rows.push([`${p.name} - Invoices & Transactions`]);
@@ -18685,7 +18862,7 @@
         let prevBal = 0;
         const sortedTxns = App.data.transactions
           .filter(x => x.partyId === t.partyId)
-          .sort((a, b) => new Date(a.date) - new Date(b.date) || a.id.localeCompare(b.id));
+          .sort((a, b) => sortTransactionsByDate(a, b, true));
 
         let currentRunning = parseFloat(p.openingBalance || 0);
         for (let i = 0; i < sortedTxns.length; i++) {
@@ -20090,18 +20267,20 @@
       if (App.data.activityLog.length === 0) {
         container.innerHTML = '<p class="text-secondary text-center" style="font-size:13px; padding:10px;">No system log events recorded.</p>';
       } else {
-        App.data.activityLog.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(l => {
+        let logHtml = '';
+        App.data.activityLog.sort((a,b) => parseDate(b.timestamp) - parseDate(a.timestamp)).forEach(l => {
           const who = l.userName || l.userId || 'System';
           const what = l.actionType || l.action || 'Action';
           const where = l.moduleName || '';
           const info = l.details || '';
-          container.innerHTML += `
+          logHtml += `
             <div style="font-size:12.5px; padding:8px; border-bottom:1px solid var(--brd); display:flex; justify-content:space-between;">
               <div><strong>${who}</strong>: ${what} in ${where} ${info ? '(' + info + ')' : ''}</div>
               <div class="text-secondary">${formatDate(l.timestamp)}</div>
             </div>
           `;
         });
+        container.innerHTML = logHtml;
       }
 
       // Show Google Sheets migration card if opened inside Apps Script Web App context
@@ -20763,7 +20942,7 @@
         });
 
         // Chronologically sort transactions
-        const sortedTxns = [...transactions].sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+        const sortedTxns = [...transactions].sort((a, b) => sortTransactionsByDate(a, b, true));
 
         sortedTxns.forEach(t => {
           const pid = t.partyId;
@@ -21392,7 +21571,8 @@
       if (App.data.notifications.length === 0) {
         container.innerHTML = '<p class="text-center text-secondary" style="font-size:13.5px; padding:12px;">No notifications found.</p>';
       } else {
-        App.data.notifications.sort((a,b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date)).forEach(n => {
+        let notifHtml = '';
+        App.data.notifications.sort((a,b) => parseDate(b.createdAt || b.date) - parseDate(a.createdAt || a.date)).forEach(n => {
           let actionBtnHtml = '';
           if (!n.read) {
             if (n.type && n.type.indexOf('PasswordReset|') === 0 && App.isAdmin) {
@@ -21408,7 +21588,7 @@
               actionBtnHtml = `<button class="btn btn-secondary btn-sm" onclick="markNotifRead('${n.id}')">Read</button>`;
             }
           }
-          container.innerHTML += `
+          notifHtml += `
             <div style="padding:12px; background:${n.read ? '#fff' : '#EFF6FF'}; border:1px solid var(--brd); border-radius:var(--r); display:flex; justify-content:space-between; align-items:center;">
               <div>
                 <p style="font-size:13.5px; font-weight:600;">${n.message}</p>
@@ -21420,6 +21600,7 @@
             </div>
           `;
         });
+        container.innerHTML = notifHtml;
       }
 
       openModal('notifModal');
@@ -21766,7 +21947,8 @@
       if (list.length === 0) {
         body.innerHTML = '<tr><td colspan="8" class="text-center" style="padding: 16px;">No transactions recorded.</td></tr>';
       } else {
-        list.sort((a,b) => new Date(a.date) - new Date(b.date)).forEach(t => {
+        let rowsHtml = '';
+        list.sort((a,b) => sortTransactionsByDate(a, b, true)).forEach(t => {
           const debit = parseFloat(t.debit || 0);
           const credit = parseFloat(t.credit || 0);
           const proofLink = t.proofUrl ? `<a href="javascript:void(0)" onclick="openDocumentViewer('${t.proofUrl}', 'Payment Proof - ${t.voucherNo || t.id}')" style="color:var(--acc);" title="View Proof"><i class="fa-solid fa-file-image"></i></a>` : '--';
@@ -21797,7 +21979,7 @@
                : `<button class="btn btn-sm" style="background: linear-gradient(135deg,#065F46,#047857); color:#fff; font-size:11px; padding:4px 10px; border-radius:6px; gap:4px; display:inline-flex; align-items:center; white-space:nowrap; margin-left: 6px;" onclick="openPaymentQrModal('${t.id}', ${balanceDue}, '${t.voucherNo || t.id}')" title="Pay ₹${balanceDue.toFixed(2)} for this invoice"><i class="fa-solid fa-qrcode"></i> Pay ₹${Math.ceil(balanceDue)}</button>`)
             : '';
 
-          body.innerHTML += `
+          rowsHtml += `
             <tr>
               <td data-label="Voucher No" style="word-break: break-all; font-size: 12.5px; max-width: 140px;"><strong>${t.voucherNo || t.id}</strong></td>
               <td data-label="Date">${formatDate(t.date)}</td>
@@ -21814,6 +21996,7 @@
             </tr>
           `;
         });
+        body.innerHTML = rowsHtml;
       }
       
       openModal('myTransactionsModal');
@@ -22012,13 +22195,14 @@
         return;
       }
       
-      list.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(f => {
+      let rowsHtml = '';
+      list.sort((a,b) => parseDate(b.date) - parseDate(a.date)).forEach(f => {
         let typeIcon = '<i class="fa-solid fa-phone" title="Phone Call"></i> Call';
         if (f.type === 'Email') typeIcon = '<i class="fa-solid fa-envelope" title="Email"></i> Email';
         if (f.type === 'Meeting') typeIcon = '<i class="fa-solid fa-users" title="Meeting"></i> Meeting';
         if (f.type === 'SMS') typeIcon = '<i class="fa-solid fa-comments" title="SMS/WhatsApp"></i> Chat';
         
-        body.innerHTML += `
+        rowsHtml += `
           <tr>
             <td>${formatDate(f.date)}</td>
             <td><strong>${typeIcon}</strong></td>
@@ -22031,6 +22215,7 @@
           </tr>
         `;
       });
+      body.innerHTML = rowsHtml;
     }
 
     function saveFollowupForm(e) {
@@ -22453,6 +22638,7 @@
           navigator.serviceWorker.register('./sw.js')
             .then((reg) => {
               console.log('[PWA] Service Worker registered successfully with scope:', reg.scope);
+              reg.update().catch(() => {});
               reg.onupdatefound = () => {
                 const installingWorker = reg.installing;
                 if (!installingWorker) return;
@@ -22466,6 +22652,14 @@
             .catch((err) => {
               console.warn('[PWA] Service Worker registration failed:', err);
             });
+        });
+
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
         });
       }
 

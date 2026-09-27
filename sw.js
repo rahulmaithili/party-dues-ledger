@@ -1,5 +1,5 @@
 // Shiv Shakti / Mr.Rahul ERP - PWA Service Worker
-const CACHE_NAME = 'mr-rahul-erp-v1.2';
+const CACHE_NAME = 'mr-rahul-erp-v1.3';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
