@@ -32,6 +32,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- SheetJS (XLSX) for Excel Export & Import -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- ExcelJS for High Quality Styled Excel Exports & Formulas -->
+  <script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
   <!-- ===== FIREBASE SDK ===== -->
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -17994,7 +17996,7 @@
       }
     }
 
-    function exportAllPartiesExcel(onlySelected = false, applyFilter = false) {
+    async function exportAllPartiesExcel(onlySelected = false, applyFilter = false) {
       if (document.getElementById('exportDropdownMenu')) {
         document.getElementById('exportDropdownMenu').style.display = 'none';
       }
@@ -18068,6 +18070,213 @@
         exportScope = `FILTERED PARTIES EXPORT (Category: ${filter}${search ? ', Search: ' + search : ''})`;
         filePrefix = `Filtered_Parties_${filter}_Export`;
       }
+
+      showLoading(true, 'Generating styled Parties Excel...');
+
+      try {
+        if (typeof ExcelJS !== 'undefined') {
+          const workbook = new ExcelJS.Workbook();
+          workbook.creator = companyTitle;
+          const ws = workbook.addWorksheet('Parties Directory', {
+            views: [{ state: 'frozen', xSplit: 0, ySplit: 5 }]
+          });
+
+          ws.columns = [
+            { key: 'sno', width: 8 },
+            { key: 'pid', width: 14 },
+            { key: 'name', width: 28 },
+            { key: 'type', width: 16 },
+            { key: 'mobile', width: 16 },
+            { key: 'email', width: 24 },
+            { key: 'gstin', width: 18 },
+            { key: 'address', width: 30 },
+            { key: 'opening', width: 18 },
+            { key: 'debits', width: 18 },
+            { key: 'credits', width: 18 },
+            { key: 'balance', width: 20 },
+            { key: 'status', width: 18 },
+            { key: 'cylinders', width: 22 },
+            { key: 'security', width: 18 },
+            { key: 'limit', width: 16 }
+          ];
+
+          // 1. Company Banner (Row 1)
+          ws.mergeCells('A1:P1');
+          ws.getCell('A1').value = companyTitle.toUpperCase();
+          ws.getCell('A1').font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+          ws.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+          ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+          ws.getRow(1).height = 36;
+
+          // 2. Subtitle (Row 2)
+          ws.mergeCells('A2:P2');
+          ws.getCell('A2').value = `${exportScope} - Exported on ${formatDate(new Date())} (${list.length} Parties)`;
+          ws.getCell('A2').font = { size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
+          ws.getCell('A2').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+          ws.getCell('A2').alignment = { vertical: 'middle', horizontal: 'center' };
+          ws.getRow(2).height = 24;
+
+          ws.getRow(3).height = 8;
+
+          // 3. Header Row (Row 5)
+          const headers = [
+            'S.No', 'Party ID', 'Party Name', 'Party Type / Category', 'Mobile Number', 'Email Address', 'GSTIN', 'Full Address',
+            'Opening Balance (₹)', 'Total Debits / Invoices (₹)', 'Total Credits / Receipts (₹)', 'Current Balance Due (₹)',
+            'Balance Status', 'Cylinders Holding', 'Security Deposit (₹)', 'Credit Limit (₹)'
+          ];
+          const hRow = ws.getRow(5);
+          hRow.values = headers;
+          hRow.height = 28;
+          for (let c = 1; c <= 16; c++) {
+            const cell = hRow.getCell(c);
+            cell.font = { size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+            cell.alignment = {
+              vertical: 'middle',
+              horizontal: [9, 10, 11, 12, 15, 16].includes(c) ? 'right' : ([3, 6, 8].includes(c) ? 'left' : 'center')
+            };
+          }
+
+          let totalOpening = 0;
+          let totalDebitsSum = 0;
+          let totalCreditsSum = 0;
+          let totalDues = 0;
+          let totalAdvance = 0;
+          let totalCylinders = 0;
+          let totalSecurity = 0;
+
+          const gridBorder = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
+
+          list.forEach((p, idx) => {
+            const rNum = 6 + idx;
+            const row = ws.getRow(rNum);
+            const opening = parseFloat(p.openingBalance || 0);
+            const bal = partyBalance[p.id] !== undefined ? partyBalance[p.id] : opening;
+            const deb = partyDebits[p.id] || 0;
+            const cred = partyCredits[p.id] || 0;
+
+            totalOpening += opening;
+            totalDebitsSum += deb;
+            totalCreditsSum += cred;
+
+            let status = 'Settled (Nil)';
+            if (bal > 0) {
+              status = 'Receivable (Due)';
+              totalDues += bal;
+            } else if (bal < 0) {
+              status = 'Payable (Advance)';
+              totalAdvance += Math.abs(bal);
+            }
+
+            let cylCount = 0;
+            let cylDesc = '0';
+            try {
+              const holding = getPartyCylinderHolding(p.id);
+              const parts = [];
+              Object.keys(holding).forEach(k => {
+                if (holding[k] > 0) {
+                  parts.push(`${k}: ${holding[k]}`);
+                  cylCount += holding[k];
+                }
+              });
+              if (parts.length > 0) {
+                cylDesc = `${cylCount} (${parts.join(', ')})`;
+              }
+            } catch (e) {}
+            totalCylinders += cylCount;
+            totalSecurity += parseFloat(p.securityDeposit || 0);
+
+            // Column L Formula: =I{rNum} + J{rNum} - K{rNum} (Opening + Debits - Credits)
+            row.values = [
+              idx + 1,
+              p.id || '',
+              p.name || '',
+              p.type || 'Customer',
+              p.mobile || '',
+              p.email || '',
+              p.gstin || '',
+              p.address || '',
+              opening,
+              deb,
+              cred,
+              { formula: `I${rNum}+J${rNum}-K${rNum}`, result: bal },
+              status,
+              cylDesc,
+              parseFloat(p.securityDeposit || 0),
+              parseFloat(p.creditLimit || 0)
+            ];
+            row.height = 22;
+
+            for (let c = 1; c <= 16; c++) {
+              const cell = row.getCell(c);
+              cell.border = gridBorder;
+              cell.font = { size: 10, color: { argb: 'FF1E293B' } };
+              if (idx % 2 === 1) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+              cell.alignment = {
+                vertical: 'middle',
+                horizontal: [9, 10, 11, 12, 15, 16].includes(c) ? 'right' : ([3, 6, 8].includes(c) ? 'left' : 'center')
+              };
+              if ([9, 10, 11, 12, 15, 16].includes(c)) {
+                cell.numFmt = '₹#,##0.00;[Red]-₹#,##0.00;"-"';
+              }
+              if (c === 12 && bal > 0) cell.font = { size: 10, bold: true, color: { argb: 'FFDC2626' } };
+              if (c === 12 && bal < 0) cell.font = { size: 10, bold: true, color: { argb: 'FF059669' } };
+            }
+          });
+
+          const lastRow = 5 + list.length;
+          const totRow = ws.getRow(lastRow + 1);
+          totRow.values = [
+            'TOTAL', '', `Total Parties: ${list.length}`, '', '', '', '', '',
+            { formula: `SUM(I6:I${lastRow})`, result: totalOpening },
+            { formula: `SUM(J6:J${lastRow})`, result: totalDebitsSum },
+            { formula: `SUM(K6:K${lastRow})`, result: totalCreditsSum },
+            { formula: `SUM(L6:L${lastRow})`, result: totalDues - totalAdvance },
+            `Dues: ₹${totalDues.toFixed(2)}`,
+            totalCylinders,
+            { formula: `SUM(O6:O${lastRow})`, result: totalSecurity },
+            ''
+          ];
+          totRow.height = 26;
+
+          for (let c = 1; c <= 16; c++) {
+            const cell = totRow.getCell(c);
+            cell.font = { size: 10, bold: true, color: { argb: 'FF0F172A' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+            cell.border = { top: { style: 'thin', color: { argb: 'FF0F172A' } }, bottom: { style: 'double', color: { argb: 'FF0F172A' } } };
+            cell.alignment = {
+              vertical: 'middle',
+              horizontal: [9, 10, 11, 12, 15, 16].includes(c) ? 'right' : ([3, 6, 8].includes(c) ? 'left' : 'center')
+            };
+            if ([9, 10, 11, 12, 15, 16].includes(c)) {
+              cell.numFmt = '₹#,##0.00;[Red]-₹#,##0.00;"-"';
+            }
+          }
+
+          const buffer = await workbook.xlsx.writeBuffer();
+          const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `${filePrefix}_${new Date().toISOString().slice(0,10)}.xlsx`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(link.href);
+
+          showLoading(false);
+          showToast(`Exported ${filePrefix}.xlsx successfully!`, 'success');
+          return;
+        }
+      } catch (err) {
+        console.warn('ExcelJS export failed:', err);
+      }
+
+      showLoading(false);
 
       const rows = [];
       rows.push([companyTitle]);
@@ -18183,7 +18392,7 @@
       exportToExcelOrCsv(filePrefix, 'Parties Master', rows, colWidths);
     }
 
-    function exportPartyLedgerExcel(partyId) {
+    async function exportPartyLedgerExcel(partyId) {
       const pid = partyId || (document.getElementById('followupPartyId') ? document.getElementById('followupPartyId').value : null) || reopenLedgerPartyId;
       if (!pid) {
         showToast('No party selected for ledger export', 'error');
@@ -18205,6 +18414,354 @@
       
       const sortedLedger = [...ledger].sort((a, b) => sortTransactionsByDate(a, b, true));
 
+      showLoading(true, 'Generating high-quality Excel statement...');
+
+      // Method 1: Ultra High Quality Excel with formulas, fonts, fills & borders via ExcelJS
+      try {
+        if (typeof ExcelJS !== 'undefined') {
+          const workbook = new ExcelJS.Workbook();
+          workbook.creator = companyTitle;
+          workbook.lastModifiedBy = App.currentUser ? App.currentUser.name : 'System';
+          workbook.created = new Date();
+          workbook.modified = new Date();
+
+          const ws = workbook.addWorksheet('Party Ledger', {
+            views: [{ state: 'frozen', xSplit: 0, ySplit: 7 }] // Freeze headers & party info
+          });
+
+          // Column definitions with generous, readable widths
+          ws.columns = [
+            { key: 'sno', width: 8 },
+            { key: 'date', width: 14 },
+            { key: 'voucher', width: 19 },
+            { key: 'particulars', width: 38 },
+            { key: 'qty', width: 12 },
+            { key: 'rate', width: 14 },
+            { key: 'type', width: 13 },
+            { key: 'mode', width: 14 },
+            { key: 'cylOut', width: 11 },
+            { key: 'cylIn', width: 11 },
+            { key: 'debit', width: 17 },
+            { key: 'credit', width: 17 },
+            { key: 'balance', width: 20 }
+          ];
+
+          // 1. Company Header Banner (Row 1)
+          ws.mergeCells('A1:M1');
+          const titleCell = ws.getCell('A1');
+          titleCell.value = companyTitle.toUpperCase();
+          titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+          titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }; // Deep Royal Navy
+          titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          ws.getRow(1).height = 36;
+
+          // 2. Subtitle Banner (Row 2)
+          ws.mergeCells('A2:M2');
+          const subCell = ws.getCell('A2');
+          subCell.value = 'ACCOUNT STATEMENT / PARTY LEDGER';
+          subCell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FF1E3A8A' } };
+          subCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+          subCell.alignment = { vertical: 'middle', horizontal: 'center' };
+          ws.getRow(2).height = 24;
+
+          // Spacer Row 3
+          ws.getRow(3).height = 8;
+
+          // 3. Party Information Cards (Row 4 & Row 5)
+          const cardBorder = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
+          const cardFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+
+          ws.mergeCells('A4:D4');
+          ws.getCell('A4').value = `Party Name: ${p.name}`;
+          ws.getCell('A4').font = { bold: true, size: 10.5, color: { argb: 'FF0F172A' } };
+
+          ws.mergeCells('E4:G4');
+          ws.getCell('E4').value = `Mobile: ${p.mobile || '--'}`;
+
+          ws.mergeCells('H4:J4');
+          ws.getCell('H4').value = `GSTIN: ${p.gstin || '--'}`;
+
+          ws.mergeCells('K4:M4');
+          ws.getCell('K4').value = `Party Type: ${p.type || 'Customer'}`;
+
+          ws.mergeCells('A5:D5');
+          ws.getCell('A5').value = `Address: ${p.address || '--'}`;
+
+          ws.mergeCells('E5:G5');
+          ws.getCell('E5').value = `Opening Balance: ₹${openingBal.toFixed(2)}`;
+          ws.getCell('E5').font = { bold: true, size: 10, color: { argb: 'FF2563EB' } };
+
+          ws.mergeCells('H5:J5');
+          ws.getCell('H5').value = `Generated On: ${formatDate(new Date())}`;
+
+          ws.mergeCells('K5:M5');
+          const isDues = runningBal > 0;
+          ws.getCell('K5').value = `Status: ${isDues ? 'Dues Pending' : (runningBal < 0 ? 'Advance Balance' : 'Dues Cleared')}`;
+          ws.getCell('K5').font = { bold: true, size: 10, color: { argb: isDues ? 'FFDC2626' : 'FF059669' } };
+
+          [4, 5].forEach(rNum => {
+            const r = ws.getRow(rNum);
+            r.height = 22;
+            for (let c = 1; c <= 13; c++) {
+              const cell = r.getCell(c);
+              cell.fill = cardFill;
+              cell.border = cardBorder;
+              cell.alignment = { vertical: 'middle' };
+              if (!cell.font) cell.font = { size: 10, color: { argb: 'FF334155' } };
+            }
+          });
+
+          // Spacer Row 6
+          ws.getRow(6).height = 10;
+
+          // 4. Main Table Header Row (Row 7)
+          const headers = [
+            'S.No', 'Date', 'Voucher No', 'Product / Particulars', 'Qty', 'Rate (₹)',
+            'Type', 'Payment Mode', 'Cyl Out', 'Cyl In', 'Debit / Dr (₹)', 'Credit / Cr (₹)', 'Running Balance (₹)'
+          ];
+          const headerRow = ws.getRow(7);
+          headerRow.values = headers;
+          headerRow.height = 28;
+          for (let c = 1; c <= 13; c++) {
+            const cell = headerRow.getCell(c);
+            cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; // Midnight Charcoal
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FF334155' } },
+              bottom: { style: 'medium', color: { argb: 'FF1E293B' } },
+              left: { style: 'thin', color: { argb: 'FF334155' } },
+              right: { style: 'thin', color: { argb: 'FF334155' } }
+            };
+            cell.alignment = {
+              vertical: 'middle',
+              horizontal: [4].includes(c) ? 'left' : ([6, 11, 12, 13].includes(c) ? 'right' : 'center')
+            };
+          }
+
+          const gridBorder = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
+
+          // 5. Opening Balance Row (Row 8)
+          const opRow = ws.getRow(8);
+          opRow.values = [
+            1,
+            formatDate(p.createdAt || new Date()),
+            'OPENING-BAL',
+            'Opening Balance Brought Forward',
+            '-',
+            '-',
+            'Opening',
+            '-',
+            0,
+            0,
+            openingBal > 0 ? openingBal : 0,
+            openingBal < 0 ? Math.abs(openingBal) : 0,
+            openingBal
+          ];
+          opRow.height = 22;
+          for (let c = 1; c <= 13; c++) {
+            const cell = opRow.getCell(c);
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEFF6FF' } }; // Light Ice Blue
+            cell.border = gridBorder;
+            cell.font = { size: 10, bold: true, color: { argb: 'FF1E3A8A' } };
+            cell.alignment = {
+              vertical: 'middle',
+              horizontal: [4].includes(c) ? 'left' : ([6, 11, 12, 13].includes(c) ? 'right' : 'center')
+            };
+            if ([11, 12, 13].includes(c)) {
+              cell.numFmt = '₹#,##0.00;[Red]-₹#,##0.00;"-"';
+            }
+          }
+
+          let totalDebit = openingBal > 0 ? openingBal : 0;
+          let totalCredit = openingBal < 0 ? Math.abs(openingBal) : 0;
+          let totalCylOut = 0;
+          let totalCylIn = 0;
+
+          // 6. Data Rows with Live Excel Formula for Running Balance: =M{prevRow} + K{currentRow} - L{currentRow}
+          sortedLedger.forEach((t, idx) => {
+            const rNum = 9 + idx;
+            const row = ws.getRow(rNum);
+
+            const debit = parseFloat(t.debit || 0);
+            const credit = parseFloat(t.credit || 0);
+            runningBal += debit - credit;
+            totalDebit += debit;
+            totalCredit += credit;
+
+            const cylOut = parseInt(t.cylinderOut || 0, 10);
+            const cylIn = parseInt(t.cylinderIn || 0, 10);
+            totalCylOut += cylOut;
+            totalCylIn += cylIn;
+
+            let prodText = '';
+            let qtyText = '-';
+            let rateVal = '-';
+
+            if (t.items && Array.isArray(t.items) && t.items.length > 0) {
+              prodText = t.items.map(x => x.productName || 'Item').join(', ');
+              if (t.description) prodText += ` | ${t.description}`;
+              qtyText = t.items.map(x => `${x.quantity || 1}${x.unit ? ' ' + x.unit : ' Pcs'}`).join(', ');
+              rateVal = t.items.map(x => (x.rate || x.price || 0)).join(', ');
+            } else {
+              prodText = t.description || (t.txnType === 'Payment' ? 'Payment Made' : (t.txnType === 'Receipt' ? 'Payment Receipt' : t.txnType || 'Transaction'));
+            }
+
+            const fullVoucherNo = t.voucherNo || t.id || '';
+            const displayVoucher = formatShortVoucherNo(fullVoucherNo);
+
+            // Dynamic Excel Running Balance Formula
+            const balanceFormula = `M${rNum - 1}+K${rNum}-L${rNum}`;
+
+            row.values = [
+              idx + 2,
+              formatDate(t.date),
+              displayVoucher,
+              prodText,
+              qtyText,
+              rateVal,
+              t.txnType || 'Txn',
+              t.paymentMode || 'Cash',
+              cylOut,
+              cylIn,
+              debit > 0 ? debit : 0,
+              credit > 0 ? credit : 0,
+              { formula: balanceFormula, result: runningBal } // EXCEL DYNAMIC FORMULA
+            ];
+            row.height = 22;
+
+            const isZebra = idx % 2 === 1;
+            for (let c = 1; c <= 13; c++) {
+              const cell = row.getCell(c);
+              cell.border = gridBorder;
+              cell.font = { size: 10, color: { argb: 'FF1E293B' } };
+              if (isZebra) {
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+              }
+              cell.alignment = {
+                vertical: 'middle',
+                horizontal: [4].includes(c) ? 'left' : ([6, 11, 12, 13].includes(c) ? 'right' : 'center'),
+                wrapText: [4].includes(c)
+              };
+
+              if ([11, 12, 13].includes(c)) {
+                cell.numFmt = '₹#,##0.00;[Red]-₹#,##0.00;"-"';
+                if (c === 11 && debit > 0) cell.font = { size: 10, bold: true, color: { argb: 'FFDC2626' } }; // Soft red for debits
+                if (c === 12 && credit > 0) cell.font = { size: 10, bold: true, color: { argb: 'FF059669' } }; // Soft green for credits
+                if (c === 13) cell.font = { size: 10, bold: true, color: { argb: 'FF0F172A' } };
+              }
+              if ([9, 10].includes(c)) {
+                cell.numFmt = '#,##0;[Red]-#,##0;"-"';
+              }
+            }
+          });
+
+          const lastDataRow = 8 + sortedLedger.length;
+          const totalRowNum = lastDataRow + 1;
+          const totRow = ws.getRow(totalRowNum);
+
+          // 7. Grand Total Row with SUM Formulas
+          totRow.values = [
+            'TOTAL',
+            '',
+            `Entries: ${sortedLedger.length + 1}`,
+            '',
+            '',
+            '',
+            '',
+            '',
+            { formula: `SUM(I8:I${lastDataRow})`, result: totalCylOut },
+            { formula: `SUM(J8:J${lastDataRow})`, result: totalCylIn },
+            { formula: `SUM(K8:K${lastDataRow})`, result: totalDebit },
+            { formula: `SUM(L8:L${lastDataRow})`, result: totalCredit },
+            { formula: `M${lastDataRow}`, result: runningBal }
+          ];
+          totRow.height = 26;
+
+          for (let c = 1; c <= 13; c++) {
+            const cell = totRow.getCell(c);
+            cell.font = { size: 10, bold: true, color: { argb: 'FF0F172A' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FF0F172A' } },
+              bottom: { style: 'double', color: { argb: 'FF0F172A' } }, // Professional accounting double underline
+              left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+              right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+            };
+            cell.alignment = {
+              vertical: 'middle',
+              horizontal: [4].includes(c) ? 'left' : ([6, 11, 12, 13].includes(c) ? 'right' : 'center')
+            };
+            if ([11, 12, 13].includes(c)) {
+              cell.numFmt = '₹#,##0.00;[Red]-₹#,##0.00;"-"';
+            }
+            if ([9, 10].includes(c)) {
+              cell.numFmt = '#,##0;[Red]-#,##0;"-"';
+            }
+          }
+
+          // 8. Net Closing Outstanding Card Row
+          const cardRowNum = totalRowNum + 2;
+          ws.mergeCells(`A${cardRowNum}:J${cardRowNum}`);
+          const labelCell = ws.getCell(`A${cardRowNum}`);
+          labelCell.value = 'NET CLOSING OUTSTANDING BALANCE:';
+          labelCell.font = { size: 11, bold: true, color: { argb: 'FF0F172A' } };
+          labelCell.alignment = { vertical: 'middle', horizontal: 'right' };
+
+          ws.mergeCells(`K${cardRowNum}:M${cardRowNum}`);
+          const valCell = ws.getCell(`K${cardRowNum}`);
+          valCell.value = { formula: `M${totalRowNum}`, result: runningBal };
+          valCell.font = { size: 13, bold: true, color: { argb: runningBal > 0 ? 'FFDC2626' : 'FF059669' } };
+          valCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: runningBal > 0 ? 'FFFEF2F2' : 'FFECFDF5' } };
+          valCell.numFmt = '₹#,##0.00;[Red]-₹#,##0.00;"₹0.00"';
+          valCell.alignment = { vertical: 'middle', horizontal: 'center' };
+
+          const borderStyle = {
+            top: { style: 'medium', color: { argb: runningBal > 0 ? 'FFDC2626' : 'FF059669' } },
+            bottom: { style: 'medium', color: { argb: runningBal > 0 ? 'FFDC2626' : 'FF059669' } },
+            left: { style: 'medium', color: { argb: runningBal > 0 ? 'FFDC2626' : 'FF059669' } },
+            right: { style: 'medium', color: { argb: runningBal > 0 ? 'FFDC2626' : 'FF059669' } }
+          };
+          for (let c = 11; c <= 13; c++) {
+            ws.getRow(cardRowNum).getCell(c).border = borderStyle;
+          }
+          ws.getRow(cardRowNum).height = 32;
+
+          // Direct browser download
+          const buffer = await workbook.xlsx.writeBuffer();
+          const cleanPartyName = (p.name || 'Party').replace(/[^a-zA-Z0-9_\u0900-\u097F-]/g, '_');
+          const dateSlug = new Date().toISOString().slice(0, 10);
+          const fullFilename = `${cleanPartyName}_Ledger_Statement_${dateSlug}.xlsx`;
+
+          const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = fullFilename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(link.href);
+
+          showLoading(false);
+          showToast(`Exported ${fullFilename} successfully!`, 'success');
+          return;
+        }
+      } catch (excelErr) {
+        console.warn('ExcelJS export failed, falling back to basic export:', excelErr);
+      }
+
+      showLoading(false);
+
+      // Fallback: SheetJS / CSV
       const rows = [];
       rows.push([companyTitle]);
       rows.push(['ACCOUNT STATEMENT / LEDGER']);
@@ -18213,35 +18770,14 @@
       rows.push([]);
 
       rows.push([
-        'S.No',
-        'Date',
-        'Voucher No',
-        'Product / Particulars',
-        'Qty',
-        'Rate (₹)',
-        'Type',
-        'Payment Mode',
-        'Cyl Out',
-        'Cyl In',
-        'Debit / Dr (₹)',
-        'Credit / Cr (₹)',
-        'Running Balance (₹)'
+        'S.No', 'Date', 'Voucher No', 'Product / Particulars', 'Qty', 'Rate (₹)',
+        'Type', 'Payment Mode', 'Cyl Out', 'Cyl In', 'Debit / Dr (₹)', 'Credit / Cr (₹)', 'Running Balance (₹)'
       ]);
 
       rows.push([
-        1,
-        formatDate(p.createdAt || new Date()),
-        'OPENING-BAL',
-        'Opening Balance Brought Forward',
-        '--',
-        '--',
-        'Opening Balance',
-        '--',
-        0,
-        0,
-        openingBal > 0 ? openingBal : 0,
-        openingBal < 0 ? Math.abs(openingBal) : 0,
-        openingBal
+        1, formatDate(p.createdAt || new Date()), 'OPENING-BAL', 'Opening Balance Brought Forward',
+        '--', '--', 'Opening Balance', '--', 0, 0,
+        openingBal > 0 ? openingBal : 0, openingBal < 0 ? Math.abs(openingBal) : 0, openingBal
       ]);
 
       let totalDebit = openingBal > 0 ? openingBal : 0;
@@ -18267,52 +18803,27 @@
 
         if (t.items && Array.isArray(t.items) && t.items.length > 0) {
           prodText = t.items.map(x => x.productName || 'Item').join(', ');
-          if (t.description) {
-            prodText += ` | ${t.description}`;
-          }
+          if (t.description) prodText += ` | ${t.description}`;
           qtyText = t.items.map(x => `${x.quantity || 1}${x.unit ? ' ' + x.unit : ' Pcs'}`).join(', ');
           rateText = t.items.map(x => (x.rate || x.price || 0)).join(', ');
         } else {
           prodText = t.description || (t.txnType === 'Payment' ? 'Payment Made' : (t.txnType === 'Receipt' ? 'Payment Receipt' : t.txnType || 'Transaction'));
-          qtyText = '--';
-          rateText = '--';
         }
 
         const fullVoucherNo = t.voucherNo || t.id || '';
         const displayVoucher = formatShortVoucherNo(fullVoucherNo);
 
         rows.push([
-          idx + 2,
-          formatDate(t.date),
-          displayVoucher,
-          prodText,
-          qtyText,
-          rateText,
-          t.txnType || 'Txn',
-          t.paymentMode || 'Cash',
-          cylOut,
-          cylIn,
-          debit > 0 ? debit : 0,
-          credit > 0 ? credit : 0,
-          runningBal
+          idx + 2, formatDate(t.date), displayVoucher, prodText, qtyText, rateText,
+          t.txnType || 'Txn', t.paymentMode || 'Cash', cylOut, cylIn,
+          debit > 0 ? debit : 0, credit > 0 ? credit : 0, runningBal
         ]);
       });
 
       rows.push([]);
       rows.push([
-        'TOTAL',
-        '',
-        `Total Entries: ${sortedLedger.length + 1}`,
-        '',
-        '',
-        '',
-        '',
-        '',
-        totalCylOut,
-        totalCylIn,
-        totalDebit,
-        totalCredit,
-        runningBal
+        'TOTAL', '', `Total Entries: ${sortedLedger.length + 1}`, '', '', '', '', '',
+        totalCylOut, totalCylIn, totalDebit, totalCredit, runningBal
       ]);
       rows.push(['CLOSING OUTSTANDING BALANCE:', '', '', '', '', '', '', '', '', '', '', '', runningBal]);
 
@@ -18321,7 +18832,7 @@
       exportToExcelOrCsv(filename, 'Statement', rows, colWidths);
     }
 
-    function exportMyTransactionsExcel() {
+    async function exportMyTransactionsExcel() {
       if (!App.currentUser || !App.currentUser.partyId) {
         showToast('No party account linked to this user profile', 'error');
         return;
@@ -18337,24 +18848,152 @@
 
       list.sort((a, b) => sortTransactionsByDate(a, b, true));
 
+      const company = App.data.companyProfile || {};
+      const companyTitle = company.companyName || 'Mr.Rahul ERP';
+
+      showLoading(true, 'Generating Excel statement...');
+
+      try {
+        if (typeof ExcelJS !== 'undefined') {
+          const workbook = new ExcelJS.Workbook();
+          workbook.creator = companyTitle;
+          const ws = workbook.addWorksheet('My Transactions', {
+            views: [{ state: 'frozen', xSplit: 0, ySplit: 5 }]
+          });
+
+          ws.columns = [
+            { key: 'sno', width: 8 },
+            { key: 'date', width: 14 },
+            { key: 'voucher', width: 20 },
+            { key: 'type', width: 14 },
+            { key: 'debit', width: 18 },
+            { key: 'credit', width: 18 },
+            { key: 'mode', width: 14 },
+            { key: 'items', width: 38 }
+          ];
+
+          // Title Banner
+          ws.mergeCells('A1:H1');
+          ws.getCell('A1').value = `${companyTitle} - ${p.name}`.toUpperCase();
+          ws.getCell('A1').font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+          ws.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } };
+          ws.getCell('A1').alignment = { vertical: 'middle', horizontal: 'center' };
+          ws.getRow(1).height = 34;
+
+          ws.mergeCells('A2:H2');
+          ws.getCell('A2').value = `Invoices & Payment Transactions - Exported on ${formatDate(new Date())}`;
+          ws.getCell('A2').font = { size: 10.5, bold: true, color: { argb: 'FF1E3A8A' } };
+          ws.getCell('A2').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+          ws.getCell('A2').alignment = { vertical: 'middle', horizontal: 'center' };
+          ws.getRow(2).height = 22;
+
+          ws.getRow(3).height = 8;
+
+          // Header Row (Row 5)
+          const headers = ['S.No', 'Date', 'Voucher No', 'Type', 'Debit / Billed (₹)', 'Credit / Paid (₹)', 'Payment Mode', 'Remarks / Items'];
+          const hRow = ws.getRow(5);
+          hRow.values = headers;
+          hRow.height = 28;
+          for (let c = 1; c <= 8; c++) {
+            const cell = hRow.getCell(c);
+            cell.font = { size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } };
+            cell.alignment = { vertical: 'middle', horizontal: [5, 6].includes(c) ? 'right' : ([8].includes(c) ? 'left' : 'center') };
+          }
+
+          let totalDebit = 0;
+          let totalCredit = 0;
+          const gridBorder = {
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
+          };
+
+          list.forEach((t, idx) => {
+            const rNum = 6 + idx;
+            const row = ws.getRow(rNum);
+            const debit = parseFloat(t.debit || 0);
+            const credit = parseFloat(t.credit || 0);
+            totalDebit += debit;
+            totalCredit += credit;
+
+            let itemsStr = t.description || '';
+            if (t.items && Array.isArray(t.items) && t.items.length > 0) {
+              const itemText = t.items.map(x => `${x.productName} (x${x.quantity})`).join(', ');
+              itemsStr = itemsStr ? `${itemsStr} [${itemText}]` : itemText;
+            }
+
+            row.values = [
+              idx + 1,
+              formatDate(t.date),
+              formatShortVoucherNo(t.voucherNo || t.id),
+              t.txnType,
+              debit > 0 ? debit : 0,
+              credit > 0 ? credit : 0,
+              t.paymentMode || 'Cash',
+              itemsStr
+            ];
+            row.height = 22;
+
+            for (let c = 1; c <= 8; c++) {
+              const cell = row.getCell(c);
+              cell.border = gridBorder;
+              cell.font = { size: 10, color: { argb: 'FF1E293B' } };
+              if (idx % 2 === 1) cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+              cell.alignment = { vertical: 'middle', horizontal: [5, 6].includes(c) ? 'right' : ([8].includes(c) ? 'left' : 'center') };
+              if ([5, 6].includes(c)) cell.numFmt = '₹#,##0.00;[Red]-₹#,##0.00;"-"';
+            }
+          });
+
+          const lastRow = 5 + list.length;
+          const totRow = ws.getRow(lastRow + 1);
+          totRow.values = [
+            'TOTAL', '', `Entries: ${list.length}`, '',
+            { formula: `SUM(E6:E${lastRow})`, result: totalDebit },
+            { formula: `SUM(F6:F${lastRow})`, result: totalCredit },
+            '', ''
+          ];
+          totRow.height = 26;
+          for (let c = 1; c <= 8; c++) {
+            const cell = totRow.getCell(c);
+            cell.font = { size: 10, bold: true, color: { argb: 'FF0F172A' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF1F5F9' } };
+            cell.border = { top: { style: 'thin' }, bottom: { style: 'double' } };
+            if ([5, 6].includes(c)) cell.numFmt = '₹#,##0.00;[Red]-₹#,##0.00;"-"';
+          }
+
+          const buffer = await workbook.xlsx.writeBuffer();
+          const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `${p.name}_My_Transactions.xlsx`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(link.href);
+
+          showLoading(false);
+          showToast('Downloaded transactions Excel successfully!', 'success');
+          return;
+        }
+      } catch (err) {
+        console.warn('ExcelJS export failed:', err);
+      }
+
+      showLoading(false);
+
+      // Fallback
       const rows = [];
       rows.push([`${p.name} - Invoices & Transactions`]);
       rows.push([`Exported on: ${formatDate(new Date())}`]);
       rows.push([]);
       rows.push([
-        'S.No',
-        'Date',
-        'Voucher No',
-        'Type',
-        'Debit / Billed (₹)',
-        'Credit / Paid (₹)',
-        'Payment Mode',
-        'Remarks / Items'
+        'S.No', 'Date', 'Voucher No', 'Type', 'Debit / Billed (₹)', 'Credit / Paid (₹)', 'Payment Mode', 'Remarks / Items'
       ]);
 
       let totalDebit = 0;
       let totalCredit = 0;
-
       list.forEach((t, idx) => {
         const debit = parseFloat(t.debit || 0);
         const credit = parseFloat(t.credit || 0);
@@ -18368,14 +19007,8 @@
         }
 
         rows.push([
-          idx + 1,
-          formatDate(t.date),
-          formatShortVoucherNo(t.voucherNo || t.id),
-          t.txnType,
-          debit > 0 ? debit : 0,
-          credit > 0 ? credit : 0,
-          t.paymentMode || 'Cash',
-          itemsStr
+          idx + 1, formatDate(t.date), formatShortVoucherNo(t.voucherNo || t.id),
+          t.txnType, debit > 0 ? debit : 0, credit > 0 ? credit : 0, t.paymentMode || 'Cash', itemsStr
         ]);
       });
 
