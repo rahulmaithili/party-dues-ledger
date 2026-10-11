@@ -11005,10 +11005,52 @@
 
     function normalizeTransactions() {
       if (!App.data.transactions) return;
+      const isGstEnabled = (App.data.companyProfile && App.data.companyProfile.enableGst !== false && App.data.companyProfile.enableGst !== 'false');
+
       App.data.transactions.forEach(t => {
         let debit = parseFloat(t.debit || 0);
         let credit = parseFloat(t.credit || 0);
         
+        // Auto-correct transactions where GST was erroneously calculated while GST is disabled
+        if (!isGstEnabled && t.items && t.items.length > 0 && t.totals && (parseFloat(t.totals.cgst || 0) > 0 || parseFloat(t.totals.sgst || 0) > 0)) {
+          let calcSubtotal = 0;
+          t.items.forEach(it => {
+            it.gst = 0;
+            const lineVal = (parseFloat(it.quantity) || 0) * (parseFloat(it.rate !== undefined ? it.rate : (it.price || 0)) || 0);
+            it.amount = lineVal;
+            calcSubtotal += lineVal;
+          });
+          const discount = parseFloat(t.totals.discount || 0);
+          const trueGrand = Math.round(Math.max(0, calcSubtotal - discount));
+          
+          t.totals.subTotal = calcSubtotal;
+          t.totals.cgst = 0;
+          t.totals.sgst = 0;
+          t.totals.igst = 0;
+          t.totals.roundOff = 0;
+          t.totals.grandTotal = trueGrand;
+
+          if (t.txnType === 'Sale') {
+            t.debit = trueGrand;
+            const paid = (t.totals.paidCash ? parseFloat(t.totals.paidCash) : 0) + (t.totals.paidBank ? parseFloat(t.totals.paidBank) : 0);
+            t.totals.balanceDue = Math.max(0, trueGrand - paid);
+          } else if (t.txnType === 'Purchase') {
+            t.credit = trueGrand;
+            const paid = (t.totals.paidCash ? parseFloat(t.totals.paidCash) : 0) + (t.totals.paidBank ? parseFloat(t.totals.paidBank) : 0);
+            t.totals.balanceDue = Math.max(0, trueGrand - paid);
+          }
+
+          // Silently persist corrected values to Firestore if logged in
+          if (typeof db !== 'undefined' && t.id) {
+            db.collection('transactions').doc(t.id).update({
+              debit: t.debit,
+              credit: t.credit,
+              items: t.items,
+              totals: t.totals
+            }).catch(() => {});
+          }
+        }
+
         if (t.txnType === 'Sale') {
           const paid = (t.totals && t.totals.paidCash ? parseFloat(t.totals.paidCash) : 0) + (t.totals && t.totals.paidBank ? parseFloat(t.totals.paidBank) : 0);
           if (paid > 0 && credit === 0) t.credit = paid;
@@ -13890,7 +13932,9 @@
 
     function addInvoiceItemRow() {
       const idx = activeInvoiceItems.length;
-      activeInvoiceItems.push({ productId: '', quantity: 1, emptyReturn: 0, rate: 0, gst: 18, amount: 0 });
+      const isGstEnabled = (App.data.companyProfile && App.data.companyProfile.enableGst !== false && App.data.companyProfile.enableGst !== 'false');
+      const defaultGst = isGstEnabled ? 18 : 0;
+      activeInvoiceItems.push({ productId: '', quantity: 1, emptyReturn: 0, rate: 0, gst: defaultGst, amount: 0 });
 
       let prodOptions = '<option value="">-- Select Product --</option>';
       App.data.products.forEach(p => {
@@ -13915,7 +13959,7 @@
           <input type="number" class="light-form-control text-right" step="0.01" value="0" oninput="handleInvoiceItemRateChange(${idx}, this.value)" required>
         </td>
         <td class="gst-only">
-          <input type="number" class="light-form-control text-right" value="18" readonly>
+          <input type="number" class="light-form-control text-right" value="${defaultGst}" readonly>
         </td>
         <td class="text-right" style="font-weight:600; padding-top:20px;" id="invItemTotal_${idx}">₹0.00</td>
         <td class="text-center">
@@ -13938,14 +13982,17 @@
       
       const isSale = document.getElementById('invoiceTxnType').value === 'Sale';
       const rate = isSale ? p.saleRate : p.purchaseRate;
+      const isGstEnabled = (App.data.companyProfile && App.data.companyProfile.enableGst !== false && App.data.companyProfile.enableGst !== 'false');
+      const gstVal = isGstEnabled ? ((p.gst !== undefined && p.gst !== null) ? p.gst : 18) : 0;
 
       activeInvoiceItems[idx].productId = p.id;
       activeInvoiceItems[idx].rate = rate;
-      activeInvoiceItems[idx].gst = (p.gst !== undefined && p.gst !== null) ? p.gst : 18;
+      activeInvoiceItems[idx].gst = gstVal;
 
       const row = document.getElementById(`invItemRow_${idx}`);
       row.cells[3].querySelector('input').value = rate;
-      row.cells[4].querySelector('input').value = p.gst;
+      const gstInput = row.cells[4].querySelector('input');
+      if (gstInput) gstInput.value = gstVal;
 
       calculateInvoiceTotals();
     }
@@ -13968,19 +14015,20 @@
     function calculateInvoiceTotals() {
       let subTotal = 0;
       let totalTax = 0;
+      const showGst = (App.data.companyProfile && App.data.companyProfile.enableGst !== false && App.data.companyProfile.enableGst !== 'false');
 
       activeInvoiceItems.forEach((item, idx) => {
         if (!item || !item.productId) return;
-        const showGst = (App.data.companyProfile.enableGst !== false && App.data.companyProfile.enableGst !== 'false');
-        const lineVal = item.quantity * item.rate;
-        const lineTax = showGst ? (lineVal * (item.gst / 100)) : 0;
+        const lineVal = (parseFloat(item.quantity) || 0) * (parseFloat(item.rate) || 0);
+        const lineTax = showGst ? (lineVal * ((parseFloat(item.gst) || 0) / 100)) : 0;
         const lineTotal = lineVal + lineTax;
         
         item.amount = lineTotal;
         subTotal += lineVal;
         totalTax += lineTax;
 
-        document.getElementById(`invItemTotal_${idx}`).textContent = formatCurrency(lineTotal);
+        const totalCell = document.getElementById(`invItemTotal_${idx}`);
+        if (totalCell) totalCell.textContent = formatCurrency(lineTotal);
       });
 
       // Update Filled Cylinders Delivered automatically if not manually overridden
@@ -14033,8 +14081,13 @@
       }
       const party = App.data.parties.find(x => x.id === pid);
 
+      const isGstEnabled = (App.data.companyProfile && App.data.companyProfile.enableGst !== false && App.data.companyProfile.enableGst !== 'false');
+
       const items = activeInvoiceItems.filter(x => x && x.productId).map(x => {
         const prod = App.data.products.find(y => y.id === x.productId);
+        const itemGst = isGstEnabled ? (parseFloat(x.gst) || 0) : 0;
+        const lineVal = (parseFloat(x.quantity) || 0) * (parseFloat(x.rate) || 0);
+        const lineAmount = isGstEnabled ? (lineVal * (1 + itemGst / 100)) : lineVal;
         return {
           productId: x.productId,
           productName: prod.name,
@@ -14043,8 +14096,8 @@
           emptyReturn: x.emptyReturn || 0,
           unit: prod.unit,
           rate: x.rate,
-          gst: x.gst,
-          amount: x.amount
+          gst: itemGst,
+          amount: lineAmount
         };
       });
 
@@ -14056,8 +14109,10 @@
       // Calculate totals
       let subTotal = 0, taxTotal = 0;
       items.forEach(x => {
-        subTotal += x.quantity * x.rate;
-        taxTotal += (x.quantity * x.rate) * (x.gst / 100);
+        const lineVal = (parseFloat(x.quantity) || 0) * (parseFloat(x.rate) || 0);
+        const lineTax = isGstEnabled ? (lineVal * ((parseFloat(x.gst) || 0) / 100)) : 0;
+        subTotal += lineVal;
+        taxTotal += lineTax;
       });
 
       const discount = parseFloat(document.getElementById('invDiscount').value || 0);
@@ -14149,14 +14204,17 @@
       const body = document.getElementById('invoiceItemsBody');
       body.innerHTML = '';
 
+      const isGstEnabled = (App.data.companyProfile && App.data.companyProfile.enableGst !== false && App.data.companyProfile.enableGst !== 'false');
+
       const itemsList = t.items || [];
       itemsList.forEach((item, idx) => {
+        const itemGst = isGstEnabled ? ((item.gst !== undefined && item.gst !== null) ? item.gst : 18) : 0;
         const mappedItem = {
           productId: item.productId,
           quantity: item.quantity,
           emptyReturn: item.emptyReturn !== undefined ? item.emptyReturn : (item.cylinderReturn || 0),
           rate: item.rate !== undefined ? item.rate : (item.price || 0),
-          gst: (item.gst !== undefined && item.gst !== null) ? item.gst : 18,
+          gst: itemGst,
           amount: item.amount !== undefined ? item.amount : (item.total || 0)
         };
         activeInvoiceItems.push(mappedItem);
@@ -14184,7 +14242,7 @@
             <input type="number" class="light-form-control text-right" step="0.01" value="${mappedItem.rate}" oninput="handleInvoiceItemRateChange(${idx}, this.value)" required>
           </td>
           <td class="gst-only">
-            <input type="number" class="light-form-control text-right" value="${(mappedItem.gst !== undefined && mappedItem.gst !== null) ? mappedItem.gst : 18}" readonly>
+            <input type="number" class="light-form-control text-right" value="${itemGst}" readonly>
           </td>
           <td class="text-right" style="font-weight:600; padding-top:20px;" id="invItemTotal_${idx}">${formatCurrency(mappedItem.amount)}</td>
           <td class="text-center">
@@ -16758,7 +16816,10 @@
           productHTML = t.items.map((x, idx) => {
             const isLast = idx === t.items.length - 1;
             const dividerClass = (hasMultiple && !isLast) ? 'has-divider' : '';
-            return `<div class="item-sub-row ${dividerClass}" style="font-weight:600; color:var(--txt);">${x.productName || 'Item'}</div>`;
+            const taxBadge = (x.gst > 0 && t.totals && (parseFloat(t.totals.cgst || 0) > 0 || parseFloat(t.totals.sgst || 0) > 0 || parseFloat(t.totals.igst || 0) > 0)) 
+              ? `<span class="badge" style="font-size:10px; padding:1px 5px; background:rgba(239,68,68,0.1); color:var(--dan); border:1px solid rgba(239,68,68,0.25); margin-left:4px;">+${x.gst}% GST</span>` 
+              : '';
+            return `<div class="item-sub-row ${dividerClass}" style="font-weight:600; color:var(--txt);">${x.productName || 'Item'}${taxBadge}</div>`;
           }).join('');
 
           qtyHTML = t.items.map((x, idx) => {
@@ -17144,7 +17205,12 @@
         totalCredit += cred;
       });
 
-      const netBalance = totalDebit - totalCredit;
+      let openingBal = 0;
+      if (!isSelectionMode && window._activeLedgerPartyId) {
+        const party = App.data.parties.find(x => x.id === window._activeLedgerPartyId);
+        if (party) openingBal = parseFloat(party.openingBalance || 0);
+      }
+      const netBalance = openingBal + totalDebit - totalCredit;
 
       const debFormatted = formatCurrency(totalDebit);
       const credFormatted = formatCurrency(totalCredit);
